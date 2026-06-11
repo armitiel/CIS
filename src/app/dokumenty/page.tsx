@@ -25,6 +25,7 @@ import {
   zapiszSzablony,
   type SzablonZapisany,
 } from "@/lib/szablony";
+import { generujInteraktywnyFormularz } from "@/lib/pdf-interaktywny";
 import { Avatar, BrakiPill } from "@/components/ui";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
@@ -248,12 +249,44 @@ export default function Dokumenty() {
               className="hidden"
               onChange={(e) => wczytajWniosek(e.target.files?.[0])}
             />
-            <button onClick={() => fileRef.current?.click()} className="btn-primary">
-              <span className="material-symbols-rounded text-[19px]">
-                upload_file
-              </span>
-              Wczytaj wniosek
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="btn-primary"
+              >
+                <span className="material-symbols-rounded text-[19px]">
+                  upload_file
+                </span>
+                Wczytaj wniosek
+              </button>
+              <button
+                onClick={async () => {
+                  setGeneruje("pdf-int");
+                  try {
+                    await generujInteraktywnyFormularz(spec);
+                    setKomunikat(
+                      "✓ Pobrano interaktywny PDF — pola tekstowe i listy rozwijane wypełnisz w Adobe Reader/przeglądarce.",
+                    );
+                  } catch (e) {
+                    setKomunikat(
+                      `Błąd PDF: ${e instanceof Error ? e.message : "nieznany"}`,
+                    );
+                  } finally {
+                    setGeneruje(null);
+                  }
+                }}
+                disabled={generuje !== null}
+                className="btn-dark"
+                title="Wypełnialny PDF: pola tekstowe, listy rozwijane ze słowników SOWA, pola wyboru"
+              >
+                <span className="material-symbols-rounded text-[18px]">
+                  picture_as_pdf
+                </span>
+                {generuje === "pdf-int"
+                  ? "Generuję…"
+                  : "Formularz interaktywny (PDF)"}
+              </button>
+            </div>
           </div>
         </div>
 
