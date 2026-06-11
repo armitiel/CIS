@@ -21,6 +21,8 @@ export interface Uczestnik {
   dataPrzystapienia: string; // ISO
   frekwencja: number; // %
   brakujaceDokumenty: string[];
+  /** identyfikatory dokumentów już znajdujących się w teczce (wg projekt-spec) */
+  posiadaneDokumenty: string[];
 }
 
 export interface Zajecia {
