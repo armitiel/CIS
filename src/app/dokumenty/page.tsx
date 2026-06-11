@@ -5,6 +5,7 @@
 // Pełna teczka pojedynczego uczestnika jest w jego kartotece (moduł Uczestnicy).
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
   brakiWTeczce,
@@ -33,6 +34,7 @@ import {
 import WyborGeneratora from "@/components/WyborGeneratora";
 import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
+import { Avatar, BrakiPill } from "@/components/ui";
 import type { Uczestnik } from "@/lib/types";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
@@ -59,7 +61,7 @@ export default function Dokumenty() {
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
   const [pokazWybor, setPokazWybor] = useState(false);
-  const [pokazWyborOsob, setPokazWyborOsob] = useState(false);
+  const [zaznaczeni, setZaznaczeni] = useState<Set<string>>(new Set());
   const [podglad, setPodglad] = useState<{
     tytul: string;
     linie: LiniaPodgladu[];
@@ -95,15 +97,37 @@ export default function Dokumenty() {
     setTimeout(() => setRozpoznano(true), 600);
   }
 
-  /** Pakiety braków dla osób wybranych z listy: 1 osoba → .docx, kilka → ZIP. */
-  async function pobierzPakietyWybranych(wybrani: Uczestnik[]) {
+  function przelaczZaznaczenie(id: string) {
+    setZaznaczeni((stan) => {
+      const n = new Set(stan);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  // zmiana projektu / importu bazy → domyślnie zaznacz wszystkich
+  useEffect(() => {
+    setZaznaczeni(new Set(uczestnicy.map((u) => u.id)));
+  }, [uczestnicy]);
+
+  /**
+   * Pakiety dokumentów dla ZAZNACZONYCH osób:
+   * jedna osoba → pojedynczy plik .docx, kilka osób → wspólny ZIP.
+   */
+  async function pakietyDlaZaznaczonych(tylkoBraki: boolean) {
+    const wybrani = uczestnicy.filter((u) => zaznaczeni.has(u.id));
     if (wybrani.length === 0) return;
-    setGeneruje("wybrani");
+    setGeneruje("wsad");
     setKomunikat(null);
     try {
+      const dokDla = (u: Uczestnik) =>
+        (tylkoBraki ? brakiWTeczce(u, spec) : wymaganeDokumenty(u, spec)).filter(
+          (d) => d.generowalny,
+        );
       if (wybrani.length === 1) {
         const u = wybrani[0];
-        const dokumenty = brakiWTeczce(u, spec).filter((d) => d.generowalny);
+        const dokumenty = dokDla(u);
         if (dokumenty.length === 0) {
           setKomunikat(
             `Teczka ${u.nazwisko} ${u.imie} jest kompletna — brak dokumentów do wygenerowania.`,
@@ -112,51 +136,24 @@ export default function Dokumenty() {
         }
         await generujPakiet(dokumenty, u, spec);
         setKomunikat(
-          `✓ Wygenerowano pakiet braków (.docx) dla: ${u.nazwisko} ${u.imie}.`,
+          `✓ Wygenerowano ${tylkoBraki ? "pakiet braków" : "komplet"} (.docx) dla: ${u.nazwisko} ${u.imie}.`,
         );
       } else {
         const pakiety = wybrani.map((u) => ({
           uczestnik: u,
-          dokumenty: brakiWTeczce(u, spec).filter((d) => d.generowalny),
+          dokumenty: dokDla(u),
         }));
         const n = await generujPakietyZbiorczo(
           pakiety,
           spec,
-          "Pakiety_brakow_wybrani",
+          tylkoBraki ? "Pakiety_brakow" : "Pakiety_komplet",
         );
         setKomunikat(
           n > 0
-            ? `✓ Wygenerowano ZIP z pakietami braków dla ${n} z ${wybrani.length} wybranych osób.`
-            : "Wybrane teczki są kompletne — brak dokumentów do wygenerowania.",
+            ? `✓ Wygenerowano ZIP z pakietami dla ${n} z ${wybrani.length} zaznaczonych osób.`
+            : "Zaznaczone teczki są kompletne — brak dokumentów do wygenerowania.",
         );
       }
-    } finally {
-      setGeneruje(null);
-    }
-  }
-
-  /** Wsadowo: pakiety dokumentów dla wszystkich uczestników → jeden ZIP. */
-  async function pobierzPakietyWsadowo(tylkoBraki: boolean) {
-    setGeneruje("wsad");
-    setKomunikat(null);
-    try {
-      const pakiety = uczestnicy.map((u) => ({
-        uczestnik: u,
-        dokumenty: (tylkoBraki
-          ? brakiWTeczce(u, spec)
-          : wymaganeDokumenty(u, spec)
-        ).filter((d) => d.generowalny),
-      }));
-      const n = await generujPakietyZbiorczo(
-        pakiety,
-        spec,
-        tylkoBraki ? "Pakiety_brakow" : "Pakiety_komplet",
-      );
-      setKomunikat(
-        n > 0
-          ? `✓ Wygenerowano ZIP z pakietami dla ${n} uczestników.`
-          : "Brak dokumentów do wygenerowania (wszystkie teczki kompletne).",
-      );
     } finally {
       setGeneruje(null);
     }
@@ -400,7 +397,7 @@ export default function Dokumenty() {
         </p>
       </section>
 
-      {/* KROK 2: generowanie — zbiorczo i dla wybranej osoby */}
+      {/* KROK 2: generowanie — lista osób z zaznaczaniem + akcje na zaznaczeniu */}
       <section
         className="card anim-card-in px-6 py-[22px]"
         style={{ animationDelay: "0.1s" }}
@@ -411,35 +408,38 @@ export default function Dokumenty() {
               2. Generowanie dokumentów
             </h2>
             <p className="m-0 mt-[5px] text-[13.5px] text-muted">
-              Zbiorczo dla całej grupy ({uczestnicy.length} osób, w tym{" "}
-              {zBrakami} z brakami) albo dla wybranej osoby.
+              Zaznacz osoby na liście ({uczestnicy.length} w bazie, {zBrakami}{" "}
+              z brakami) — akcje obejmą zaznaczonych. Jedna osoba → pliki
+              .docx, kilka → wspólny ZIP.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => pobierzPakietyWsadowo(true)}
-              disabled={generuje !== null || uczestnicy.length === 0}
+              onClick={() => pakietyDlaZaznaczonych(true)}
+              disabled={generuje !== null || zaznaczeni.size === 0}
               className="btn-primary"
-              title="Jeden ZIP: pakiet brakujących dokumentów dla każdego uczestnika"
+              title="Brakujące dokumenty z teczek zaznaczonych osób"
             >
               <span className="material-symbols-rounded text-[19px]">
                 folder_zip
               </span>
-              {generuje === "wsad" ? "Generuję…" : "Pakiety braków (ZIP)"}
+              {generuje === "wsad"
+                ? "Generuję…"
+                : `Pakiety braków (${zaznaczeni.size})`}
             </button>
             <button
-              onClick={() => pobierzPakietyWsadowo(false)}
-              disabled={generuje !== null || uczestnicy.length === 0}
+              onClick={() => pakietyDlaZaznaczonych(false)}
+              disabled={generuje !== null || zaznaczeni.size === 0}
               className="btn-dark"
-              title="Jeden ZIP: komplet wymaganych dokumentów dla każdego uczestnika"
+              title="Komplet wymaganych dokumentów dla zaznaczonych osób"
             >
-              Komplety (ZIP)
+              Komplety ({zaznaczeni.size})
             </button>
             <button
               onClick={() => setPokazWybor(true)}
-              disabled={generuje !== null || uczestnicy.length === 0}
+              disabled={generuje !== null || zaznaczeni.size === 0}
               className="btn-dark"
-              title="Wybierz z listy, które dokumenty wygenerować dla wszystkich"
+              title="Wskaż konkretne formularze do wygenerowania dla zaznaczonych osób"
             >
               <span className="material-symbols-rounded text-[18px]">
                 checklist
@@ -449,25 +449,117 @@ export default function Dokumenty() {
           </div>
         </div>
 
-        {/* Akcje dla wybranych osób (multi-wybór z listy jak w zakładce Uczestnicy) */}
-        <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-soft/60 px-4 py-3">
-          <span className="text-[13px] font-semibold text-ink-mid">
-            Dla wybranych osób:
-          </span>
-          <button
-            onClick={() => setPokazWyborOsob(true)}
-            disabled={uczestnicy.length === 0 || generuje !== null}
-            className="btn-dark"
-            title="Wybierz z listy jedną lub kilka osób — pakiety brakujących dokumentów"
-          >
-            <span className="material-symbols-rounded text-[18px]">
-              group_add
+        {/* Wbudowana lista uczestników z zaznaczaniem */}
+        <div className="mt-4 overflow-hidden rounded-xl border border-line">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-soft px-4 py-2.5">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={
+                  zaznaczeni.size === uczestnicy.length &&
+                  uczestnicy.length > 0
+                }
+                onChange={(e) =>
+                  setZaznaczeni(
+                    e.target.checked
+                      ? new Set(uczestnicy.map((u) => u.id))
+                      : new Set(),
+                  )
+                }
+                className="h-4 w-4 accent-[oklch(0.52_0.09_152)]"
+              />
+              <span className="th-label">
+                Zaznaczono {zaznaczeni.size} z {uczestnicy.length}
+              </span>
+            </label>
+            <span className="flex gap-2.5 text-xs font-semibold">
+              <button
+                onClick={() =>
+                  setZaznaczeni(new Set(uczestnicy.map((u) => u.id)))
+                }
+                className="text-primary-strong hover:underline"
+              >
+                wszyscy
+              </button>
+              <button
+                onClick={() =>
+                  setZaznaczeni(
+                    new Set(
+                      uczestnicy
+                        .filter((u) => u.status === "aktywny")
+                        .map((u) => u.id),
+                    ),
+                  )
+                }
+                className="text-primary-strong hover:underline"
+              >
+                aktywni
+              </button>
+              <button
+                onClick={() =>
+                  setZaznaczeni(
+                    new Set(
+                      uczestnicy
+                        .filter((u) => brakiWTeczce(u, spec).length > 0)
+                        .map((u) => u.id),
+                    ),
+                  )
+                }
+                className="text-amber-ink hover:underline"
+              >
+                z brakami
+              </button>
+              <button
+                onClick={() => setZaznaczeni(new Set())}
+                className="text-muted hover:underline"
+              >
+                wyczyść
+              </button>
             </span>
-            {generuje === "wybrani" ? "Generuję…" : "Wybierz z listy…"}
-          </button>
-          <span className="text-xs text-muted">
-            jedna osoba → pakiet .docx · kilka osób → wspólny ZIP
-          </span>
+          </div>
+          <div className="max-h-72 overflow-y-auto">
+            {uczestnicy.map((u) => {
+              const braki = brakiWTeczce(u, spec).length;
+              return (
+                <label
+                  key={u.id}
+                  className="flex cursor-pointer items-center gap-3 border-t border-line-soft px-4 py-2 transition-colors hover:bg-hover-row"
+                >
+                  <input
+                    type="checkbox"
+                    checked={zaznaczeni.has(u.id)}
+                    onChange={() => przelaczZaznaczenie(u.id)}
+                    className="h-4 w-4 shrink-0 accent-[oklch(0.52_0.09_152)]"
+                  />
+                  <Avatar nazwa={`${u.imie} ${u.nazwisko}`} size={30} />
+                  <span className="min-w-0 truncate text-sm font-semibold text-ink">
+                    {u.nazwisko} {u.imie}
+                  </span>
+                  <span className="text-xs text-faint">
+                    {u.sciezka} · {u.status}
+                  </span>
+                  <span className="ml-auto flex items-center gap-2">
+                    <BrakiPill braki={braki} />
+                    <Link
+                      href={`/uczestnicy/${u.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-primary-strong hover:bg-green-soft"
+                      title="Otwórz kartotekę (pełna teczka)"
+                    >
+                      <span className="material-symbols-rounded text-lg">
+                        folder_open
+                      </span>
+                    </Link>
+                  </span>
+                </label>
+              );
+            })}
+            {uczestnicy.length === 0 && (
+              <div className="px-4 py-6 text-center text-sm text-faint">
+                Brak uczestników — zaimportuj bazę w module Uczestnicy.
+              </div>
+            )}
+          </div>
         </div>
 
         {komunikat && (
@@ -623,22 +715,6 @@ export default function Dokumenty() {
         </p>
       </section>
 
-      {/* POPUP: wybór osób do pakietów braków (sekcja 2) */}
-      {pokazWyborOsob && (
-        <WyborUczestnikow
-          uczestnicy={uczestnicy}
-          spec={spec}
-          tytul="Pakiety braków dla wybranych osób"
-          podtytul="Zaznacz jedną lub kilka osób — wygenerujemy brakujące dokumenty ich teczek"
-          etykieta="Generuj pakiety"
-          onClose={() => setPokazWyborOsob(false)}
-          onConfirm={(wybrani) => {
-            setPokazWyborOsob(false);
-            void pobierzPakietyWybranych(wybrani);
-          }}
-        />
-      )}
-
       {/* POPUP: wybór uczestników do generowania z szablonu własnego */}
       {wyborSzablonu && (
         <WyborUczestnikow
@@ -719,11 +795,13 @@ export default function Dokumenty() {
         </Portal>
       )}
 
-      {/* POPUP: wybór uczestników × dokumentów (wspólny komponent) */}
+      {/* POPUP: wybór dokumentów dla osób zaznaczonych na liście sekcji 2 */}
       {pokazWybor && (
         <WyborGeneratora
           spec={spec}
           uczestnicy={uczestnicy}
+          domyslniUczestnicy={[...zaznaczeni]}
+          ukryjUczestnikow
           onClose={() => setPokazWybor(false)}
           onDone={(k) => setKomunikat(k)}
         />

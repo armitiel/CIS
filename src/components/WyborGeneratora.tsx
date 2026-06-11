@@ -30,6 +30,7 @@ export default function WyborGeneratora({
   spec,
   uczestnicy,
   domyslniUczestnicy,
+  ukryjUczestnikow = false,
   onClose,
   onDone,
 }: {
@@ -37,6 +38,8 @@ export default function WyborGeneratora({
   uczestnicy: Uczestnik[];
   /** identyfikatory uczestników wstępnie zaznaczonych (np. z listy) */
   domyslniUczestnicy?: string[];
+  /** true = osoby wybrane wcześniej (np. na liście w sekcji) — popup pokazuje tylko wybór dokumentów */
+  ukryjUczestnikow?: boolean;
   onClose: () => void;
   onDone: (komunikat: string) => void;
 }) {
@@ -113,8 +116,9 @@ export default function WyborGeneratora({
               Generowanie dokumentów
             </h3>
             <p className="m-0 mt-0.5 text-xs text-muted">
-              Zaznacz uczestników i dokumenty — reguły projektu są respektowane
-              (np. IPZS trafi tylko do bezrobotnych)
+              {ukryjUczestnikow
+                ? `Dla ${wybraniUcz.size} zaznaczonych osób — wybierz dokumenty; reguły projektu są respektowane (np. IPZS trafi tylko do bezrobotnych)`
+                : "Zaznacz uczestników i dokumenty — reguły projektu są respektowane (np. IPZS trafi tylko do bezrobotnych)"}
             </p>
           </div>
           <button
@@ -126,8 +130,13 @@ export default function WyborGeneratora({
           </button>
         </div>
 
-        <div className="grid flex-1 grid-cols-1 overflow-hidden md:grid-cols-2">
+        <div
+          className={`grid flex-1 grid-cols-1 overflow-hidden ${
+            ukryjUczestnikow ? "" : "md:grid-cols-2"
+          }`}
+        >
           {/* Uczestnicy */}
+          {!ukryjUczestnikow && (
           <div className="flex flex-col overflow-hidden border-b border-line md:border-b-0 md:border-r">
             <div className="flex items-center justify-between bg-soft px-5 py-2.5">
               <span className="th-label">
@@ -188,6 +197,7 @@ export default function WyborGeneratora({
               ))}
             </div>
           </div>
+          )}
 
           {/* Dokumenty */}
           <div className="flex flex-col overflow-hidden">
@@ -258,8 +268,9 @@ export default function WyborGeneratora({
 
         <div className="flex items-center justify-between gap-3 border-t border-line bg-soft px-6 py-4">
           <span className="text-xs text-muted">
-            Braki w teczkach uzupełnisz szybciej przyciskiem „Pakiety dla
-            wszystkich” w module Dokumenty.
+            {ukryjUczestnikow
+              ? "Same braki w teczkach uzupełnisz szybciej przyciskiem „Pakiety braków”."
+              : "Braki w teczkach uzupełnisz szybciej przyciskiem „Pakiety braków” w module Dokumenty."}
           </span>
           <button
             onClick={generuj}
