@@ -19,6 +19,8 @@ import {
   type WymaganyDokument,
 } from "./projekt-spec";
 import { trescRealna } from "./tresci-realne";
+import { polaUczestnika, wypelnijSzablon } from "./szablony";
+import { wzorDlaDokumentu } from "./wzory";
 
 type Blok = Paragraph | Table;
 
@@ -344,17 +346,34 @@ export async function generujDokument(
   u: Uczestnik,
   spec: SpecyfikacjaProjektu = specyfikacjaCIS,
 ) {
-  const doc = dokumentDocx(trescDokumentu(d, u, spec));
-  await pobierz(doc, `${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`);
+  const blob = await dokumentBlob(d, u, spec);
+  pobierzBlob(blob, `${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`);
 }
 
-/** Buduje pojedynczy dokument jako Blob (bez pobierania) — używany przez podgląd. */
+/**
+ * Buduje pojedynczy dokument jako Blob — używany przez podgląd i pobieranie.
+ * Kolejność źródeł treści:
+ * 1) prawdziwy plik wzoru z public/wzory (wypełniany polami uczestnika),
+ * 2) treść realna przepisana w tresci-realne.ts,
+ * 3) ogólna treść generowana (fallback).
+ */
 export async function dokumentBlob(
   d: WymaganyDokument,
   u: Uczestnik,
   spec: SpecyfikacjaProjektu = specyfikacjaCIS,
 ): Promise<Blob> {
+  const wzor = await wzorDlaDokumentu(spec, d);
+  if (wzor) return wypelnijSzablon(wzor, polaUczestnika(u, spec));
   return Packer.toBlob(dokumentDocx(trescDokumentu(d, u, spec)));
+}
+
+function pobierzBlob(blob: Blob, nazwaPliku: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nazwaPliku;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /**
