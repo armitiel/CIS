@@ -6,6 +6,8 @@ import { brakiWTeczce } from "@/lib/projekt-spec";
 import { useProjekt } from "@/components/ProjektProvider";
 import { etapyNazwy } from "@/lib/mock-data";
 import { Avatar, BrakiPill, Pasek, SciezkaPill, StatusPill } from "@/components/ui";
+import { walidujBaze, type WynikWalidacji } from "@/lib/sowa-walidacja";
+import { eksportujCSV, pobierzCSV } from "@/lib/sowa-eksport";
 import type { KategoriaUczestnika } from "@/lib/types";
 
 type FiltrKategorii = "wszyscy" | KategoriaUczestnika;
@@ -17,7 +19,24 @@ export default function Uczestnicy() {
   const [kategoria, setKategoria] = useState<FiltrKategorii>("wszyscy");
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [trwaImport, setTrwaImport] = useState(false);
+  const [walidacja, setWalidacja] = useState<WynikWalidacji | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function waliduj() {
+    setWalidacja(walidujBaze(uczestnicy));
+  }
+
+  function eksportuj() {
+    const csv = eksportujCSV(uczestnicy, { numerProjektu: projekt.nabor });
+    pobierzCSV(
+      `Import_${projekt.skrot.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`,
+      csv,
+    );
+    setKomunikat(
+      `Wygenerowano plik Import (${uczestnicy.length} uczestników). ` +
+        "Pola „Zakres wsparcia” / „Rodzaj wsparcia” uzupełnij wartościami słownikowymi z eksportu systemowego naboru.",
+    );
+  }
 
   // zapytanie z wyszukiwarki w nagłówku (/uczestnicy?q=…)
   useEffect(() => {
@@ -123,6 +142,27 @@ export default function Uczestnicy() {
               Wyczyść import
             </button>
           )}
+          <button
+            onClick={waliduj}
+            className="btn-dark"
+            title="Sprawdź dane pod import do SOWA (PESEL, słowniki, pola wymagane)"
+          >
+            <span className="material-symbols-rounded text-[18px]">
+              rule
+            </span>
+            Waliduj (SOWA)
+          </button>
+          <button
+            onClick={eksportuj}
+            disabled={uczestnicy.length === 0}
+            className="btn-dark"
+            title="Pobierz CSV w formacie Import SOWA (43 kolumny, średnik, UTF-8 BOM)"
+          >
+            <span className="material-symbols-rounded text-[18px]">
+              download
+            </span>
+            Eksport CSV (SOWA)
+          </button>
           <button className="btn-dark" title="Formularz dodawania — etap E1">
             <span className="material-symbols-rounded text-[18px]">
               person_add
@@ -135,6 +175,86 @@ export default function Uczestnicy() {
       {komunikat && (
         <div className="card anim-fade-in px-4 py-3 text-sm text-ink">
           {komunikat}
+        </div>
+      )}
+
+      {walidacja && (
+        <div className="card anim-card-in overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+            <h2 className="m-0 font-serif text-[17px] font-semibold text-ink-strong">
+              Walidacja pod import SOWA
+            </h2>
+            <div className="flex items-center gap-2 text-[12.5px] font-bold">
+              <span className="rounded-full bg-red-soft px-[11px] py-[5px] text-red-ink">
+                {walidacja.bledy} błędów
+              </span>
+              <span className="rounded-full bg-amber-soft px-[11px] py-[5px] text-amber-ink">
+                {walidacja.ostrzezenia} ostrzeżeń
+              </span>
+              <span className="rounded-full bg-green-soft px-[11px] py-[5px] text-primary-strong">
+                {walidacja.czysci} bez uwag
+              </span>
+              <button
+                onClick={() => setWalidacja(null)}
+                className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-faint hover:bg-soft"
+                title="Zamknij"
+              >
+                <span className="material-symbols-rounded text-lg">close</span>
+              </button>
+            </div>
+          </div>
+          {walidacja.problemy.length === 0 ? (
+            <p className="m-0 px-5 py-4 text-sm text-primary-strong">
+              ✓ Wszystkie dane przechodzą walidację — baza gotowa do eksportu.
+            </p>
+          ) : (
+            <div className="max-h-80 overflow-y-auto">
+              {uczestnicy
+                .filter((u) =>
+                  walidacja.problemy.some((p) => p.uczestnikId === u.id),
+                )
+                .map((u) => {
+                  const problemy = walidacja.problemy.filter(
+                    (p) => p.uczestnikId === u.id,
+                  );
+                  return (
+                    <div
+                      key={u.id}
+                      className="border-t border-line-soft px-5 py-3"
+                    >
+                      <Link
+                        href={`/uczestnicy/${u.id}`}
+                        className="text-sm font-bold text-ink hover:text-primary-strong"
+                      >
+                        {u.nazwisko} {u.imie}
+                      </Link>
+                      <ul className="m-0 mt-1.5 flex list-none flex-col gap-1 p-0">
+                        {problemy.map((p, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-[13px] leading-snug"
+                          >
+                            <span
+                              className={`material-symbols-rounded mt-px shrink-0 text-base ${
+                                p.poziom === "blad"
+                                  ? "text-red-ink"
+                                  : "text-amber-ink"
+                              }`}
+                            >
+                              {p.poziom === "blad" ? "error" : "warning"}
+                            </span>
+                            <span className="text-ink-mid">
+                              <span className="font-semibold">{p.pole}:</span>{" "}
+                              {p.komunikat}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
