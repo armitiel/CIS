@@ -13,6 +13,18 @@ import {
 import { generujPakietyZbiorczo } from "@/lib/generator";
 import type { Uczestnik } from "@/lib/types";
 
+/** Dokumenty zalecane = indywidualne dokumenty teczki z rozpoznanej specyfikacji projektu. */
+function zalecaneDokumenty(spec: SpecyfikacjaProjektu): Set<string> {
+  return new Set(
+    spec.dokumenty
+      .filter(
+        (d) =>
+          d.generowalny && d.rodzaj === "uczestnik" && d.moment !== "ad hoc",
+      )
+      .map((d) => d.id),
+  );
+}
+
 export default function WyborGeneratora({
   spec,
   uczestnicy,
@@ -27,7 +39,10 @@ export default function WyborGeneratora({
   onClose: () => void;
   onDone: (komunikat: string) => void;
 }) {
-  const [wybraneDok, setWybraneDok] = useState<Set<string>>(new Set());
+  const zalecane = useMemo(() => zalecaneDokumenty(spec), [spec]);
+  const [wybraneDok, setWybraneDok] = useState<Set<string>>(
+    () => new Set(zalecane),
+  );
   const [wybraniUcz, setWybraniUcz] = useState<Set<string>>(
     new Set(
       domyslniUczestnicy ??
@@ -178,20 +193,11 @@ export default function WyborGeneratora({
               <span className="th-label">Dokumenty ({wybraneDok.size})</span>
               <span className="flex gap-2 text-xs font-semibold">
                 <button
-                  onClick={() =>
-                    setWybraneDok(
-                      new Set(
-                        spec.dokumenty
-                          .filter(
-                            (d) => d.generowalny && d.rodzaj === "uczestnik",
-                          )
-                          .map((d) => d.id),
-                      ),
-                    )
-                  }
+                  onClick={() => setWybraneDok(new Set(zalecane))}
                   className="text-primary-strong hover:underline"
+                  title="Dokumenty teczki uczestnika z rozpoznanej specyfikacji projektu"
                 >
-                  teczka
+                  zalecane
                 </button>
                 <button
                   onClick={() => setWybraneDok(new Set())}
@@ -225,6 +231,11 @@ export default function WyborGeneratora({
                           {d.symbol}
                         </span>{" "}
                         <span className="text-ink">{d.nazwa}</span>
+                        {zalecane.has(d.id) && (
+                          <span className="ml-1.5 rounded-full bg-green-soft px-1.5 py-px text-[10.5px] font-semibold text-primary-strong">
+                            zalecany
+                          </span>
+                        )}
                         {d.dotyczy !== "wszyscy" && (
                           <span className="ml-1 text-xs text-muted">
                             (

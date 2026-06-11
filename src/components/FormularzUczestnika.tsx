@@ -120,15 +120,18 @@ export default function FormularzUczestnika({
     klucz,
     hint,
     szeroki,
+    typ,
   }: {
     label: string;
     klucz: keyof typeof f;
     hint?: string;
     szeroki?: boolean;
+    typ?: string;
   }) => (
     <div className={szeroki ? "sm:col-span-2" : ""}>
       <label className="th-label mb-1 block">{label}</label>
       <input
+        type={typ ?? "text"}
         value={f[klucz]}
         onChange={(e) => set(klucz)(e.target.value)}
         placeholder={hint}
@@ -243,9 +246,9 @@ export default function FormularzUczestnika({
           <Pole label="Telefon" klucz="telefon" />
           <Pole label="E-mail" klucz="email" hint="bez polskich znaków" szeroki />
           <Pole
-            label="Data przystąpienia"
+            label="Data przystąpienia (puste = lista rezerwowa)"
             klucz="dataPrzystapienia"
-            hint="RRRR-MM-DD (puste = lista rezerwowa)"
+            typ="date"
           />
           <Pole label="Grupa" klucz="grupa" hint="np. A" />
         </div>

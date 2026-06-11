@@ -70,7 +70,12 @@ function pole(label: string, value?: string | number): Paragraph {
     spacing: { after: 110 },
     children: [
       new TextRun({ text: `${label}: `, bold: true }),
-      new TextRun({ text: value !== undefined && value !== "" ? String(value) : linia }),
+      new TextRun({
+        text:
+          value !== undefined && String(value).trim() !== ""
+            ? String(value)
+            : linia,
+      }),
     ],
   });
 }
@@ -333,6 +338,40 @@ export async function generujDokument(
 ) {
   const doc = dokumentDocx(trescDokumentu(d, u, spec));
   await pobierz(doc, `${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`);
+}
+
+/** Buduje pojedynczy dokument jako Blob (bez pobierania) — używany przez podgląd. */
+export async function dokumentBlob(
+  d: WymaganyDokument,
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+): Promise<Blob> {
+  return Packer.toBlob(dokumentDocx(trescDokumentu(d, u, spec)));
+}
+
+/**
+ * Uczestnik wzorcowy (puste dane → kropki do uzupełnienia) — podgląd wzoru
+ * formularza z listy specyfikacji, zanim wybierzemy konkretnego uczestnika.
+ */
+export function uczestnikWzor(
+  dotyczy: WymaganyDokument["dotyczy"],
+): Uczestnik {
+  const bezrobotny = dotyczy !== "bierny";
+  return {
+    id: "wzor",
+    imie: "",
+    nazwisko: "",
+    kategoria: bezrobotny ? "bezrobotny" : "bierny",
+    sciezka: bezrobotny ? "IPZS" : "IPR",
+    cykl: 1,
+    grupa: "—",
+    status: "aktywny",
+    dataPrzystapienia: "—",
+    frekwencja: 0,
+    posiadaneDokumenty: [],
+    etapSciezki: 0,
+    postepSciezki: 0,
+  };
 }
 
 /** Buduje pakiet uczestnika jako Blob (bez pobierania) — do generowania wsadowego. */
