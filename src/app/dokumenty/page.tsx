@@ -185,7 +185,7 @@ export default function Dokumenty() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="flex max-w-[1240px] flex-col gap-[18px]">
       {/* KROK 1: wniosek / specyfikacja */}
       <section className="card anim-card-in px-6 py-[22px]">
         <div className="flex flex-wrap items-start justify-between gap-3">

@@ -12,6 +12,7 @@ import {
   StatusPill,
   Stepper,
 } from "@/components/ui";
+import TeczkaUczestnika from "@/components/TeczkaUczestnika";
 
 export default function Kartoteka() {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +21,7 @@ export default function Kartoteka() {
 
   if (!u) {
     return (
-      <div className="mx-auto max-w-4xl">
+      <div className="max-w-4xl">
         <div className="card p-6 text-sm text-muted">
           Nie znaleziono uczestnika w projekcie „{projekt.skrot}”.{" "}
           <Link href="/uczestnicy" className="font-semibold hover:underline">
@@ -41,7 +42,7 @@ export default function Kartoteka() {
         : "text-red-ink";
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-[18px]">
+    <div className="flex max-w-4xl flex-col gap-[18px]">
       <nav className="text-sm text-muted">
         <Link href="/uczestnicy" className="hover:underline">
           Uczestnicy
@@ -203,6 +204,16 @@ export default function Kartoteka() {
 
       <section
         className="card anim-card-in px-6 py-[22px]"
+        style={{ animationDelay: "0.29s" }}
+      >
+        <h2 className="m-0 mb-4 font-serif text-[19px] font-semibold text-ink-strong">
+          Teczka dokumentów
+        </h2>
+        <TeczkaUczestnika uczestnik={u} />
+      </section>
+
+      <section
+        className="card anim-card-in px-6 py-[22px]"
         style={{ animationDelay: "0.32s" }}
       >
         <h2 className="m-0 font-serif text-[19px] font-semibold text-ink-strong">
@@ -215,12 +226,6 @@ export default function Kartoteka() {
       </section>
 
       <section className="flex flex-wrap gap-3">
-        <Link href="/dokumenty" className="btn-primary">
-          <span className="material-symbols-rounded text-[19px]">
-            description
-          </span>
-          Generuj dokumenty
-        </Link>
         <button className="btn-dark">Edytuj dane</button>
         <span className="self-center text-xs text-faint">
           (edycja danych aktywna po podłączeniu bazy — etap E1)
