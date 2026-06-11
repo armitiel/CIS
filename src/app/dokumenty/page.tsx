@@ -5,7 +5,6 @@
 // Pełna teczka pojedynczego uczestnika jest w jego kartotece (moduł Uczestnicy).
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
   brakiWTeczce,
@@ -60,7 +59,7 @@ export default function Dokumenty() {
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
   const [pokazWybor, setPokazWybor] = useState(false);
-  const [wybranyId, setWybranyId] = useState("");
+  const [pokazWyborOsob, setPokazWyborOsob] = useState(false);
   const [podglad, setPodglad] = useState<{
     tytul: string;
     linie: LiniaPodgladu[];
@@ -89,11 +88,6 @@ export default function Dokumenty() {
     [uczestnicy, spec],
   );
 
-  const wybrany = uczestnicy.find((u) => u.id === wybranyId);
-  const brakiWybranego = wybrany
-    ? brakiWTeczce(wybrany, spec).filter((d) => d.generowalny).length
-    : 0;
-
   function wczytajWniosek(file: File | undefined) {
     if (!file) return;
     setWniosekNazwa(file.name);
@@ -101,14 +95,41 @@ export default function Dokumenty() {
     setTimeout(() => setRozpoznano(true), 600);
   }
 
-  /** Pakiet braków dla wybranej osoby. */
-  async function pobierzPakietWybranego() {
-    if (!wybrany) return;
-    const dokumenty = brakiWTeczce(wybrany, spec).filter((d) => d.generowalny);
-    if (dokumenty.length === 0) return;
-    setGeneruje(`${wybrany.id}:pakiet`);
+  /** Pakiety braków dla osób wybranych z listy: 1 osoba → .docx, kilka → ZIP. */
+  async function pobierzPakietyWybranych(wybrani: Uczestnik[]) {
+    if (wybrani.length === 0) return;
+    setGeneruje("wybrani");
+    setKomunikat(null);
     try {
-      await generujPakiet(dokumenty, wybrany, spec);
+      if (wybrani.length === 1) {
+        const u = wybrani[0];
+        const dokumenty = brakiWTeczce(u, spec).filter((d) => d.generowalny);
+        if (dokumenty.length === 0) {
+          setKomunikat(
+            `Teczka ${u.nazwisko} ${u.imie} jest kompletna — brak dokumentów do wygenerowania.`,
+          );
+          return;
+        }
+        await generujPakiet(dokumenty, u, spec);
+        setKomunikat(
+          `✓ Wygenerowano pakiet braków (.docx) dla: ${u.nazwisko} ${u.imie}.`,
+        );
+      } else {
+        const pakiety = wybrani.map((u) => ({
+          uczestnik: u,
+          dokumenty: brakiWTeczce(u, spec).filter((d) => d.generowalny),
+        }));
+        const n = await generujPakietyZbiorczo(
+          pakiety,
+          spec,
+          "Pakiety_brakow_wybrani",
+        );
+        setKomunikat(
+          n > 0
+            ? `✓ Wygenerowano ZIP z pakietami braków dla ${n} z ${wybrani.length} wybranych osób.`
+            : "Wybrane teczki są kompletne — brak dokumentów do wygenerowania.",
+        );
+      }
     } finally {
       setGeneruje(null);
     }
@@ -428,52 +449,25 @@ export default function Dokumenty() {
           </div>
         </div>
 
-        {/* Akcje dla wybranej osoby */}
+        {/* Akcje dla wybranych osób (multi-wybór z listy jak w zakładce Uczestnicy) */}
         <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-soft/60 px-4 py-3">
           <span className="text-[13px] font-semibold text-ink-mid">
-            Dla wybranej osoby:
+            Dla wybranych osób:
           </span>
-          <select
-            value={wybranyId}
-            onChange={(e) => setWybranyId(e.target.value)}
-            className="w-56 cursor-pointer rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-sm text-ink outline-none"
-          >
-            <option value="">wybierz uczestnika…</option>
-            {uczestnicy.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nazwisko} {u.imie}
-              </option>
-            ))}
-          </select>
           <button
-            onClick={pobierzPakietWybranego}
-            disabled={!wybrany || brakiWybranego === 0 || generuje !== null}
+            onClick={() => setPokazWyborOsob(true)}
+            disabled={uczestnicy.length === 0 || generuje !== null}
             className="btn-dark"
-            title={
-              wybrany && brakiWybranego === 0
-                ? "Teczka kompletna — brak dokumentów do wygenerowania"
-                : "Pakiet brakujących dokumentów (.docx) dla wybranej osoby"
-            }
+            title="Wybierz z listy jedną lub kilka osób — pakiety brakujących dokumentów"
           >
             <span className="material-symbols-rounded text-[18px]">
-              download
+              group_add
             </span>
-            {generuje === `${wybranyId}:pakiet`
-              ? "Generuję…"
-              : `Pakiet braków${wybrany ? ` (${brakiWybranego})` : ""}`}
+            {generuje === "wybrani" ? "Generuję…" : "Wybierz z listy…"}
           </button>
-          {wybrany && (
-            <Link
-              href={`/uczestnicy/${wybrany.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-[13px] font-semibold text-primary-strong hover:bg-green-soft"
-              title="Pełna teczka: pojedyncze dokumenty, podgląd, szablony"
-            >
-              <span className="material-symbols-rounded text-[18px]">
-                folder_open
-              </span>
-              Otwórz teczkę
-            </Link>
-          )}
+          <span className="text-xs text-muted">
+            jedna osoba → pakiet .docx · kilka osób → wspólny ZIP
+          </span>
         </div>
 
         {komunikat && (
@@ -628,6 +622,22 @@ export default function Dokumenty() {
           „Zaświadcza się, że {"{{imie_nazwisko}}"}, PESEL {"{{pesel}}"}…”.
         </p>
       </section>
+
+      {/* POPUP: wybór osób do pakietów braków (sekcja 2) */}
+      {pokazWyborOsob && (
+        <WyborUczestnikow
+          uczestnicy={uczestnicy}
+          spec={spec}
+          tytul="Pakiety braków dla wybranych osób"
+          podtytul="Zaznacz jedną lub kilka osób — wygenerujemy brakujące dokumenty ich teczek"
+          etykieta="Generuj pakiety"
+          onClose={() => setPokazWyborOsob(false)}
+          onConfirm={(wybrani) => {
+            setPokazWyborOsob(false);
+            void pobierzPakietyWybranych(wybrani);
+          }}
+        />
+      )}
 
       {/* POPUP: wybór uczestników do generowania z szablonu własnego */}
       {wyborSzablonu && (

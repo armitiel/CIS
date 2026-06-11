@@ -11,12 +11,16 @@ import {
   TextRun,
 } from "docx";
 import JSZip from "jszip";
+import type { Table } from "docx";
 import type { Uczestnik } from "./types";
 import {
   specyfikacjaCIS,
   type SpecyfikacjaProjektu,
   type WymaganyDokument,
 } from "./projekt-spec";
+import { trescRealna } from "./tresci-realne";
+
+type Blok = Paragraph | Table;
 
 const dzis = () =>
   new Date().toLocaleDateString("pl-PL", {
@@ -149,7 +153,11 @@ function trescDokumentu(
   d: WymaganyDokument,
   u: Uczestnik,
   spec: SpecyfikacjaProjektu,
-): Paragraph[] {
+): Blok[] {
+  // Realne treści wzorów (Formularze_projektowe) — pierwszeństwo przed wersją ogólną
+  const realna = trescRealna(d, u, spec);
+  if (realna) return realna;
+
   const base = naglowekProjektu(spec, d.symbol);
   switch (d.id) {
     case "a-01":
@@ -294,7 +302,7 @@ function trescDokumentu(
   }
 }
 
-function dokumentDocx(children: Paragraph[]): Document {
+function dokumentDocx(children: Blok[]): Document {
   return new Document({
     styles: { default: { document: { run: { font: "Calibri", size: 22 } } } },
     sections: [
@@ -380,7 +388,7 @@ async function pakietBlob(
   u: Uczestnik,
   spec: SpecyfikacjaProjektu,
 ): Promise<Blob> {
-  const children: Paragraph[] = [];
+  const children: Blok[] = [];
   dokumenty.forEach((d, i) => {
     const tresc = trescDokumentu(d, u, spec);
     if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
@@ -431,7 +439,7 @@ export async function generujPakiet(
   u: Uczestnik,
   spec: SpecyfikacjaProjektu = specyfikacjaCIS,
 ) {
-  const children: Paragraph[] = [];
+  const children: Blok[] = [];
   dokumenty.forEach((d, i) => {
     const tresc = trescDokumentu(d, u, spec);
     if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
