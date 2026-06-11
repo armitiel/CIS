@@ -12,6 +12,7 @@
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
     "docx": "^9.0.0",
+    "docx-preview": "^0.3.7",
     "docxtemplater": "^3.50.0",
     "jszip": "^3.10.1",
     "next": "^15.3.0",

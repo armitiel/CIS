@@ -14,7 +14,7 @@ import {
   type WymaganyDokument,
 } from "@/lib/projekt-spec";
 import { dokumentBlob, generujDokument, generujPakiet } from "@/lib/generator";
-import { podgladDocx, type LiniaPodgladu } from "@/lib/podglad-docx";
+import PodgladDocxModal from "@/components/PodgladDocxModal";
 import {
   arrayBufferZBase64,
   generujZSzablonu,
@@ -35,7 +35,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
   const [podglad, setPodglad] = useState<{
     tytul: string;
-    linie: LiniaPodgladu[];
+    blob: Blob;
   } | null>(null);
   const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
 
@@ -74,7 +74,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
       const blob = await dokumentBlob(d, u, spec);
       setPodglad({
         tytul: `${d.symbol} · ${d.nazwa} — ${u.nazwisko} ${u.imie}`,
-        linie: await podgladDocx(blob),
+        blob,
       });
     } catch (e) {
       setKomunikat(
@@ -220,66 +220,14 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
         </div>
       )}
 
-      {/* POPUP: podgląd dokumentu */}
+      {/* POPUP: podgląd dokumentu — wierny render pliku .docx */}
       {podglad && (
         <Portal>
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setPodglad(null)}
-        >
-          <div
-            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
-              <h3 className="m-0 truncate text-sm font-semibold text-ink">
-                {podglad.tytul}
-              </h3>
-              <button
-                onClick={() => setPodglad(null)}
-                className="shrink-0 text-faint hover:text-ink"
-                title="Zamknij podgląd"
-              >
-                <span className="material-symbols-rounded notranslate text-[22px]">
-                  close
-                </span>
-              </button>
-            </div>
-            <div className="overflow-y-auto bg-soft px-6 py-6">
-              <div className="mx-auto max-w-[640px] rounded-md bg-white px-10 py-12 shadow-sm ring-1 ring-line-soft">
-                {podglad.linie.map((l, i) =>
-                  l.tekst === "" && !l.prawa ? (
-                    <div key={i} className="h-3" />
-                  ) : l.prawa !== undefined ? (
-                    <p
-                      key={i}
-                      className={`m-0 flex justify-between gap-6 whitespace-pre-wrap py-0.5 text-[13px] leading-relaxed text-neutral-800 ${l.bold ? "font-semibold" : ""} ${l.italic ? "italic text-neutral-500" : ""}`}
-                    >
-                      <span>{l.tekst}</span>
-                      <span>{l.prawa}</span>
-                    </p>
-                  ) : (
-                    <p
-                      key={i}
-                      className={`m-0 whitespace-pre-wrap py-0.5 text-[13px] leading-relaxed text-neutral-800 ${l.bold ? "font-semibold" : ""} ${l.italic ? "italic text-neutral-500" : ""} ${l.center ? "text-center" : ""}`}
-                    >
-                      {l.tekst}
-                    </p>
-                  ),
-                )}
-                {podglad.linie.length === 0 && (
-                  <p className="m-0 text-center text-sm text-neutral-400">
-                    (pusty dokument)
-                  </p>
-                )}
-              </div>
-              <p className="mt-3 text-center text-xs text-faint">
-                Podgląd poglądowy — układ wydruku w pliku .docx może się
-                nieznacznie różnić.
-              </p>
-            </div>
-          </div>
-        </div>
+          <PodgladDocxModal
+            tytul={podglad.tytul}
+            blob={podglad.blob}
+            onClose={() => setPodglad(null)}
+          />
         </Portal>
       )}
     </div>
