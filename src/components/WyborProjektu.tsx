@@ -6,10 +6,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
+import NowyProjekt from "@/components/NowyProjekt";
 
 export default function WyborProjektu() {
-  const { projekt, projekty, zmienProjekt } = useProjekt();
+  const { projekt, projekty, zmienProjekt, usunProjekt, projektWlasny } =
+    useProjekt();
   const [otwarte, setOtwarte] = useState(false);
+  const [pokazNowy, setPokazNowy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,8 +100,53 @@ export default function WyborProjektu() {
               </button>
             );
           })}
+
+          {/* + Nowy projekt (dane z wczytanego wniosku albo ręcznie) */}
+          <button
+            onClick={() => {
+              setOtwarte(false);
+              setPokazNowy(true);
+            }}
+            className="block w-full border-t border-line px-3 py-2.5 text-left transition-colors hover:bg-soft"
+          >
+            <span className="flex items-center gap-2 text-[13px] font-bold text-primary-strong">
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                add_circle
+              </span>
+              Nowy projekt…
+            </span>
+            <span className="mt-0.5 block pl-[26px] text-[11px] text-muted">
+              dane z wniosku (.docx/.txt) albo ręcznie
+            </span>
+          </button>
+
+          {/* usuwanie aktywnego projektu własnego */}
+          {projektWlasny && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Usunąć projekt „${projekt.skrot}” wraz z jego bazą uczestników (zapis lokalny)?`,
+                  )
+                ) {
+                  usunProjekt(projekt.id);
+                  setOtwarte(false);
+                }
+              }}
+              className="block w-full border-t border-line-soft px-3 py-2 text-left transition-colors hover:bg-red-soft/40"
+            >
+              <span className="flex items-center gap-2 text-[12px] font-semibold text-red-ink">
+                <span className="material-symbols-rounded notranslate text-[16px]">
+                  delete
+                </span>
+                Usuń projekt „{projekt.skrot}”
+              </span>
+            </button>
+          )}
         </div>
       )}
+
+      {pokazNowy && <NowyProjekt onClose={() => setPokazNowy(false)} />}
     </div>
   );
 }
