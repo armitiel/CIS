@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
   brakiWTeczce,
@@ -10,7 +10,21 @@ import {
   type Sekcja,
   type WymaganyDokument,
 } from "@/lib/projekt-spec";
-import { generujDokument, generujPakiet } from "@/lib/generator";
+import {
+  generujDokument,
+  generujPakiet,
+  generujPakietyZbiorczo,
+} from "@/lib/generator";
+import {
+  LISTA_POL,
+  arrayBufferZBase64,
+  base64ZArrayBuffer,
+  generujZSzablonu,
+  generujZSzablonuZbiorczo,
+  wczytajSzablony,
+  zapiszSzablony,
+  type SzablonZapisany,
+} from "@/lib/szablony";
 import { Avatar, BrakiPill } from "@/components/ui";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
@@ -35,7 +49,14 @@ export default function Dokumenty() {
   const [rozpoznano, setRozpoznano] = useState(false);
   const [rozwiniety, setRozwiniety] = useState<string | null>(null);
   const [generuje, setGeneruje] = useState<string | null>(null);
+  const [komunikat, setKomunikat] = useState<string | null>(null);
+  const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const szablonRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setSzablony(wczytajSzablony(projekt.id));
+  }, [projekt.id]);
 
   const sekcje = useMemo(() => {
     const m = new Map<Sekcja, WymaganyDokument[]>();
@@ -73,6 +94,90 @@ export default function Dokumenty() {
       await generujPakiet(dokumenty, u, spec);
     } finally {
       setGeneruje(null);
+    }
+  }
+
+  /** Wsadowo: pakiety braków dla wszystkich uczestników → jeden ZIP. */
+  async function pobierzPakietyWsadowo(tylkoBraki: boolean) {
+    setGeneruje("wsad");
+    setKomunikat(null);
+    try {
+      const pakiety = uczestnicy.map((u) => ({
+        uczestnik: u,
+        dokumenty: (tylkoBraki
+          ? brakiWTeczce(u, spec)
+          : wymaganeDokumenty(u, spec)
+        ).filter((d) => d.generowalny),
+      }));
+      const n = await generujPakietyZbiorczo(
+        pakiety,
+        spec,
+        tylkoBraki ? "Pakiety_brakow" : "Pakiety_komplet",
+      );
+      setKomunikat(
+        n > 0
+          ? `✓ Wygenerowano ZIP z pakietami dla ${n} uczestników.`
+          : "Brak dokumentów do wygenerowania (wszystkie teczki kompletne).",
+      );
+    } finally {
+      setGeneruje(null);
+    }
+  }
+
+  /** Dodanie własnego szablonu .docx z polami {{pole}}. */
+  async function dodajSzablon(file: File | undefined) {
+    if (!file) return;
+    const ab = await file.arrayBuffer();
+    const nowy: SzablonZapisany = {
+      nazwa: file.name,
+      base64: base64ZArrayBuffer(ab),
+      dodano: new Date().toISOString().slice(0, 10),
+    };
+    const nowe = [...szablony.filter((s) => s.nazwa !== nowy.nazwa), nowy];
+    setSzablony(nowe);
+    zapiszSzablony(projekt.id, nowe);
+    setKomunikat(`✓ Dodano szablon „${file.name}” do projektu ${projekt.skrot}.`);
+    if (szablonRef.current) szablonRef.current.value = "";
+  }
+
+  function usunSzablon(nazwa: string) {
+    const nowe = szablony.filter((s) => s.nazwa !== nazwa);
+    setSzablony(nowe);
+    zapiszSzablony(projekt.id, nowe);
+  }
+
+  async function generujSzablonZbiorczo(s: SzablonZapisany) {
+    setGeneruje(`szablon:${s.nazwa}`);
+    setKomunikat(null);
+    try {
+      const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
+      await generujZSzablonuZbiorczo(
+        arrayBufferZBase64(s.base64),
+        s.nazwa,
+        aktywni,
+        spec,
+      );
+      setKomunikat(
+        `✓ Wygenerowano „${s.nazwa}” dla ${aktywni.length} aktywnych uczestników (ZIP).`,
+      );
+    } catch (e) {
+      setKomunikat(
+        `Błąd szablonu: ${e instanceof Error ? e.message : "sprawdź znaczniki {{pole}}"}`,
+      );
+    } finally {
+      setGeneruje(null);
+    }
+  }
+
+  function generujSzablonDlaUczestnika(s: SzablonZapisany, uczestnikId: string) {
+    const u = uczestnicy.find((x) => x.id === uczestnikId);
+    if (!u) return;
+    try {
+      generujZSzablonu(arrayBufferZBase64(s.base64), s.nazwa, u, spec);
+    } catch (e) {
+      setKomunikat(
+        `Błąd szablonu: ${e instanceof Error ? e.message : "sprawdź znaczniki {{pole}}"}`,
+      );
     }
   }
 
@@ -184,13 +289,46 @@ export default function Dokumenty() {
         className="card anim-card-in px-6 py-[22px]"
         style={{ animationDelay: "0.1s" }}
       >
-        <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
-          2. Teczki uczestników i generowanie
-        </h2>
-        <p className="m-0 mt-[5px] text-[13.5px] text-muted">
-          Silnik reguł wskazuje braki. Kliknij uczestnika, aby pobrać komplet
-          dokumentów .docx.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
+              2. Teczki uczestników i generowanie
+            </h2>
+            <p className="m-0 mt-[5px] text-[13.5px] text-muted">
+              Silnik reguł wskazuje braki. Kliknij uczestnika, aby pobrać
+              komplet dokumentów .docx.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => pobierzPakietyWsadowo(true)}
+              disabled={generuje !== null || uczestnicy.length === 0}
+              className="btn-primary"
+              title="Jeden ZIP: pakiet brakujących dokumentów dla każdego uczestnika"
+            >
+              <span className="material-symbols-rounded text-[19px]">
+                folder_zip
+              </span>
+              {generuje === "wsad"
+                ? "Generuję…"
+                : "Pakiety dla wszystkich (ZIP)"}
+            </button>
+            <button
+              onClick={() => pobierzPakietyWsadowo(false)}
+              disabled={generuje !== null || uczestnicy.length === 0}
+              className="btn-dark"
+              title="Jeden ZIP: komplet wymaganych dokumentów dla każdego uczestnika"
+            >
+              Komplety (ZIP)
+            </button>
+          </div>
+        </div>
+
+        {komunikat && (
+          <div className="anim-fade-in mt-3 rounded-xl bg-soft px-4 py-2.5 text-sm text-ink">
+            {komunikat}
+          </div>
+        )}
 
         <div className="mt-4 overflow-hidden rounded-xl border border-line">
           <table className="w-full text-left text-[15px]">
@@ -348,6 +486,139 @@ export default function Dokumenty() {
         <p className="mt-2 text-xs text-faint">
           Dokumenty grupowe i kadrowe (listy obecności, dzienniki, protokoły)
           będą generowane z modułów Obecności i Harmonogram (etapy E2–E4).
+        </p>
+      </section>
+
+      {/* KROK 3: szablony własne z polami dynamicznymi */}
+      <section
+        className="card anim-card-in px-6 py-[22px]"
+        style={{ animationDelay: "0.2s" }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
+              3. Szablony własne (pola dynamiczne)
+            </h2>
+            <p className="m-0 mt-[5px] text-[13.5px] text-muted">
+              Wgraj własny wzór .docx ze znacznikami{" "}
+              <code className="rounded bg-soft px-1.5 py-0.5 font-mono text-xs">
+                {"{{imie_nazwisko}}"}
+              </code>{" "}
+              — aplikacja wypełni go danymi każdego uczestnika.
+            </p>
+          </div>
+          <div>
+            <input
+              ref={szablonRef}
+              type="file"
+              accept=".docx"
+              className="hidden"
+              onChange={(e) => dodajSzablon(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => szablonRef.current?.click()}
+              className="btn-primary"
+            >
+              <span className="material-symbols-rounded text-[19px]">
+                note_add
+              </span>
+              Dodaj szablon .docx
+            </button>
+          </div>
+        </div>
+
+        {szablony.length > 0 && (
+          <div className="mt-4 overflow-hidden rounded-xl border border-line">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-soft">
+                <tr>
+                  <th className="th-label px-4 py-2">Szablon</th>
+                  <th className="th-label px-4 py-2">Dodano</th>
+                  <th className="th-label px-4 py-2">Generuj dla…</th>
+                  <th className="th-label w-44 px-4 py-2">Wsadowo</th>
+                  <th className="th-label w-16 px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-soft">
+                {szablony.map((s) => (
+                  <tr key={s.nazwa}>
+                    <td className="px-4 py-2.5 font-medium text-ink">
+                      {s.nazwa}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted">{s.dodano}</td>
+                    <td className="px-4 py-2.5">
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value)
+                            generujSzablonDlaUczestnika(s, e.target.value);
+                          e.target.value = "";
+                        }}
+                        className="w-48 cursor-pointer rounded-lg border border-line-strong bg-surface px-2 py-1.5 text-sm text-ink outline-none"
+                      >
+                        <option value="" disabled>
+                          wybierz uczestnika…
+                        </option>
+                        {uczestnicy.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.nazwisko} {u.imie}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => generujSzablonZbiorczo(s)}
+                        disabled={generuje !== null}
+                        className="btn-dark"
+                      >
+                        {generuje === `szablon:${s.nazwa}`
+                          ? "Generuję…"
+                          : "Wszyscy aktywni (ZIP)"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => usunSzablon(s.nazwa)}
+                        className="text-faint hover:text-red-ink"
+                        title="Usuń szablon"
+                      >
+                        <span className="material-symbols-rounded text-[20px]">
+                          delete
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <details className="mt-4 rounded-xl border border-line">
+          <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-ink hover:bg-hover-row">
+            Dostępne pola dynamiczne ({LISTA_POL.length})
+          </summary>
+          <div className="grid grid-cols-1 gap-x-6 border-t border-line-soft px-4 py-3 sm:grid-cols-2">
+            {LISTA_POL.map(([klucz, opis]) => (
+              <div
+                key={klucz}
+                className="flex items-baseline justify-between gap-3 py-1 text-sm"
+              >
+                <code className="rounded bg-soft px-1.5 py-0.5 font-mono text-xs text-ink">
+                  {`{{${klucz}}}`}
+                </code>
+                <span className="text-right text-xs text-muted">{opis}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+
+        <p className="mt-3 text-xs text-faint">
+          Szablony zapisują się w przeglądarce, osobno dla każdego projektu.
+          Brakujące dane uczestnika są wstawiane jako kropki do ręcznego
+          uzupełnienia. Wzór: w Wordzie wpisz znacznik w miejscu danych, np.
+          „Zaświadcza się, że {"{{imie_nazwisko}}"}, PESEL {"{{pesel}}"}…”.
         </p>
       </section>
     </div>

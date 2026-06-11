@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "docx": "^9.0.0",
+    "docxtemplater": "^3.50.0",
+    "jszip": "^3.10.1",
     "next": "^15.3.0",
+    "pizzip": "^3.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "xlsx": "^0.18.5"

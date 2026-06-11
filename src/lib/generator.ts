@@ -10,6 +10,7 @@ import {
   TabStopType,
   TextRun,
 } from "docx";
+import JSZip from "jszip";
 import type { Uczestnik } from "./types";
 import {
   specyfikacjaCIS,
@@ -332,6 +333,57 @@ export async function generujDokument(
 ) {
   const doc = dokumentDocx(trescDokumentu(d, u, spec));
   await pobierz(doc, `${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`);
+}
+
+/** Buduje pakiet uczestnika jako Blob (bez pobierania) — do generowania wsadowego. */
+async function pakietBlob(
+  dokumenty: WymaganyDokument[],
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu,
+): Promise<Blob> {
+  const children: Paragraph[] = [];
+  dokumenty.forEach((d, i) => {
+    const tresc = trescDokumentu(d, u, spec);
+    if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
+    children.push(...tresc);
+  });
+  return Packer.toBlob(dokumentDocx(children));
+}
+
+export interface PakietWsadowy {
+  uczestnik: Uczestnik;
+  dokumenty: WymaganyDokument[];
+}
+
+/**
+ * Generowanie wsadowe: pakiety .docx dla wielu uczestników w jednym pliku ZIP.
+ * Każdy uczestnik = jeden plik .docx (jego dokumenty rozdzielone stronami).
+ */
+export async function generujPakietyZbiorczo(
+  pakiety: PakietWsadowy[],
+  spec: SpecyfikacjaProjektu,
+  nazwaZip = "Pakiety_dokumentow",
+): Promise<number> {
+  const zip = new JSZip();
+  let wygenerowano = 0;
+  for (const p of pakiety) {
+    if (p.dokumenty.length === 0) continue;
+    const blob = await pakietBlob(p.dokumenty, p.uczestnik, spec);
+    zip.file(
+      `Pakiet_${slug(p.uczestnik.nazwisko)}_${slug(p.uczestnik.imie)}.docx`,
+      blob,
+    );
+    wygenerowano += 1;
+  }
+  if (wygenerowano === 0) return 0;
+  const wynik = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(wynik);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug(nazwaZip)}_${slug(spec.id)}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
+  return wygenerowano;
 }
 
 /** Generuje pakiet (jeden plik .docx, dokumenty rozdzielone nową stroną). */
