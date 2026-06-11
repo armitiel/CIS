@@ -2,7 +2,7 @@
 // pola tekstowe, listy rozwijane ze słowników SOWA, pola wyboru.
 // Działa w przeglądarce (pdf-lib); polskie znaki przez wbudowaną czcionkę DejaVu.
 
-import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFPage, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import {
   SLOWNIK_DEGURBA,
@@ -141,11 +141,14 @@ export async function generujInteraktywnyFormularz(
 ) {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const fontBytes = await fetch("/fonts/DejaVuSans.ttf").then((r) =>
-    r.arrayBuffer(),
-  );
+  // Obie czcionki z pełnym Unicode (polskie znaki) — standardowe czcionki PDF
+  // (WinAnsi) nie kodują m.in. „Ł”, „ż”, „ś”.
+  const [fontBytes, fontBoldBytes] = await Promise.all([
+    fetch("/fonts/DejaVuSans.ttf").then((r) => r.arrayBuffer()),
+    fetch("/fonts/DejaVuSans-Bold.ttf").then((r) => r.arrayBuffer()),
+  ]);
   const font = await doc.embedFont(fontBytes, { subset: true });
-  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontBold = await doc.embedFont(fontBoldBytes, { subset: true });
 
   const ctx: Ctx = { doc, page: doc.addPage(A4), font, fontBold, y: 0 };
   ctx.y = A4[1] - MARGINES;
