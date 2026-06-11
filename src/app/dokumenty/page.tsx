@@ -1,19 +1,31 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { uczestnicy } from "@/lib/mock-data";
 import {
   brakiWTeczce,
+  dokumentyAdHoc,
+  sekcjeNazwy,
   specyfikacjaCIS,
   wymaganeDokumenty,
+  type Sekcja,
+  type WymaganyDokument,
 } from "@/lib/projekt-spec";
 import { generujDokument, generujPakiet } from "@/lib/generator";
 
-const momentLabel = {
-  rekrutacja: "rekrutacja",
-  "udział": "w trakcie udziału",
-  "zakończenie": "zakończenie",
-} as const;
+const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
+  uczestnik: "teczka uczestnika",
+  grupowy: "lista zbiorcza",
+  kadrowy: "dokument kadrowy",
+  organizacyjny: "organizacyjny",
+};
+
+const rodzajStyl: Record<WymaganyDokument["rodzaj"], string> = {
+  uczestnik: "bg-blue-100 text-blue-800",
+  grupowy: "bg-violet-100 text-violet-800",
+  kadrowy: "bg-slate-200 text-slate-700",
+  organizacyjny: "bg-teal-100 text-teal-800",
+};
 
 export default function Dokumenty() {
   const [wniosekNazwa, setWniosekNazwa] = useState<string | null>(null);
@@ -22,19 +34,25 @@ export default function Dokumenty() {
   const [generuje, setGeneruje] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const sekcje = useMemo(() => {
+    const m = new Map<Sekcja, WymaganyDokument[]>();
+    for (const d of specyfikacjaCIS.dokumenty) {
+      m.set(d.sekcja, [...(m.get(d.sekcja) ?? []), d]);
+    }
+    return m;
+  }, []);
+
   function wczytajWniosek(file: File | undefined) {
     if (!file) return;
     setWniosekNazwa(file.name);
-    // Symulacja analizy — w etapie E6 plik trafi do analizy AI,
-    // która sama zbuduje specyfikację dokumentów dla dowolnego naboru.
+    setRozpoznano(false);
     setTimeout(() => setRozpoznano(true), 600);
   }
 
-  async function pobierzDokument(docId: string, uczestnikId: string) {
+  async function pobierzDokument(d: WymaganyDokument, uczestnikId: string) {
     const u = uczestnicy.find((x) => x.id === uczestnikId);
-    const d = specyfikacjaCIS.dokumenty.find((x) => x.id === docId);
-    if (!u || !d) return;
-    setGeneruje(`${uczestnikId}:${docId}`);
+    if (!u) return;
+    setGeneruje(`${uczestnikId}:${d.id}`);
     try {
       await generujDokument(d, u);
     } finally {
@@ -42,12 +60,10 @@ export default function Dokumenty() {
     }
   }
 
-  async function pobierzPakiet(uczestnikId: string, tylkoBraki: boolean) {
+  async function pobierzPakiet(uczestnikId: string) {
     const u = uczestnicy.find((x) => x.id === uczestnikId);
     if (!u) return;
-    const dokumenty = (tylkoBraki ? brakiWTeczce(u) : wymaganeDokumenty(u)).filter(
-      (d) => d.generowalny,
-    );
+    const dokumenty = brakiWTeczce(u).filter((d) => d.generowalny);
     if (dokumenty.length === 0) return;
     setGeneruje(`${uczestnikId}:pakiet`);
     try {
@@ -64,8 +80,8 @@ export default function Dokumenty() {
           Generator dokumentacji
         </h1>
         <p className="text-sm text-slate-500">
-          Specyfikacja projektu → wymagane formularze → generowanie z bazy
-          uczestników
+          Katalog formularzy A–H wg analizy optymalizacji (10.06.2026) —
+          silnik reguł i generowanie z bazy uczestników
         </p>
       </header>
 
@@ -77,11 +93,14 @@ export default function Dokumenty() {
               1. Wniosek / specyfikacja projektu
             </h2>
             <p className="text-sm text-slate-500">
-              Wczytaj wniosek o dofinansowanie, aby rozpoznać wymagane
-              dokumenty
+              Aktywna specyfikacja: {specyfikacjaCIS.nazwa} (
+              {specyfikacjaCIS.nabor})
+            </p>
+            <p className="text-xs text-slate-400">
+              Źródło: {specyfikacjaCIS.zrodlo}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div>
             <input
               ref={fileRef}
               type="file"
@@ -105,8 +124,7 @@ export default function Dokumenty() {
             </p>
             {rozpoznano ? (
               <p className="mt-1 font-medium text-green-700">
-                ✓ Rozpoznano projekt: {specyfikacjaCIS.nazwa} (
-                {specyfikacjaCIS.nabor})
+                ✓ Rozpoznano projekt: {specyfikacjaCIS.nazwa}
               </p>
             ) : (
               <p className="mt-1 text-slate-500">Analizowanie…</p>
@@ -114,56 +132,54 @@ export default function Dokumenty() {
           </div>
         )}
 
-        <div className="mt-4">
-          <p className="text-sm font-medium text-slate-600">
-            Aktywna specyfikacja: {specyfikacjaCIS.nazwa}
-          </p>
-          <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Dokument</th>
-                  <th className="px-4 py-2 font-medium">Dotyczy</th>
-                  <th className="px-4 py-2 font-medium">Moment</th>
-                  <th className="px-4 py-2 font-medium">Generowanie</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {specyfikacjaCIS.dokumenty.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-4 py-2">
-                      <p className="font-medium text-slate-700">{d.nazwa}</p>
-                      <p className="text-xs text-slate-400">{d.opis}</p>
-                    </td>
-                    <td className="px-4 py-2 text-slate-600">
-                      {d.dotyczy === "wszyscy"
-                        ? "wszyscy"
-                        : d.dotyczy === "bezrobotny"
-                          ? "bezrobotni (IPZS)"
-                          : "bierni zawodowo (IPR)"}
-                    </td>
-                    <td className="px-4 py-2 text-slate-600">
-                      {momentLabel[d.moment]}
-                    </td>
-                    <td className="px-4 py-2">
-                      {d.generowalny ? (
-                        <span className="text-green-700">z aplikacji</span>
-                      ) : (
-                        <span className="text-slate-400">
-                          dostarcza uczestnik
+        <div className="mt-4 space-y-4">
+          {[...sekcje.entries()].map(([sekcja, dokumenty]) => (
+            <details key={sekcja} className="group rounded-lg border border-slate-200">
+              <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <span>{sekcjeNazwy[sekcja]}</span>
+                <span className="text-xs font-normal text-slate-400">
+                  {dokumenty.length} formularzy
+                </span>
+              </summary>
+              <table className="w-full border-t border-slate-100 text-left text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  {dokumenty.map((d) => (
+                    <tr key={d.id}>
+                      <td className="w-24 px-4 py-2 align-top font-mono text-xs text-slate-500">
+                        {d.symbol}
+                      </td>
+                      <td className="px-2 py-2">
+                        <p className="font-medium text-slate-700">{d.nazwa}</p>
+                        <p className="text-xs text-slate-400">{d.opis}</p>
+                        <p className="text-xs text-slate-400">
+                          Podpisy: {d.podpisUczestnika}
+                        </p>
+                      </td>
+                      <td className="w-40 px-4 py-2 align-top">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${rodzajStyl[d.rodzaj]}`}
+                        >
+                          {rodzajLabel[d.rodzaj]}
                         </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-2 text-xs text-slate-400">
-            Specyfikacja naboru FELB.06.11 jest wbudowana. Automatyczna analiza
-            dowolnego wniosku (AI) — etap E6.
-          </p>
+                        {d.dotyczy !== "wszyscy" && (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {d.dotyczy === "bezrobotny"
+                              ? "bezrobotni (CIS)"
+                              : "bierni zawodowo"}
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          ))}
         </div>
+        <p className="mt-3 text-xs text-slate-400">
+          Specyfikacja wbudowana — automatyczna analiza dowolnego wniosku (AI)
+          to etap E6. Pełne odwzorowanie treści wzorów PDF — etap E5.
+        </p>
       </section>
 
       {/* KROK 2: teczki i generowanie */}
@@ -172,8 +188,9 @@ export default function Dokumenty() {
           2. Teczki uczestników i generowanie
         </h2>
         <p className="text-sm text-slate-500">
-          Silnik reguł wskazuje braki. Kliknij uczestnika, aby zobaczyć
-          szczegóły i pobrać dokumenty.
+          Silnik reguł pokazuje dokumenty indywidualne wymagane w teczce
+          (IPZS — bezrobotni, IPR — bierni, A-05 tylko uczestnicy CIS itd.).
+          Kliknij uczestnika, aby pobrać dokumenty .docx.
         </p>
 
         <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
@@ -191,9 +208,10 @@ export default function Dokumenty() {
               {uczestnicy.map((u) => {
                 const wymagane = wymaganeDokumenty(u);
                 const braki = brakiWTeczce(u);
+                const adHoc = dokumentyAdHoc(u);
                 const otwarty = rozwiniety === u.id;
                 return (
-                  <FragmentRow
+                  <Wiersz
                     key={u.id}
                     otwarty={otwarty}
                     onToggle={() => setRozwiniety(otwarty ? null : u.id)}
@@ -202,8 +220,7 @@ export default function Dokumenty() {
                         <td className="px-4 py-3 font-medium text-slate-800">
                           {u.nazwisko} {u.imie}
                           <span className="ml-2 text-xs font-normal text-slate-400">
-                            {u.kategoria === "bezrobotny" ? "IPZS" : "IPR"} ·{" "}
-                            {u.status}
+                            {u.sciezka} · {u.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-slate-600">
@@ -227,7 +244,7 @@ export default function Dokumenty() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              pobierzPakiet(u.id, true);
+                              pobierzPakiet(u.id);
                             }}
                             disabled={
                               braki.filter((b) => b.generowalny).length === 0 ||
@@ -243,64 +260,99 @@ export default function Dokumenty() {
                       </>
                     }
                   >
-                    <ul className="space-y-1.5">
-                      {wymagane.map((d) => {
-                        const wTeczce = u.posiadaneDokumenty.includes(d.id);
-                        const klucz = `${u.id}:${d.id}`;
-                        return (
-                          <li
-                            key={d.id}
-                            className="flex items-center justify-between gap-3"
-                          >
-                            <span className="text-sm">
-                              <span
-                                className={
-                                  wTeczce ? "text-green-700" : "text-amber-700"
-                                }
-                              >
-                                {wTeczce ? "✓" : "—"}
-                              </span>{" "}
-                              <span className="text-slate-700">{d.nazwa}</span>{" "}
-                              <span className="text-xs text-slate-400">
-                                ({momentLabel[d.moment]})
+                    <div className="space-y-3">
+                      <ul className="space-y-1.5">
+                        {wymagane.map((d) => {
+                          const wTeczce = u.posiadaneDokumenty.includes(d.id);
+                          const klucz = `${u.id}:${d.id}`;
+                          return (
+                            <li
+                              key={d.id}
+                              className="flex items-center justify-between gap-3"
+                            >
+                              <span className="text-sm">
+                                <span
+                                  className={
+                                    wTeczce ? "text-green-700" : "text-amber-700"
+                                  }
+                                >
+                                  {wTeczce ? "✓" : "—"}
+                                </span>{" "}
+                                <span className="font-mono text-xs text-slate-400">
+                                  {d.symbol}
+                                </span>{" "}
+                                <span className="text-slate-700">{d.nazwa}</span>
                               </span>
-                            </span>
-                            {d.generowalny ? (
-                              <button
-                                onClick={() => pobierzDokument(d.id, u.id)}
-                                disabled={generuje !== null}
-                                className="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                              {d.generowalny ? (
+                                <button
+                                  onClick={() => pobierzDokument(d, u.id)}
+                                  disabled={generuje !== null}
+                                  className="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  {generuje === klucz
+                                    ? "Generuję…"
+                                    : "Pobierz .docx"}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-slate-400">
+                                  wystawia OPS/PUP
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {adHoc.length > 0 && (
+                        <div className="border-t border-slate-200 pt-2">
+                          <p className="text-xs font-medium text-slate-500">
+                            Dokumenty „ad hoc” (gdy dotyczy):
+                          </p>
+                          <ul className="mt-1 space-y-1">
+                            {adHoc.map((d) => (
+                              <li
+                                key={d.id}
+                                className="flex items-center justify-between gap-3 text-sm"
                               >
-                                {generuje === klucz
-                                  ? "Generuję…"
-                                  : "Pobierz .docx"}
-                              </button>
-                            ) : (
-                              <span className="text-xs text-slate-400">
-                                dostarcza uczestnik
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </FragmentRow>
+                                <span>
+                                  <span className="font-mono text-xs text-slate-400">
+                                    {d.symbol}
+                                  </span>{" "}
+                                  <span className="text-slate-600">
+                                    {d.nazwa}
+                                  </span>
+                                </span>
+                                <button
+                                  onClick={() => pobierzDokument(d, u.id)}
+                                  disabled={generuje !== null}
+                                  className="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  {generuje === `${u.id}:${d.id}`
+                                    ? "Generuję…"
+                                    : "Pobierz .docx"}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </Wiersz>
                 );
               })}
             </tbody>
           </table>
         </div>
         <p className="mt-2 text-xs text-slate-400">
-          Dokumenty generowane są z danych testowych. Pola nieobecne w bazie
-          (PESEL, adres) pojawiają się jako miejsca do uzupełnienia — znikną po
-          etapie E1.
+          Dane testowe (fikcyjne) w strukturze SOWA. Dokumenty grupowe i
+          kadrowe (listy obecności, dzienniki, protokoły) będą generowane z
+          modułów Obecności i Harmonogram (etapy E2–E4).
         </p>
       </section>
     </div>
   );
 }
 
-function FragmentRow({
+function Wiersz({
   naglowek,
   children,
   otwarty,

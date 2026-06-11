@@ -5,6 +5,7 @@ import Link from "next/link";
 import { uczestnicy } from "@/lib/mock-data";
 import StatusBadge from "@/components/StatusBadge";
 import FrekwencjaBadge from "@/components/FrekwencjaBadge";
+import { brakiWTeczce } from "@/lib/projekt-spec";
 import type { KategoriaUczestnika } from "@/lib/types";
 
 type FiltrKategorii = "wszyscy" | KategoriaUczestnika;
@@ -107,11 +108,11 @@ export default function Uczestnicy() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {u.brakujaceDokumenty.length === 0 ? (
+                  {brakiWTeczce(u).length === 0 ? (
                     <span className="text-sm text-green-700">komplet</span>
                   ) : (
                     <span className="text-sm font-medium text-amber-700">
-                      braki: {u.brakujaceDokumenty.length}
+                      braki: {brakiWTeczce(u).length}
                     </span>
                   )}
                 </td>
@@ -129,8 +130,8 @@ export default function Uczestnicy() {
       </div>
 
       <p className="text-xs text-slate-400">
-        Dane testowe (fikcyjne). Eksport CSV do SOWA oraz walidacja PESEL/TERYT
-        — etap E1.
+        Dane testowe (fikcyjne) w strukturze SOWA. Eksport CSV do SOWA oraz
+        walidacja PESEL/TERYT — etap E1.
       </p>
     </div>
   );

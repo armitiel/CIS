@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { alerty, dzisiejszeZajecia, limity, uczestnicy } from "@/lib/mock-data";
+import { brakiWTeczce } from "@/lib/projekt-spec";
 
 function Karta({
   tytul,
@@ -28,7 +29,7 @@ export default function Pulpit() {
     aktywni.reduce((s, u) => s + u.frekwencja, 0) / (aktywni.length || 1),
   );
   const niekompletne = uczestnicy.filter(
-    (u) => u.brakujaceDokumenty.length > 0,
+    (u) => brakiWTeczce(u).length > 0,
   ).length;
 
   return (
