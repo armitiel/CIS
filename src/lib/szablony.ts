@@ -15,6 +15,7 @@ export const LISTA_POL: [string, string][] = [
   ["nazwisko", "Nazwisko uczestnika"],
   ["imie_nazwisko", "Imię i nazwisko"],
   ["pesel", "PESEL"],
+  ["data_urodzenia", "Data urodzenia (z PESEL)"],
   ["plec", "Płeć"],
   ["wiek", "Wiek w chwili przystąpienia"],
   ["wyksztalcenie", "Wykształcenie (ISCED)"],
@@ -44,6 +45,25 @@ export const LISTA_POL: [string, string][] = [
 
 const PUSTE = "……………………";
 
+/** Data urodzenia wyliczona z PESEL (stulecie kodowane w miesiącu). */
+function dataUrodzeniaZPesel(pesel?: string): string {
+  if (!pesel || !/^\d{11}$/.test(pesel)) return "";
+  let rok = parseInt(pesel.slice(0, 2), 10);
+  let miesiac = parseInt(pesel.slice(2, 4), 10);
+  const dzien = parseInt(pesel.slice(4, 6), 10);
+  if (miesiac > 80) {
+    rok += 1800;
+    miesiac -= 80;
+  } else if (miesiac > 20) {
+    rok += 2000;
+    miesiac -= 20;
+  } else {
+    rok += 1900;
+  }
+  if (miesiac < 1 || miesiac > 12 || dzien < 1 || dzien > 31) return "";
+  return `${String(dzien).padStart(2, "0")}.${String(miesiac).padStart(2, "0")}.${rok}`;
+}
+
 /** Komplet wartości pól dla uczestnika (brakujące dane → kropki do uzupełnienia). */
 export function polaUczestnika(
   u: Uczestnik,
@@ -59,6 +79,7 @@ export function polaUczestnika(
     nazwisko: v(u.nazwisko),
     imie_nazwisko: `${u.imie} ${u.nazwisko}`,
     pesel: v(s.pesel),
+    data_urodzenia: v(dataUrodzeniaZPesel(s.pesel)),
     plec: v(s.plec),
     wiek: v(s.wiek),
     wyksztalcenie: v(s.wyksztalcenie),
