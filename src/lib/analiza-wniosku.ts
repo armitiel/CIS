@@ -28,7 +28,36 @@ export interface WynikAnalizy {
   uwagi: string[];
 }
 
-/** Tekst z pliku .docx (word/document.xml) lub .txt. */
+/** Tekst z pliku PDF — warstwa tekstowa przez pdfjs (lazy import). */
+async function tekstZPdf(file: File): Promise<string> {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+  ).toString();
+  const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() })
+    .promise;
+  const czesci: string[] = [];
+  for (let s = 1; s <= doc.numPages; s++) {
+    const strona = await doc.getPage(s);
+    const tresc = await strona.getTextContent();
+    czesci.push(
+      tresc.items
+        .map((i) => ("str" in i ? i.str : ""))
+        .join(" ")
+        .replace(/\s+/g, " "),
+    );
+  }
+  const tekst = czesci.join("\n").trim();
+  if (tekst.length < 50) {
+    throw new Error(
+      "Ten PDF wygląda na skan (brak warstwy tekstowej) — wklej tekst wniosku ręcznie albo użyj wersji .docx.",
+    );
+  }
+  return tekst;
+}
+
+/** Tekst z pliku .pdf, .docx (word/document.xml) lub .txt. */
 export async function wyciagnijTekstZPliku(file: File): Promise<string> {
   const nazwa = file.name.toLowerCase();
   if (nazwa.endsWith(".txt")) {
@@ -49,12 +78,10 @@ export async function wyciagnijTekstZPliku(file: File): Promise<string> {
       .trim();
   }
   if (nazwa.endsWith(".pdf")) {
-    throw new Error(
-      "PDF nie jest jeszcze odczytywany w przeglądarce — zapisz wniosek jako .docx/.txt albo użyj opcji „Wklej tekst”.",
-    );
+    return await tekstZPdf(file);
   }
   throw new Error(
-    "Nieobsługiwany format — wczytaj .docx lub .txt, albo wklej tekst dokumentu.",
+    "Nieobsługiwany format — wczytaj .pdf, .docx lub .txt, albo wklej tekst dokumentu.",
   );
 }
 

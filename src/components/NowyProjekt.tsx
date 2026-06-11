@@ -1,9 +1,11 @@
 "use client";
 
-// Popup dodawania nowego projektu. Dane można wypełnić automatycznie z
-// dokumentu projektu (wniosek o dofinansowanie w .docx/.txt albo wklejony
-// tekst). Parser pokazuje, skąd wziął każdą wartość; dokument nierozpoznany
-// jako wniosek NIE wypełnia pól — użytkownik uzupełnia formularz ręcznie.
+// Popup dodawania nowego projektu. Dane można wypełniać z WIELU dokumentów
+// po kolei (wniosek, umowa, fiszka naboru — .docx/.txt albo wklejony tekst):
+// każdy kolejny dokument DOKŁADA dane do pustych pól, niczego nie nadpisując
+// (ani wartości z wcześniejszych dokumentów, ani ręcznych poprawek).
+// Każda wartość ma pokazane źródło: plik + fragment tekstu. Dokument
+// nierozpoznany jako wniosek nie wypełnia pól.
 
 import { useRef, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
@@ -11,27 +13,45 @@ import Portal from "@/components/Portal";
 import {
   analizujDokument,
   wyciagnijTekstZPliku,
+  type Rozpoznanie,
   type WynikAnalizy,
 } from "@/lib/analiza-wniosku";
 import type { ProjektWlasnyZapis } from "@/lib/projekty";
 
-const STATUS_ANALIZY = {
+const STATUS_ANALIZY: Record<
+  Rozpoznanie,
+  { ikona: string; klasa: string; krotko: string }
+> = {
   wniosek: {
     ikona: "check_circle",
     klasa: "bg-green-soft text-primary-strong",
-    tekst: "Rozpoznano wniosek o dofinansowanie — pola wypełnione automatycznie, zweryfikuj przed zapisem.",
+    krotko: "wniosek",
   },
   czesciowe: {
     ikona: "warning",
     klasa: "bg-amber-soft text-amber-ink",
-    tekst: "Dokument częściowo rozpoznany — uzupełnij brakujące pola.",
+    krotko: "częściowo rozpoznany",
   },
   nierozpoznany: {
     ikona: "error",
     klasa: "bg-red-soft text-red-ink",
-    tekst: "To nie wygląda na wniosek o dofinansowanie — pola pozostały puste.",
+    krotko: "nierozpoznany",
   },
-} as const;
+};
+
+interface DokumentAnalizy {
+  nazwa: string;
+  rozpoznanie: Rozpoznanie;
+  punkty: number;
+}
+
+interface TrafienieZeZrodlem {
+  pole: string;
+  wartosc: string;
+  fragment: string;
+  dokument: string;
+  zastosowano: boolean;
+}
 
 function slug(s: string): string {
   return (
@@ -54,30 +74,62 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
   const [nabor, setNabor] = useState("");
   const [wnioskodawca, setWnioskodawca] = useState("");
   const [okres, setOkres] = useState("");
-  const [zrodlo, setZrodlo] = useState("wpis ręczny");
 
-  const [analiza, setAnaliza] = useState<WynikAnalizy | null>(null);
+  const [dokumenty, setDokumenty] = useState<DokumentAnalizy[]>([]);
+  const [trafienia, setTrafienia] = useState<TrafienieZeZrodlem[]>([]);
+  const [uwagi, setUwagi] = useState<string[]>([]);
   const [blad, setBlad] = useState<string | null>(null);
   const [pokazWklej, setPokazWklej] = useState(false);
   const [wklejony, setWklejony] = useState("");
   const [analizuje, setAnalizuje] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function zastosujAnalize(wynik: WynikAnalizy, opisZrodla: string) {
-    setAnaliza(wynik);
+  /**
+   * Dokłada wynik analizy kolejnego dokumentu: wypełnia TYLKO puste pola.
+   * Konflikt (pole już wypełnione inną wartością) trafia do uwag — bez
+   * nadpisywania danych zgromadzonych wcześniej.
+   */
+  function dolozAnalize(wynik: WynikAnalizy, nazwaDok: string) {
     setBlad(null);
-    if (wynik.pola.nazwa) {
-      setNazwa(wynik.pola.nazwa);
-      if (!skrot) setSkrot(wynik.pola.nazwa.split(/\s+/).slice(0, 3).join(" "));
+    setDokumenty((d) => [
+      ...d,
+      { nazwa: nazwaDok, rozpoznanie: wynik.rozpoznanie, punkty: wynik.punkty },
+    ]);
+
+    const noweUwagi: string[] = [...wynik.uwagi];
+    const stanPol: [string, string, (v: string) => void, string | undefined][] =
+      [
+        ["Tytuł projektu", nazwa, setNazwa, wynik.pola.nazwa],
+        ["Nabór", nabor, setNabor, wynik.pola.nabor],
+        ["Wnioskodawca", wnioskodawca, setWnioskodawca, wynik.pola.wnioskodawca],
+        ["Okres realizacji", okres, setOkres, wynik.pola.okres],
+      ];
+
+    const zastosowanePola = new Set<string>();
+    for (const [etykieta, obecna, ustaw, nowa] of stanPol) {
+      if (!nowa) continue;
+      if (obecna.trim() === "") {
+        ustaw(nowa);
+        zastosowanePola.add(etykieta);
+      } else if (obecna.trim() !== nowa) {
+        noweUwagi.push(
+          `${etykieta}: w „${nazwaDok}” znaleziono inną wartość („${nowa}”) — pozostawiono dotychczasową. Możesz poprawić ręcznie.`,
+        );
+      }
     }
-    if (wynik.pola.nabor) setNabor(wynik.pola.nabor);
-    if (wynik.pola.wnioskodawca) setWnioskodawca(wynik.pola.wnioskodawca);
-    if (wynik.pola.okres) setOkres(wynik.pola.okres);
-    setZrodlo(
-      wynik.rozpoznanie === "nierozpoznany"
-        ? "wpis ręczny"
-        : `analiza dokumentu: ${opisZrodla}`,
-    );
+    if (wynik.pola.nazwa && skrot.trim() === "" && nazwa.trim() === "") {
+      setSkrot(wynik.pola.nazwa.split(/\s+/).slice(0, 3).join(" "));
+    }
+
+    setTrafienia((t) => [
+      ...t,
+      ...wynik.trafienia.map((tr) => ({
+        ...tr,
+        dokument: nazwaDok,
+        zastosowano: zastosowanePola.has(tr.pole),
+      })),
+    ]);
+    setUwagi((u) => [...u, ...noweUwagi]);
   }
 
   async function analizujPlik(file: File | undefined) {
@@ -86,10 +138,9 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
     setBlad(null);
     try {
       const tekst = await wyciagnijTekstZPliku(file);
-      zastosujAnalize(analizujDokument(tekst), file.name);
+      dolozAnalize(analizujDokument(tekst), file.name);
     } catch (e) {
       setBlad(e instanceof Error ? e.message : "Nie udało się odczytać pliku.");
-      setAnaliza(null);
     } finally {
       setAnalizuje(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -98,7 +149,11 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
 
   function analizujWklejony() {
     if (wklejony.trim().length === 0) return;
-    zastosujAnalize(analizujDokument(wklejony), "wklejony tekst");
+    dolozAnalize(
+      analizujDokument(wklejony),
+      `wklejony tekst #${dokumenty.length + 1}`,
+    );
+    setWklejony("");
     setPokazWklej(false);
   }
 
@@ -109,6 +164,9 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
     let id = baza;
     let i = 2;
     while (projekty.some((p) => p.id === id)) id = `${baza}-${i++}`;
+    const rozpoznane = dokumenty.filter(
+      (d) => d.rozpoznanie !== "nierozpoznany",
+    );
     const zapis: ProjektWlasnyZapis = {
       id,
       nazwa: n,
@@ -116,7 +174,10 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
       nabor: nabor.trim(),
       wnioskodawca: wnioskodawca.trim(),
       okres: okres.trim(),
-      zrodlo,
+      zrodlo:
+        rozpoznane.length > 0
+          ? `analiza dokumentów: ${rozpoznane.map((d) => d.nazwa).join(", ")}`
+          : "wpis ręczny",
       utworzono: new Date().toISOString().slice(0, 10),
     };
     dodajProjekt(zapis);
@@ -143,8 +204,8 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
                 Nowy projekt
               </h3>
               <p className="m-0 mt-0.5 text-xs text-muted">
-                Wypełnij dane z dokumentu projektu (wniosek .docx/.txt) albo
-                ręcznie
+                Dane możesz złożyć z kilku dokumentów (wniosek, umowa, fiszka)
+                — kolejne pliki uzupełniają puste pola
               </p>
             </div>
             <button
@@ -176,7 +237,11 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
                 <span className="material-symbols-rounded notranslate text-[19px]">
                   upload_file
                 </span>
-                {analizuje ? "Analizuję…" : "Wczytaj dokument projektu"}
+                {analizuje
+                  ? "Analizuję…"
+                  : dokumenty.length === 0
+                    ? "Wczytaj dokument projektu"
+                    : "Dodaj kolejny dokument"}
               </button>
               <button
                 onClick={() => setPokazWklej((v) => !v)}
@@ -192,6 +257,24 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
                 albo wypełnij pola ręcznie poniżej
               </span>
             </div>
+
+            {/* Lista przeanalizowanych dokumentów — dane się kumulują */}
+            {dokumenty.length > 0 && (
+              <div className="anim-fade-in mt-3 flex flex-wrap gap-1.5">
+                {dokumenty.map((d, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${STATUS_ANALIZY[d.rozpoznanie].klasa}`}
+                    title={`Cechy wniosku: ${d.punkty}/10`}
+                  >
+                    <span className="material-symbols-rounded notranslate text-[15px]">
+                      {STATUS_ANALIZY[d.rozpoznanie].ikona}
+                    </span>
+                    {d.nazwa} · {STATUS_ANALIZY[d.rozpoznanie].krotko}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {pokazWklej && (
               <div className="anim-fade-in mt-3">
@@ -221,48 +304,32 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
-            {analiza && (
-              <div className="anim-fade-in mt-3">
-                <div
-                  className={`flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${STATUS_ANALIZY[analiza.rozpoznanie].klasa}`}
-                >
-                  <span className="material-symbols-rounded notranslate mt-px text-lg">
-                    {STATUS_ANALIZY[analiza.rozpoznanie].ikona}
-                  </span>
-                  <span>
-                    {STATUS_ANALIZY[analiza.rozpoznanie].tekst}{" "}
-                    <span className="font-normal">
-                      (cechy wniosku: {analiza.punkty}/10)
-                    </span>
-                  </span>
-                </div>
-                {analiza.trafienia.length > 0 && (
-                  <details className="mt-2 rounded-xl border border-line">
-                    <summary className="cursor-pointer px-4 py-2 text-xs font-semibold text-ink hover:bg-hover-row">
-                      Skąd pochodzą wartości ({analiza.trafienia.length})
-                    </summary>
-                    <ul className="m-0 flex list-none flex-col gap-1.5 border-t border-line-soft p-3">
-                      {analiza.trafienia.map((t, i) => (
-                        <li key={i} className="text-xs leading-snug">
-                          <span className="font-semibold text-ink">
-                            {t.pole}:
-                          </span>{" "}
-                          <span className="text-primary-strong">
-                            {t.wartosc}
-                          </span>
-                          <div className="mt-0.5 text-faint">{t.fragment}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-                {analiza.uwagi.map((u, i) => (
-                  <p key={i} className="m-0 mt-2 text-xs text-muted">
-                    {u}
-                  </p>
-                ))}
-              </div>
+            {trafienia.length > 0 && (
+              <details className="anim-fade-in mt-3 rounded-xl border border-line" open>
+                <summary className="cursor-pointer px-4 py-2 text-xs font-semibold text-ink hover:bg-hover-row">
+                  Zebrane wartości i ich źródła ({trafienia.length})
+                </summary>
+                <ul className="m-0 flex list-none flex-col gap-1.5 border-t border-line-soft p-3">
+                  {trafienia.map((t, i) => (
+                    <li key={i} className="text-xs leading-snug">
+                      <span className="font-semibold text-ink">{t.pole}:</span>{" "}
+                      <span className="text-primary-strong">{t.wartosc}</span>{" "}
+                      <span className="text-faint">
+                        — {t.dokument}
+                        {!t.zastosowano && " (niezastosowane — pole było już wypełnione)"}
+                      </span>
+                      <div className="mt-0.5 text-faint">{t.fragment}</div>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             )}
+
+            {uwagi.map((u, i) => (
+              <p key={i} className="m-0 mt-2 text-xs text-amber-ink">
+                {u}
+              </p>
+            ))}
 
             {/* Formularz — zawsze do weryfikacji/uzupełnienia */}
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
