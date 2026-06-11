@@ -40,7 +40,7 @@ export default function Sciezki() {
             <Stepper etap={u.etapSciezki ?? 0} />
 
             <div className="mt-[22px] flex items-start gap-2.5 rounded-[13px] bg-soft px-[15px] py-[13px]">
-              <span className="material-symbols-rounded shrink-0 text-[20px] text-primary">
+              <span className="material-symbols-rounded notranslate shrink-0 text-[20px] text-primary">
                 flag
               </span>
               <div>

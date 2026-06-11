@@ -54,7 +54,7 @@ export default function PulpitStats({
         className="card card-hover anim-card-in block p-5"
       >
         <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-          <span className="material-symbols-rounded text-[25px] text-primary-strong">
+          <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
             groups
           </span>
         </div>
@@ -63,7 +63,7 @@ export default function PulpitStats({
         </div>
         <div className="mt-[7px] text-sm text-muted">Uczestnicy aktywni</div>
         <div className="mt-[13px] flex items-center gap-[5px] text-[12.5px] font-bold text-primary-strong">
-          <span className="material-symbols-rounded text-[17px]">
+          <span className="material-symbols-rounded notranslate text-[17px]">
             trending_up
           </span>
           {limityTekst}
@@ -77,7 +77,7 @@ export default function PulpitStats({
         style={{ animationDelay: "0.07s" }}
       >
         <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-blue-soft">
-          <span className="material-symbols-rounded text-[25px] text-blue-ink">
+          <span className="material-symbols-rounded notranslate text-[25px] text-blue-ink">
             route
           </span>
         </div>
@@ -100,7 +100,7 @@ export default function PulpitStats({
         style={{ animationDelay: "0.14s" }}
       >
         <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-          <span className="material-symbols-rounded text-[25px] text-primary-strong">
+          <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
             event_available
           </span>
         </div>
@@ -131,7 +131,7 @@ export default function PulpitStats({
         style={{ animationDelay: "0.21s" }}
       >
         <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-amber-soft">
-          <span className="material-symbols-rounded text-[25px] text-amber-ink">
+          <span className="material-symbols-rounded notranslate text-[25px] text-amber-ink">
             folder_off
           </span>
         </div>
@@ -140,7 +140,7 @@ export default function PulpitStats({
         </div>
         <div className="mt-[7px] text-sm text-muted">Teczki z brakami</div>
         <div className="mt-[13px] flex items-center gap-[5px] text-[12.5px] font-bold text-amber-ink">
-          <span className="material-symbols-rounded text-[17px]">
+          <span className="material-symbols-rounded notranslate text-[17px]">
             priority_high
           </span>
           wymaga uzupełnienia

@@ -177,7 +177,7 @@ export function Stepper({ etap }: { etap: number }) {
                 }}
               >
                 {done ? (
-                  <span className="material-symbols-rounded text-[19px]">
+                  <span className="material-symbols-rounded notranslate text-[19px]">
                     check
                   </span>
                 ) : (

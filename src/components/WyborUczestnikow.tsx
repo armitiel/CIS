@@ -97,7 +97,7 @@ export default function WyborUczestnikow({
             className="text-faint hover:text-ink"
             title="Zamknij"
           >
-            <span className="material-symbols-rounded text-[22px]">close</span>
+            <span className="material-symbols-rounded notranslate text-[22px]">close</span>
           </button>
         </div>
 
@@ -171,7 +171,7 @@ export default function WyborUczestnikow({
                   </span>
                 </span>
                 <span className="flex items-center gap-1.5 text-sm font-bold text-ink-mid">
-                  <span className="material-symbols-rounded text-[18px] text-faint">
+                  <span className="material-symbols-rounded notranslate text-[18px] text-faint">
                     event_available
                   </span>
                   {u.status === "aktywny" ? `${u.frekwencja}%` : "—"}
@@ -209,7 +209,7 @@ export default function WyborUczestnikow({
               disabled={zaznaczeni.size === 0}
               className="btn-primary"
             >
-              <span className="material-symbols-rounded text-[19px]">
+              <span className="material-symbols-rounded notranslate text-[19px]">
                 task_alt
               </span>
               {etykieta} ({zaznaczeni.size})

@@ -113,7 +113,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
           }
           className="btn-primary"
         >
-          <span className="material-symbols-rounded text-[19px]">download</span>
+          <span className="material-symbols-rounded notranslate text-[19px]">download</span>
           {generuje === "pakiet" ? "Generuję…" : "Pakiet braków (.docx)"}
         </button>
       </div>
@@ -146,7 +146,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
                     className="rounded-lg border border-line-strong px-2 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
                     title="Podgląd dokumentu z danymi uczestnika"
                   >
-                    <span className="material-symbols-rounded align-middle text-[15px]">
+                    <span className="material-symbols-rounded notranslate align-middle text-[15px]">
                       visibility
                     </span>
                   </button>
@@ -240,7 +240,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
                 className="shrink-0 text-faint hover:text-ink"
                 title="Zamknij podgląd"
               >
-                <span className="material-symbols-rounded text-[22px]">
+                <span className="material-symbols-rounded notranslate text-[22px]">
                   close
                 </span>
               </button>

@@ -292,7 +292,7 @@ export default function Dokumenty() {
               dokumenty
             </p>
             <div className="mt-[13px] inline-flex items-center gap-[7px] rounded-[10px] bg-green-soft px-[13px] py-[7px] text-[13px] font-semibold text-primary-strong">
-              <span className="material-symbols-rounded text-lg">
+              <span className="material-symbols-rounded notranslate text-lg">
                 check_circle
               </span>
               Aktywna specyfikacja: {spec.nazwa} ({spec.nabor})
@@ -311,7 +311,7 @@ export default function Dokumenty() {
               onClick={() => fileRef.current?.click()}
               className="btn-primary"
             >
-              <span className="material-symbols-rounded text-[19px]">
+              <span className="material-symbols-rounded notranslate text-[19px]">
                 upload_file
               </span>
               Wczytaj wniosek
@@ -378,7 +378,7 @@ export default function Dokumenty() {
                           className="inline-flex items-center gap-1 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
                           title="Podgląd wzoru formularza (pola puste)"
                         >
-                          <span className="material-symbols-rounded text-[16px]">
+                          <span className="material-symbols-rounded notranslate text-[16px]">
                             visibility
                           </span>
                           {podgladLaduje === `wzor:${d.id}` ? "…" : "Podgląd"}
@@ -420,7 +420,7 @@ export default function Dokumenty() {
               className="btn-primary"
               title="Brakujące dokumenty z teczek zaznaczonych osób"
             >
-              <span className="material-symbols-rounded text-[19px]">
+              <span className="material-symbols-rounded notranslate text-[19px]">
                 folder_zip
               </span>
               {generuje === "wsad"
@@ -441,7 +441,7 @@ export default function Dokumenty() {
               className="btn-dark"
               title="Wskaż konkretne formularze do wygenerowania dla zaznaczonych osób"
             >
-              <span className="material-symbols-rounded text-[18px]">
+              <span className="material-symbols-rounded notranslate text-[18px]">
                 checklist
               </span>
               Wybierz dokumenty…
@@ -546,7 +546,7 @@ export default function Dokumenty() {
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-primary-strong hover:bg-green-soft"
                       title="Otwórz kartotekę (pełna teczka)"
                     >
-                      <span className="material-symbols-rounded text-lg">
+                      <span className="material-symbols-rounded notranslate text-lg">
                         folder_open
                       </span>
                     </Link>
@@ -569,7 +569,7 @@ export default function Dokumenty() {
         )}
 
         <p className="mt-3 flex items-center gap-1.5 text-xs text-faint">
-          <span className="material-symbols-rounded text-base text-blue-ink">
+          <span className="material-symbols-rounded notranslate text-base text-blue-ink">
             info
           </span>
           Pełna teczka osoby (pojedyncze dokumenty, ad hoc) jest w jej
@@ -609,7 +609,7 @@ export default function Dokumenty() {
               onClick={() => szablonRef.current?.click()}
               className="btn-primary"
             >
-              <span className="material-symbols-rounded text-[19px]">
+              <span className="material-symbols-rounded notranslate text-[19px]">
                 note_add
               </span>
               Dodaj szablon .docx
@@ -643,7 +643,7 @@ export default function Dokumenty() {
                         className="btn-dark"
                         title="Wybierz z listy jednego lub kilku uczestników (widok jak w zakładce Uczestnicy)"
                       >
-                        <span className="material-symbols-rounded text-[18px]">
+                        <span className="material-symbols-rounded notranslate text-[18px]">
                           group_add
                         </span>
                         Wybierz uczestników…
@@ -667,7 +667,7 @@ export default function Dokumenty() {
                         className="mr-2 text-faint hover:text-ink disabled:opacity-50"
                         title="Podgląd szablonu (ze znacznikami)"
                       >
-                        <span className="material-symbols-rounded text-[20px]">
+                        <span className="material-symbols-rounded notranslate text-[20px]">
                           visibility
                         </span>
                       </button>
@@ -676,7 +676,7 @@ export default function Dokumenty() {
                         className="text-faint hover:text-red-ink"
                         title="Usuń szablon"
                       >
-                        <span className="material-symbols-rounded text-[20px]">
+                        <span className="material-symbols-rounded notranslate text-[20px]">
                           delete
                         </span>
                       </button>
@@ -752,7 +752,7 @@ export default function Dokumenty() {
                 className="shrink-0 text-faint hover:text-ink"
                 title="Zamknij podgląd"
               >
-                <span className="material-symbols-rounded text-[22px]">
+                <span className="material-symbols-rounded notranslate text-[22px]">
                   close
                 </span>
               </button>

@@ -69,7 +69,7 @@ export default function Kartoteka() {
       <section className="grid grid-cols-1 gap-[18px] sm:grid-cols-3">
         <div className="card card-hover anim-card-in p-5">
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] bg-blue-soft">
-            <span className="material-symbols-rounded text-[25px] text-blue-ink">
+            <span className="material-symbols-rounded notranslate text-[25px] text-blue-ink">
               route
             </span>
           </div>
@@ -86,7 +86,7 @@ export default function Kartoteka() {
           style={{ animationDelay: "0.07s" }}
         >
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-            <span className="material-symbols-rounded text-[25px] text-primary-strong">
+            <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
               event_available
             </span>
           </div>
@@ -110,7 +110,7 @@ export default function Kartoteka() {
             }`}
           >
             <span
-              className={`material-symbols-rounded text-[25px] ${
+              className={`material-symbols-rounded notranslate text-[25px] ${
                 braki.length === 0 ? "text-primary-strong" : "text-amber-ink"
               }`}
             >
@@ -151,7 +151,7 @@ export default function Kartoteka() {
         </div>
         <Stepper etap={u.etapSciezki ?? 0} />
         <div className="mt-[22px] flex items-start gap-2.5 rounded-[13px] bg-soft px-[15px] py-[13px]">
-          <span className="material-symbols-rounded shrink-0 text-[20px] text-primary">
+          <span className="material-symbols-rounded notranslate shrink-0 text-[20px] text-primary">
             flag
           </span>
           <div>

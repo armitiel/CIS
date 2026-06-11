@@ -119,7 +119,7 @@ function KartaZajec({
             {z.typ}
           </span>
           <div className="mt-2.5 flex items-center gap-[5px] text-xs text-muted">
-            <span className="material-symbols-rounded text-base">group</span>
+            <span className="material-symbols-rounded notranslate text-base">group</span>
             {z.osob} uczestników
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function Harmonogram() {
             className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line-strong bg-surface text-ink-mid transition-colors hover:bg-soft"
             title="Poprzedni"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded notranslate text-xl">
               chevron_left
             </span>
           </button>
@@ -200,7 +200,7 @@ export default function Harmonogram() {
             className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line-strong bg-surface text-ink-mid transition-colors hover:bg-soft"
             title="Następny"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded notranslate text-xl">
               chevron_right
             </span>
           </button>
@@ -211,7 +211,7 @@ export default function Harmonogram() {
             Dziś
           </button>
           <span className="ml-2 flex items-center gap-[9px]">
-            <span className="material-symbols-rounded text-[22px] text-primary">
+            <span className="material-symbols-rounded notranslate text-[22px] text-primary">
               calendar_month
             </span>
             <span className="font-serif text-lg font-semibold text-ink-strong">

@@ -79,7 +79,7 @@ export default function Pulpit() {
               className="flex items-center gap-[3px] text-[13px] font-semibold text-primary-strong"
             >
               Wszyscy
-              <span className="material-symbols-rounded text-lg">
+              <span className="material-symbols-rounded notranslate text-lg">
                 chevron_right
               </span>
             </Link>
@@ -176,7 +176,7 @@ export default function Pulpit() {
                     className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] ${o.tlo}`}
                   >
                     <span
-                      className={`material-symbols-rounded text-[19px] ${o.ikona}`}
+                      className={`material-symbols-rounded notranslate text-[19px] ${o.ikona}`}
                     >
                       {a.ikona}
                     </span>

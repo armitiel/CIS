@@ -145,7 +145,7 @@ export default function Uczestnicy() {
             disabled={trwaImport}
             className="btn-primary"
           >
-            <span className="material-symbols-rounded text-[19px]">
+            <span className="material-symbols-rounded notranslate text-[19px]">
               upload_file
             </span>
             {trwaImport ? "Importuję…" : "Importuj bazę (Excel/CSV)"}
@@ -167,7 +167,7 @@ export default function Uczestnicy() {
             className="btn-dark"
             title="Sprawdź dane pod import do SOWA (PESEL, słowniki, pola wymagane)"
           >
-            <span className="material-symbols-rounded text-[18px]">
+            <span className="material-symbols-rounded notranslate text-[18px]">
               rule
             </span>
             Waliduj (SOWA)
@@ -178,7 +178,7 @@ export default function Uczestnicy() {
             className="btn-dark"
             title="Pobierz CSV w formacie Import SOWA (43 kolumny, średnik, UTF-8 BOM)"
           >
-            <span className="material-symbols-rounded text-[18px]">
+            <span className="material-symbols-rounded notranslate text-[18px]">
               download
             </span>
             Eksport CSV (SOWA)
@@ -189,7 +189,7 @@ export default function Uczestnicy() {
             className={zaznaczeni.size > 0 ? "btn-primary" : "btn-dark"}
             title="Generuj wybrane dokumenty dla zaznaczonych uczestników (ZIP)"
           >
-            <span className="material-symbols-rounded text-[18px]">
+            <span className="material-symbols-rounded notranslate text-[18px]">
               folder_zip
             </span>
             Generuj dokumenty
@@ -200,7 +200,7 @@ export default function Uczestnicy() {
             className="btn-dark"
             title="Dodaj uczestnika — formularz z walidacją PESEL i słownikami SOWA"
           >
-            <span className="material-symbols-rounded text-[18px]">
+            <span className="material-symbols-rounded notranslate text-[18px]">
               person_add
             </span>
             Dodaj uczestnika
@@ -235,7 +235,7 @@ export default function Uczestnicy() {
                 className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-faint hover:bg-soft"
                 title="Zamknij"
               >
-                <span className="material-symbols-rounded text-lg">close</span>
+                <span className="material-symbols-rounded notranslate text-lg">close</span>
               </button>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function Uczestnicy() {
                             className="flex items-start gap-2 text-[13px] leading-snug"
                           >
                             <span
-                              className={`material-symbols-rounded mt-px shrink-0 text-base ${
+                              className={`material-symbols-rounded notranslate mt-px shrink-0 text-base ${
                                 p.poziom === "blad"
                                   ? "text-red-ink"
                                   : "text-amber-ink"
@@ -383,7 +383,7 @@ export default function Uczestnicy() {
                 <Pasek pct={u.postepSciezki ?? 0} delay={i * 0.05} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="material-symbols-rounded text-[19px] text-faint">
+                <span className="material-symbols-rounded notranslate text-[19px] text-faint">
                   event_available
                 </span>
                 <span className="text-[15px] font-bold text-ink-mid">
@@ -398,7 +398,7 @@ export default function Uczestnicy() {
                 className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft"
                 title="Otwórz kartotekę"
               >
-                <span className="material-symbols-rounded text-[21px]">
+                <span className="material-symbols-rounded notranslate text-[21px]">
                   folder_open
                 </span>
               </Link>

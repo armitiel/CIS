@@ -24,7 +24,7 @@ export default function Sidebar() {
           className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px] bg-primary text-white"
           style={{ boxShadow: "0 6px 15px oklch(0.52 0.09 152 / 0.32)" }}
         >
-          <span className="material-symbols-rounded text-[25px]">eco</span>
+          <span className="material-symbols-rounded notranslate text-[25px]">eco</span>
         </div>
         <div className="min-w-0">
           <div className="truncate font-serif text-lg font-semibold leading-[1.15] text-ink-strong">
@@ -65,7 +65,7 @@ export default function Sidebar() {
                   : "font-semibold text-[oklch(0.44_0.02_150)] hover:bg-soft"
               }`}
             >
-              <span className="material-symbols-rounded text-[22px]">
+              <span className="material-symbols-rounded notranslate text-[22px]">
                 {m.icon}
               </span>
               <span>{m.label}</span>

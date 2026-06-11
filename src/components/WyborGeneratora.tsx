@@ -126,7 +126,7 @@ export default function WyborGeneratora({
             className="text-faint hover:text-ink"
             title="Zamknij"
           >
-            <span className="material-symbols-rounded text-[22px]">close</span>
+            <span className="material-symbols-rounded notranslate text-[22px]">close</span>
           </button>
         </div>
 
@@ -277,7 +277,7 @@ export default function WyborGeneratora({
             disabled={wybraneDok.size === 0 || wybraniUcz.size === 0 || generuje}
             className="btn-primary"
           >
-            <span className="material-symbols-rounded text-[19px]">
+            <span className="material-symbols-rounded notranslate text-[19px]">
               folder_zip
             </span>
             {generuje

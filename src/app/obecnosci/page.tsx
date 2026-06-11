@@ -218,7 +218,7 @@ export default function Obecnosci() {
             className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line-strong bg-surface text-ink-mid transition-colors hover:bg-soft"
             title="Poprzedni"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded notranslate text-xl">
               chevron_left
             </span>
           </button>
@@ -227,7 +227,7 @@ export default function Obecnosci() {
             className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line-strong bg-surface text-ink-mid transition-colors hover:bg-soft"
             title="Następny"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded notranslate text-xl">
               chevron_right
             </span>
           </button>
@@ -238,7 +238,7 @@ export default function Obecnosci() {
             Dziś
           </button>
           <span className="ml-2 flex items-center gap-[9px]">
-            <span className="material-symbols-rounded text-[22px] text-primary">
+            <span className="material-symbols-rounded notranslate text-[22px] text-primary">
               fact_check
             </span>
             <span className="font-serif text-lg font-semibold text-ink-strong">
@@ -256,7 +256,7 @@ export default function Obecnosci() {
                   style={{ background: ZNACZNIK[z].tlo }}
                 >
                   <span
-                    className="material-symbols-rounded text-sm"
+                    className="material-symbols-rounded notranslate text-sm"
                     style={{ color: ZNACZNIK[z].kolor }}
                   >
                     {ZNACZNIK[z].ikona}
@@ -304,7 +304,7 @@ export default function Obecnosci() {
                       color: ZNACZNIK[z].kolor,
                     }}
                   >
-                    <span className="material-symbols-rounded text-[15px]">
+                    <span className="material-symbols-rounded notranslate text-[15px]">
                       {ZNACZNIK[z].ikona}
                     </span>
                     {n} {ZNACZNIK[z].label}
@@ -339,7 +339,7 @@ export default function Obecnosci() {
                         animationDelay: `${i * 0.04}s`,
                       }}
                     >
-                      <span className="material-symbols-rounded text-[15px]">
+                      <span className="material-symbols-rounded notranslate text-[15px]">
                         {ZNACZNIK[znak].ikona}
                       </span>
                       {ZNACZNIK[znak].label}
@@ -403,7 +403,7 @@ export default function Obecnosci() {
                       }}
                     >
                       <span
-                        className="material-symbols-rounded text-lg"
+                        className="material-symbols-rounded notranslate text-lg"
                         style={{ color: ZNACZNIK[z].kolor }}
                       >
                         {ZNACZNIK[z].ikona}

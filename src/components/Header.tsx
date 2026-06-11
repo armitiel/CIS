@@ -54,7 +54,7 @@ export default function Header() {
         <p className="m-0 mt-1 text-sm text-muted">{podtytul}</p>
       </div>
       <label className="flex w-[248px] items-center gap-[9px] rounded-xl border border-line-strong bg-surface px-3.5 py-[9px] transition-[border-color,box-shadow] duration-200 focus-within:border-[oklch(0.62_0.09_152)] focus-within:shadow-[0_0_0_3px_oklch(0.55_0.09_152/0.12)]">
-        <span className="material-symbols-rounded text-[20px] text-faint">
+        <span className="material-symbols-rounded notranslate text-[20px] text-faint">
           search
         </span>
         <input
@@ -70,7 +70,7 @@ export default function Header() {
         className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
         title={ciemny ? "Przełącz na jasny motyw" : "Przełącz na ciemny motyw"}
       >
-        <span className="material-symbols-rounded text-[22px]">
+        <span className="material-symbols-rounded notranslate text-[22px]">
           {ciemny ? "light_mode" : "dark_mode"}
         </span>
       </button>
@@ -78,7 +78,7 @@ export default function Header() {
         className="relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
         title="Powiadomienia"
       >
-        <span className="material-symbols-rounded text-[22px]">
+        <span className="material-symbols-rounded notranslate text-[22px]">
           notifications
         </span>
         <span className="absolute right-[10px] top-[9px] h-2 w-2 rounded-full border-2 border-surface bg-[oklch(0.62_0.12_60)]" />

@@ -198,7 +198,7 @@ export default function FormularzUczestnika({
             className="text-faint hover:text-ink"
             title="Zamknij"
           >
-            <span className="material-symbols-rounded text-[22px]">close</span>
+            <span className="material-symbols-rounded notranslate text-[22px]">close</span>
           </button>
         </div>
 
@@ -259,7 +259,7 @@ export default function FormularzUczestnika({
             pracy; płeć i wiek — z numeru PESEL.
           </span>
           <button onClick={zapisz} className="btn-primary">
-            <span className="material-symbols-rounded text-[19px]">
+            <span className="material-symbols-rounded notranslate text-[19px]">
               person_add
             </span>
             Dodaj uczestnika
