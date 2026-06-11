@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProjekt } from "@/components/ProjektProvider";
+import WyborProjektu from "@/components/WyborProjektu";
 
 const moduly = [
   { href: "/", label: "Pulpit", icon: "space_dashboard" },
@@ -15,7 +16,7 @@ const moduly = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { projekt, projekty, zmienProjekt } = useProjekt();
+  const { projekt } = useProjekt();
 
   return (
     <aside className="flex w-[250px] shrink-0 flex-col border-r border-line bg-panel px-4 py-[22px]">
@@ -37,18 +38,7 @@ export default function Sidebar() {
       </div>
 
       <div className="th-label px-3 pb-2">Projekt</div>
-      <select
-        value={projekt.id}
-        onChange={(e) => zmienProjekt(e.target.value)}
-        className="mx-1 mb-4 w-[calc(100%-8px)] cursor-pointer rounded-xl border border-line-strong bg-surface px-3 py-[9px] text-[13.5px] font-semibold text-ink outline-none transition-colors hover:bg-soft"
-        title="Przełącz projekt"
-      >
-        {projekty.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.nazwa}
-          </option>
-        ))}
-      </select>
+      <WyborProjektu />
 
       <div className="th-label px-3 pb-2">Moduły</div>
       <nav className="flex flex-col gap-[3px]">
