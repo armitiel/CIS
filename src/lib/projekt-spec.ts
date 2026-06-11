@@ -186,8 +186,11 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
 };
 
 /** Dokumenty indywidualne (teczka uczestnika), bez pozycji „ad hoc”. */
-export function wymaganeDokumenty(u: Uczestnik): WymaganyDokument[] {
-  return specyfikacjaCIS.dokumenty.filter((d) => {
+export function wymaganeDokumenty(
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+): WymaganyDokument[] {
+  return spec.dokumenty.filter((d) => {
     if (d.rodzaj !== "uczestnik") return false;
     if (d.moment === "ad hoc") return false;
     if (d.dotyczy !== "wszyscy" && d.dotyczy !== u.kategoria) return false;
@@ -202,8 +205,11 @@ export function wymaganeDokumenty(u: Uczestnik): WymaganyDokument[] {
 }
 
 /** Dokumenty „ad hoc” możliwe dla uczestnika (OzN, opieka, wyjazdy). */
-export function dokumentyAdHoc(u: Uczestnik): WymaganyDokument[] {
-  return specyfikacjaCIS.dokumenty.filter(
+export function dokumentyAdHoc(
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+): WymaganyDokument[] {
+  return spec.dokumenty.filter(
     (d) =>
       d.rodzaj === "uczestnik" &&
       d.moment === "ad hoc" &&
@@ -212,8 +218,11 @@ export function dokumentyAdHoc(u: Uczestnik): WymaganyDokument[] {
 }
 
 /** Braki w teczce uczestnika względem specyfikacji. */
-export function brakiWTeczce(u: Uczestnik): WymaganyDokument[] {
-  return wymaganeDokumenty(u).filter(
+export function brakiWTeczce(
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+): WymaganyDokument[] {
+  return wymaganeDokumenty(u, spec).filter(
     (d) => !u.posiadaneDokumenty.includes(d.id),
   );
 }

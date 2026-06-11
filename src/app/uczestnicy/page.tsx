@@ -1,18 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { uczestnicy } from "@/lib/mock-data";
-import StatusBadge from "@/components/StatusBadge";
-import FrekwencjaBadge from "@/components/FrekwencjaBadge";
 import { brakiWTeczce } from "@/lib/projekt-spec";
+import { useProjekt } from "@/components/ProjektProvider";
+import { etapyNazwy } from "@/lib/mock-data";
+import { Avatar, BrakiPill, Pasek, SciezkaPill, StatusPill } from "@/components/ui";
 import type { KategoriaUczestnika } from "@/lib/types";
 
 type FiltrKategorii = "wszyscy" | KategoriaUczestnika;
 
 export default function Uczestnicy() {
+  const { projekt, uczestnicy, zaimportowano, importuj, wyczyscImport } =
+    useProjekt();
   const [szukaj, setSzukaj] = useState("");
   const [kategoria, setKategoria] = useState<FiltrKategorii>("wszyscy");
+  const [komunikat, setKomunikat] = useState<string | null>(null);
+  const [trwaImport, setTrwaImport] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // zapytanie z wyszukiwarki w nagłówku (/uczestnicy?q=…)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setSzukaj(q);
+  }, []);
 
   const widoczni = useMemo(() => {
     const q = szukaj.trim().toLowerCase();
@@ -22,116 +33,203 @@ export default function Uczestnicy() {
         return false;
       return true;
     });
-  }, [szukaj, kategoria]);
+  }, [uczestnicy, szukaj, kategoria]);
+
+  const nIPZS = uczestnicy.filter((u) => u.kategoria === "bezrobotny").length;
+  const nIPR = uczestnicy.filter((u) => u.kategoria === "bierny").length;
+
+  async function obsluzImport(file: File | undefined) {
+    if (!file) return;
+    setTrwaImport(true);
+    setKomunikat(null);
+    try {
+      const wynik = await importuj(file);
+      if (wynik.uczestnicy.length > 0) {
+        setKomunikat(
+          `✓ Zaimportowano ${wynik.uczestnicy.length} uczestników z pliku „${file.name}”.` +
+            (wynik.uwagi.length ? ` ${wynik.uwagi.join(" ")}` : ""),
+        );
+      } else {
+        setKomunikat(
+          `Nie udało się rozpoznać uczestników w pliku „${file.name}”. ${wynik.uwagi.join(" ")}`,
+        );
+      }
+    } catch (e) {
+      setKomunikat(
+        `Błąd odczytu pliku: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    } finally {
+      setTrwaImport(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  const chipy: [FiltrKategorii, string, number][] = [
+    ["wszyscy", "Wszyscy", uczestnicy.length],
+    ["bezrobotny", "IPZS", nIPZS],
+    ["bierny", "IPR", nIPR],
+  ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Uczestnicy</h1>
-          <p className="text-sm text-slate-500">
-            Kartoteki uczestników projektu — cykl I
-          </p>
+    <div className="flex max-w-[1240px] flex-col gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {chipy.map(([wart, label, n]) => (
+            <button
+              key={wart}
+              onClick={() => setKategoria(wart)}
+              className={`cursor-pointer rounded-[10px] px-[15px] py-2 text-[13.5px] font-semibold transition-colors ${
+                kategoria === wart
+                  ? "bg-primary text-white"
+                  : "border border-line-strong bg-surface text-ink-mid hover:bg-soft"
+              }`}
+            >
+              {label} · {n}
+            </button>
+          ))}
+          {zaimportowano && (
+            <span className="ml-1 rounded-full bg-green-soft px-3 py-1 text-xs font-semibold text-primary-strong">
+              baza z importu
+            </span>
+          )}
         </div>
-        <button
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          title="Formularz dodawania — etap E1"
-        >
-          + Dodaj uczestnika
-        </button>
-      </header>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => obsluzImport(e.target.files?.[0])}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={trwaImport}
+            className="btn-primary"
+          >
+            <span className="material-symbols-rounded text-[19px]">
+              upload_file
+            </span>
+            {trwaImport ? "Importuję…" : "Importuj bazę (Excel/CSV)"}
+          </button>
+          {zaimportowano && (
+            <button
+              onClick={() => {
+                wyczyscImport();
+                setKomunikat("Przywrócono dane domyślne projektu.");
+              }}
+              className="btn-dark"
+              title="Usuń zaimportowaną bazę i wróć do danych domyślnych"
+            >
+              Wyczyść import
+            </button>
+          )}
+          <button className="btn-dark" title="Formularz dodawania — etap E1">
+            <span className="material-symbols-rounded text-[18px]">
+              person_add
+            </span>
+            Dodaj uczestnika
+          </button>
+        </div>
+      </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      {komunikat && (
+        <div className="card anim-fade-in px-4 py-3 text-sm text-ink">
+          {komunikat}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
         <input
           type="search"
           value={szukaj}
           onChange={(e) => setSzukaj(e.target.value)}
           placeholder="Szukaj po imieniu i nazwisku…"
-          className="w-72 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[15px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="w-72 rounded-xl border border-line-strong bg-surface px-3.5 py-[9px] text-sm text-ink outline-none transition-[border-color,box-shadow] focus:border-[oklch(0.62_0.09_152)] focus:shadow-[0_0_0_3px_oklch(0.55_0.09_152/0.12)]"
         />
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-          {(
-            [
-              ["wszyscy", "Wszyscy"],
-              ["bezrobotny", "Bezrobotni (IPZS)"],
-              ["bierny", "Bierni zawodowo (IPR)"],
-            ] as [FiltrKategorii, string][]
-          ).map(([wart, label]) => (
-            <button
-              key={wart}
-              onClick={() => setKategoria(wart)}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                kategoria === wart
-                  ? "bg-white font-semibold text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <span className="text-sm text-faint">
+          {widoczni.length} z {uczestnicy.length} · projekt „{projekt.skrot}”
+        </span>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-[15px]">
-          <thead className="border-b border-slate-200 bg-slate-50 text-sm text-slate-500">
-            <tr>
-              <th className="px-5 py-3 font-medium">Uczestnik</th>
-              <th className="px-4 py-3 font-medium">Ścieżka</th>
-              <th className="px-4 py-3 font-medium">Grupa</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Frekwencja</th>
-              <th className="px-4 py-3 font-medium">Dokumenty</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {widoczni.map((u) => (
-              <tr key={u.id} className="hover:bg-blue-50/40">
-                <td className="px-5 py-3">
+      <div className="card anim-card-in overflow-hidden">
+        <div className="grid grid-cols-[minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5">
+          <div className="th-label">Uczestnik</div>
+          <div className="th-label">Ścieżka reintegracji</div>
+          <div className="th-label">Obecność</div>
+          <div className="th-label">Dokumenty</div>
+          <div />
+        </div>
+        {widoczni.map((u, i) => {
+          const nazwa = `${u.imie} ${u.nazwisko}`;
+          const braki = brakiWTeczce(u, projekt.spec).length;
+          return (
+            <div
+              key={u.id}
+              className="anim-card-in grid grid-cols-[minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-t border-line-soft px-[22px] py-[15px] transition-colors hover:bg-hover-row"
+              style={{ animationDelay: `${i * 0.05}s` }}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar nazwa={nazwa} size={40} />
+                <div className="min-w-0">
                   <Link
                     href={`/uczestnicy/${u.id}`}
-                    className="font-medium text-slate-800 hover:text-blue-700 hover:underline"
+                    className="block truncate text-[14.5px] font-bold text-ink hover:text-primary-strong"
                   >
                     {u.nazwisko} {u.imie}
                   </Link>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{u.sciezka}</td>
-                <td className="px-4 py-3 text-slate-600">{u.grupa}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={u.status} />
-                </td>
-                <td className="px-4 py-3">
-                  {u.status === "aktywny" ? (
-                    <FrekwencjaBadge value={u.frekwencja} />
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {brakiWTeczce(u).length === 0 ? (
-                    <span className="text-sm text-green-700">komplet</span>
-                  ) : (
-                    <span className="text-sm font-medium text-amber-700">
-                      braki: {brakiWTeczce(u).length}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {widoczni.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
-                  Brak wyników dla podanych filtrów.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <span className="mt-1 inline-flex items-center gap-1.5">
+                    <SciezkaPill sciezka={u.sciezka} />
+                    {u.status !== "aktywny" && <StatusPill status={u.status} />}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                  <span className="text-[12.5px] text-muted">
+                    {etapyNazwy[u.etapSciezki ?? 0]}
+                  </span>
+                  <span className="font-serif text-sm font-semibold text-primary-strong">
+                    {u.postepSciezki ?? 0}%
+                  </span>
+                </div>
+                <Pasek pct={u.postepSciezki ?? 0} delay={i * 0.05} />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-[19px] text-faint">
+                  event_available
+                </span>
+                <span className="text-[15px] font-bold text-ink-mid">
+                  {u.status === "aktywny" ? `${u.frekwencja}%` : "—"}
+                </span>
+              </div>
+              <div>
+                <BrakiPill braki={braki} />
+              </div>
+              <Link
+                href={`/uczestnicy/${u.id}`}
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft"
+                title="Otwórz kartotekę"
+              >
+                <span className="material-symbols-rounded text-[21px]">
+                  folder_open
+                </span>
+              </Link>
+            </div>
+          );
+        })}
+        {widoczni.length === 0 && (
+          <div className="px-[22px] py-8 text-center text-sm text-faint">
+            {uczestnicy.length === 0
+              ? "Brak uczestników w projekcie — zaimportuj bazę z pliku Excel/CSV (struktura SOWA)."
+              : "Brak wyników dla podanych filtrów."}
+          </div>
+        )}
       </div>
 
-      <p className="text-xs text-slate-400">
-        Dane testowe (fikcyjne) w strukturze SOWA. Eksport CSV do SOWA oraz
-        walidacja PESEL/TERYT — etap E1.
+      <p className="text-xs text-faint">
+        Import obsługuje pliki .xlsx i .csv w strukturze SOWA (Import
+        uczestników / CIS_uczestnicy.xlsx). Dane pozostają w przeglądarce —
+        baza z logowaniem i historią zmian to etap E1.
       </p>
     </div>
   );

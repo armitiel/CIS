@@ -11,7 +11,11 @@ import {
   TextRun,
 } from "docx";
 import type { Uczestnik } from "./types";
-import { specyfikacjaCIS, type WymaganyDokument } from "./projekt-spec";
+import {
+  specyfikacjaCIS,
+  type SpecyfikacjaProjektu,
+  type WymaganyDokument,
+} from "./projekt-spec";
 
 const dzis = () =>
   new Date().toLocaleDateString("pl-PL", {
@@ -22,25 +26,28 @@ const dzis = () =>
 
 const linia = "…………………………………………………………………";
 
-function naglowekProjektu(symbol?: string): Paragraph[] {
+function naglowekProjektu(
+  spec: SpecyfikacjaProjektu,
+  symbol?: string,
+): Paragraph[] {
   return [
     new Paragraph({
       tabStops: [{ type: TabStopType.RIGHT, position: 9026 }],
       spacing: { after: 60 },
       children: [
-        new TextRun({ text: specyfikacjaCIS.wnioskodawca, bold: true, size: 22 }),
+        new TextRun({ text: spec.wnioskodawca, bold: true, size: 22 }),
         new TextRun({ text: symbol ? `\t${symbol}` : "", size: 20, color: "555555" }),
       ],
     }),
     new Paragraph({
       spacing: { after: 40 },
-      children: [new TextRun({ text: `Projekt: ${specyfikacjaCIS.nazwa}`, size: 20 })],
+      children: [new TextRun({ text: `Projekt: ${spec.nazwa}`, size: 20 })],
     }),
     new Paragraph({
       spacing: { after: 300 },
       children: [
         new TextRun({
-          text: `Nabór: ${specyfikacjaCIS.nabor} · Okres realizacji: ${specyfikacjaCIS.okres}`,
+          text: `Nabór: ${spec.nabor} · Okres realizacji: ${spec.okres}`,
           size: 18,
           color: "555555",
         }),
@@ -132,8 +139,12 @@ function daneSOWA(u: Uczestnik, pelne = true): Paragraph[] {
   return out;
 }
 
-function trescDokumentu(d: WymaganyDokument, u: Uczestnik): Paragraph[] {
-  const base = naglowekProjektu(d.symbol);
+function trescDokumentu(
+  d: WymaganyDokument,
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu,
+): Paragraph[] {
+  const base = naglowekProjektu(spec, d.symbol);
   switch (d.id) {
     case "a-01":
       return [
@@ -157,7 +168,7 @@ function trescDokumentu(d: WymaganyDokument, u: Uczestnik): Paragraph[] {
         tytul("UMOWA UCZESTNICTWA W PROJEKCIE"),
         ...daneSOWA(u, false),
         akapit(
-          `§1. Przedmiotem umowy jest udział w projekcie „${specyfikacjaCIS.nazwa}”. §2. Uczestnik zobowiązuje się do udziału w formach wsparcia wynikających z Indywidualnej Ścieżki Reintegracji. §3. Uczestnik zobowiązuje się do wypełniania ankiet monitoringowych i ewaluacyjnych (w tym pomiarów PRE/POST — bez odrębnych podpisów). §4. Wypłata świadczeń integracyjnych i premii następuje przelewem na rachunek wskazany w oświadczeniu poniżej.`,
+          `§1. Przedmiotem umowy jest udział w projekcie „${spec.nazwa}”. §2. Uczestnik zobowiązuje się do udziału w formach wsparcia wynikających z Indywidualnej Ścieżki Reintegracji. §3. Uczestnik zobowiązuje się do wypełniania ankiet monitoringowych i ewaluacyjnych (w tym pomiarów PRE/POST — bez odrębnych podpisów). §4. Wypłata świadczeń integracyjnych i premii następuje przelewem na rachunek wskazany w oświadczeniu poniżej.`,
         ),
         pole("Numer rachunku bankowego do wypłat (oświadczenie jednorazowe)", undefined),
         pole("Miejscowość i data", `Świebodzin, ${dzis()}`),
@@ -314,16 +325,24 @@ const slug = (s: string) =>
     .replace(/^_+|_+$/g, "");
 
 /** Generuje i pobiera pojedynczy dokument dla uczestnika. */
-export async function generujDokument(d: WymaganyDokument, u: Uczestnik) {
-  const doc = dokumentDocx(trescDokumentu(d, u));
+export async function generujDokument(
+  d: WymaganyDokument,
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+) {
+  const doc = dokumentDocx(trescDokumentu(d, u, spec));
   await pobierz(doc, `${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`);
 }
 
 /** Generuje pakiet (jeden plik .docx, dokumenty rozdzielone nową stroną). */
-export async function generujPakiet(dokumenty: WymaganyDokument[], u: Uczestnik) {
+export async function generujPakiet(
+  dokumenty: WymaganyDokument[],
+  u: Uczestnik,
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+) {
   const children: Paragraph[] = [];
   dokumenty.forEach((d, i) => {
-    const tresc = trescDokumentu(d, u);
+    const tresc = trescDokumentu(d, u, spec);
     if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
     children.push(...tresc);
   });

@@ -1,129 +1,206 @@
-import Link from "next/link";
-import { alerty, dzisiejszeZajecia, limity, uczestnicy } from "@/lib/mock-data";
-import { brakiWTeczce } from "@/lib/projekt-spec";
+"use client";
 
-function Karta({
-  tytul,
-  wartosc,
-  opis,
-  href,
-}: {
-  tytul: string;
-  wartosc: string;
-  opis?: string;
-  href?: string;
-}) {
-  const inner = (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-sm">
-      <p className="text-sm text-slate-500">{tytul}</p>
-      <p className="mt-1 text-3xl font-bold text-slate-800">{wartosc}</p>
-      {opis && <p className="mt-1 text-xs text-slate-400">{opis}</p>}
-    </div>
-  );
-  return href ? <Link href={href}>{inner}</Link> : inner;
-}
+import Link from "next/link";
+import { useProjekt } from "@/components/ProjektProvider";
+import {
+  dzisiejszeZajecia,
+  etapyNazwy,
+  limity,
+  ostatniaAktywnosc,
+} from "@/lib/mock-data";
+import { brakiWTeczce } from "@/lib/projekt-spec";
+import PulpitStats from "@/components/PulpitStats";
+import { Avatar, Pasek } from "@/components/ui";
+
+const ODCIEN: Record<string, { ikona: string; tlo: string }> = {
+  green: { ikona: "text-primary-strong", tlo: "bg-green-soft" },
+  amber: { ikona: "text-amber-ink", tlo: "bg-amber-soft" },
+  blue: { ikona: "text-blue-ink", tlo: "bg-blue-soft" },
+  teal: { ikona: "text-teal-ink", tlo: "bg-teal-soft" },
+};
+
+const KROPKI = [
+  "oklch(0.55 0.1 150)",
+  "oklch(0.55 0.09 240)",
+  "oklch(0.62 0.1 60)",
+];
 
 export default function Pulpit() {
+  const { projekt, uczestnicy } = useProjekt();
+  const czyCIS = projekt.id === "cis-2026";
+
   const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
   const sredniaFrekwencja = Math.round(
     aktywni.reduce((s, u) => s + u.frekwencja, 0) / (aktywni.length || 1),
   );
   const niekompletne = uczestnicy.filter(
-    (u) => brakiWTeczce(u).length > 0,
+    (u) => brakiWTeczce(u, projekt.spec).length > 0,
   ).length;
+  const sredniPostep = Math.round(
+    aktywni.reduce((s, u) => s + (u.postepSciezki ?? 0), 0) /
+      (aktywni.length || 1),
+  );
+  const bezrobotni = aktywni.filter((u) => u.kategoria === "bezrobotny").length;
+  const bierni = aktywni.filter((u) => u.kategoria === "bierny").length;
+  const limityTekst = czyCIS
+    ? `bezrobotni ${bezrobotni}/${limity.bezrobotni.limit} · bierni ${bierni}/${limity.bierni.limit}`
+    : `IPZS ${bezrobotni} · IPR ${bierni}`;
+
+  const zajecia = czyCIS ? dzisiejszeZajecia : [];
+  const aktywnosc = czyCIS ? ostatniaAktywnosc : [];
+
+  const postepy = [...aktywni]
+    .sort((a, b) => (b.postepSciezki ?? 0) - (a.postepSciezki ?? 0))
+    .slice(0, 5);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-bold text-slate-800">Pulpit</h1>
-        <p className="text-sm text-slate-500">
-          Przegląd dnia — najważniejsze informacje w jednym miejscu
-        </p>
-      </header>
+    <div className="flex max-w-[1240px] flex-col gap-5">
+      <PulpitStats
+        aktywni={aktywni.length}
+        sciezki={aktywni.length}
+        frekwencja={sredniaFrekwencja}
+        braki={niekompletne}
+        sredniPostep={sredniPostep}
+        limityTekst={limityTekst}
+      />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Karta
-          tytul="Uczestnicy aktywni"
-          wartosc={`${aktywni.length}`}
-          opis={`bezrobotni: ${limity.bezrobotni.zajete}/${limity.bezrobotni.limit} · bierni: ${limity.bierni.zajete}/${limity.bierni.limit}`}
-          href="/uczestnicy"
-        />
-        <Karta
-          tytul="Średnia frekwencja"
-          wartosc={`${sredniaFrekwencja}%`}
-          opis="aktywni uczestnicy, bieżący miesiąc"
-          href="/obecnosci"
-        />
-        <Karta
-          tytul="Niekompletne teczki"
-          wartosc={`${niekompletne}`}
-          opis="uczestnicy z brakami w dokumentach"
-          href="/dokumenty"
-        />
-        <Karta
-          tytul="Dzisiejsze zajęcia"
-          wartosc={`${dzisiejszeZajecia.length}`}
-          opis="zaplanowane na dziś"
-          href="/harmonogram"
-        />
-      </section>
-
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <h2 className="border-b border-slate-100 px-5 py-3 font-semibold text-slate-700">
-            Dzisiejsze zajęcia
-          </h2>
-          <ul className="divide-y divide-slate-100">
-            {dzisiejszeZajecia.map((z) => (
-              <li key={z.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="font-medium text-slate-800">{z.nazwa}</p>
-                  <p className="text-sm text-slate-500">
-                    {z.prowadzacy} · grupa {z.grupa} · {z.sala}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm font-medium text-slate-600">
-                  {z.godzina}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <h2 className="border-b border-slate-100 px-5 py-3 font-semibold text-slate-700">
-            Wymaga uwagi
-          </h2>
-          <ul className="divide-y divide-slate-100">
-            {alerty.map((a) => (
-              <li key={a.id} className="flex items-start gap-3 px-5 py-3">
-                <span
-                  className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-                    a.typ === "frekwencja"
-                      ? "bg-red-500"
-                      : a.typ === "dokumenty"
-                        ? "bg-amber-500"
-                        : "bg-blue-500"
-                  }`}
-                  aria-hidden
-                />
-                <p className="text-sm text-slate-700">
-                  {a.uczestnikId ? (
+      <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[1.45fr_1fr]">
+        {/* Postęp ścieżek reintegracji */}
+        <div
+          className="card anim-card-in px-6 py-[22px]"
+          style={{ animationDelay: "0.28s" }}
+        >
+          <div className="mb-1.5 flex items-center justify-between">
+            <h2 className="m-0 font-serif text-[19px] font-semibold text-ink-strong">
+              Postęp ścieżek reintegracji
+            </h2>
+            <Link
+              href="/sciezki"
+              className="flex items-center gap-[3px] text-[13px] font-semibold text-primary-strong"
+            >
+              Wszyscy
+              <span className="material-symbols-rounded text-lg">
+                chevron_right
+              </span>
+            </Link>
+          </div>
+          {postepy.map((u, i) => {
+            const nazwa = `${u.imie} ${u.nazwisko}`;
+            return (
+              <div
+                key={u.id}
+                className="flex items-center gap-3.5 border-t border-line-soft py-[13px]"
+              >
+                <Avatar nazwa={nazwa} size={38} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2.5">
                     <Link
-                      href={`/uczestnicy/${a.uczestnikId}`}
-                      className="hover:underline"
+                      href={`/uczestnicy/${u.id}`}
+                      className="text-[14.5px] font-semibold text-ink hover:text-primary-strong"
                     >
-                      {a.tresc}
+                      {nazwa}
                     </Link>
-                  ) : (
-                    a.tresc
-                  )}
-                </p>
-              </li>
-            ))}
-          </ul>
+                    <span className="font-serif text-[15px] font-semibold text-primary-strong">
+                      {u.postepSciezki ?? 0}%
+                    </span>
+                  </div>
+                  <div className="mt-[7px]">
+                    <Pasek pct={u.postepSciezki ?? 0} delay={i * 0.07} />
+                  </div>
+                  <div className="mt-[5px] text-xs text-muted">
+                    Etap: {etapyNazwy[u.etapSciezki ?? 0]}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {postepy.length === 0 && (
+            <p className="border-t border-line-soft py-5 text-sm text-faint">
+              Brak aktywnych uczestników w projekcie „{projekt.skrot}”.
+            </p>
+          )}
         </div>
-      </section>
+
+        <div className="flex flex-col gap-[18px]">
+          {/* Dzisiaj w harmonogramie */}
+          <div
+            className="card anim-card-in px-6 py-[22px]"
+            style={{ animationDelay: "0.35s" }}
+          >
+            <h2 className="m-0 mb-3.5 font-serif text-[19px] font-semibold text-ink-strong">
+              Dzisiaj w harmonogramie
+            </h2>
+            {zajecia.map((z, i) => (
+              <div key={z.id} className="flex items-center gap-[13px] py-2.5">
+                <div className="w-[42px] shrink-0 font-serif text-sm font-semibold text-ink-mid">
+                  {z.godzina.split("–")[0]}
+                </div>
+                <div
+                  className="h-[9px] w-[9px] shrink-0 rounded-full"
+                  style={{
+                    background: KROPKI[i % KROPKI.length],
+                    boxShadow: "0 0 0 4px oklch(0.55 0.06 150 / 0.1)",
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-ink">
+                    {z.nazwa}
+                  </div>
+                  <div className="text-xs text-muted">
+                    {z.prowadzacy} · grupa {z.grupa} · {z.sala}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {zajecia.length === 0 && (
+              <p className="py-2 text-sm text-faint">
+                Brak zaplanowanych zajęć — harmonogram projektu „
+                {projekt.skrot}” pojawi się po uzupełnieniu modułu.
+              </p>
+            )}
+          </div>
+
+          {/* Ostatnia aktywność */}
+          <div
+            className="card anim-card-in px-6 py-[22px]"
+            style={{ animationDelay: "0.42s" }}
+          >
+            <h2 className="m-0 mb-3 font-serif text-[19px] font-semibold text-ink-strong">
+              Ostatnia aktywność
+            </h2>
+            {aktywnosc.map((a, i) => {
+              const o = ODCIEN[a.odcien];
+              return (
+                <div key={i} className="flex gap-3 py-[9px]">
+                  <div
+                    className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] ${o.tlo}`}
+                  >
+                    <span
+                      className={`material-symbols-rounded text-[19px] ${o.ikona}`}
+                    >
+                      {a.ikona}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13.5px] leading-[1.35] text-ink-mid">
+                      <span className="font-bold text-ink">{a.kto}</span>
+                      {a.co}
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-faint">
+                      {a.kiedy}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {aktywnosc.length === 0 && (
+              <p className="py-2 text-sm text-faint">
+                Brak wpisów dla projektu „{projekt.skrot}”.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

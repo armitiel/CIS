@@ -42,7 +42,34 @@ export interface Uczestnik {
   frekwencja: number; // %
   /** identyfikatory dokumentów w teczce — symbole z projekt-spec (np. "a-01") */
   posiadaneDokumenty: string[];
+  /** etap ścieżki reintegracji: 0 Diagnoza · 1 IŚR · 2 Realizacja · 3 Zakończenie */
+  etapSciezki: 0 | 1 | 2 | 3;
+  /** postęp realizacji ścieżki w % (0–100) */
+  postepSciezki: number;
   sowa?: DaneSOWA;
+}
+
+/** Obecność uczestnika w dniach tygodnia: p obecny · u usprawiedliwiony · a nieobecny */
+export interface ObecnoscTygodnia {
+  uczestnikId: string;
+  dni: ("p" | "u" | "a")[];
+}
+
+export type KolorZajec = "green" | "blue" | "amber";
+
+export interface ZajeciaTygodnia {
+  godzina: string;
+  nazwa: string;
+  typ: string;
+  kolor: KolorZajec;
+  osob: number;
+}
+
+export interface DzienHarmonogramu {
+  dzien: string;
+  data: string;
+  dzisiaj?: boolean;
+  zajecia: ZajeciaTygodnia[];
 }
 
 export interface Zajecia {
