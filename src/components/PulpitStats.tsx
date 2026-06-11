@@ -85,7 +85,7 @@ export default function PulpitStats({
           {cS}
         </div>
         <div className="mt-[7px] text-sm text-muted">Aktywne ścieżki IŚR</div>
-        <div className="mt-3.5 h-[7px] overflow-hidden rounded-[4px] bg-[oklch(0.94_0.012_150)]">
+        <div className="mt-3.5 h-[7px] overflow-hidden rounded-[4px] bg-track">
           <div
             className="anim-bar h-full rounded-[4px] bg-green-bar"
             style={{ width: `${sredniPostep}%`, animationDelay: "0.2s" }}
@@ -108,7 +108,7 @@ export default function PulpitStats({
           <div
             className="relative h-[66px] w-[66px] shrink-0 rounded-full"
             style={{
-              background: `conic-gradient(oklch(0.55 0.11 150) ${cO * 3.6}deg, oklch(0.93 0.015 150) ${cO * 3.6}deg)`,
+              background: `conic-gradient(oklch(0.55 0.11 150) ${cO * 3.6}deg, var(--color-track) ${cO * 3.6}deg)`,
             }}
           >
             <div className="absolute inset-2 flex items-center justify-center rounded-full bg-surface font-serif text-[17px] font-bold text-ink">

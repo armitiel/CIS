@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const KLUCZ_MOTYW = "cis-app:motyw";
 
 const TYTULY: [string, string, string][] = [
   ["/uczestnicy", "Uczestnicy", "Baza osób w projekcie CIS"],
@@ -16,6 +18,22 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [ciemny, setCiemny] = useState(false);
+
+  useEffect(() => {
+    setCiemny(document.documentElement.dataset.theme === "dark");
+  }, []);
+
+  function przelaczMotyw() {
+    const nowy = !ciemny;
+    setCiemny(nowy);
+    document.documentElement.dataset.theme = nowy ? "dark" : "light";
+    try {
+      localStorage.setItem(KLUCZ_MOTYW, nowy ? "dark" : "light");
+    } catch {
+      /* ignoruj */
+    }
+  }
 
   const [, tytul, podtytul] =
     TYTULY.find(([p]) => (p === "/" ? pathname === "/" : pathname.startsWith(p))) ??
@@ -48,7 +66,16 @@ export default function Header() {
         />
       </label>
       <button
-        className="relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-[oklch(0.4_0.02_150)] transition-colors duration-200 hover:bg-soft"
+        onClick={przelaczMotyw}
+        className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
+        title={ciemny ? "Przełącz na jasny motyw" : "Przełącz na ciemny motyw"}
+      >
+        <span className="material-symbols-rounded text-[22px]">
+          {ciemny ? "light_mode" : "dark_mode"}
+        </span>
+      </button>
+      <button
+        className="relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
         title="Powiadomienia"
       >
         <span className="material-symbols-rounded text-[22px]">

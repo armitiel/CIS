@@ -16,6 +16,9 @@
   --color-line-soft: oklch(0.955 0.008 150);
   --color-line-strong: oklch(0.91 0.012 150);
 
+  /* Tło pasków postępu */
+  --color-track: oklch(0.95 0.01 150);
+
   /* Tekst */
   --color-ink: oklch(0.28 0.02 150);
   --color-ink-strong: oklch(0.25 0.03 150);
@@ -45,6 +48,65 @@
   --shadow-card-hover: 0 16px 38px oklch(0.4 0.05 150 / 0.1);
   --shadow-btn: 0 6px 14px oklch(0.52 0.09 152 / 0.28);
   --shadow-btn-hover: 0 10px 22px oklch(0.52 0.09 152 / 0.36);
+}
+
+/* ===== Motyw ciemny — nadpisanie tokenów ===== */
+[data-theme="dark"] {
+  --color-app: oklch(0.17 0.012 150);
+  --color-panel: oklch(0.2 0.012 150);
+  --color-surface: oklch(0.23 0.014 150);
+  --color-hover-row: oklch(0.26 0.014 150);
+  --color-soft: oklch(0.28 0.014 150);
+  --color-track: oklch(0.32 0.016 150);
+
+  --color-line: oklch(0.31 0.015 150);
+  --color-line-soft: oklch(0.28 0.013 150);
+  --color-line-strong: oklch(0.36 0.016 150);
+
+  --color-ink: oklch(0.92 0.012 150);
+  --color-ink-strong: oklch(0.97 0.008 150);
+  --color-ink-mid: oklch(0.85 0.014 150);
+  --color-muted: oklch(0.7 0.015 150);
+  --color-faint: oklch(0.55 0.015 150);
+
+  --color-primary: oklch(0.58 0.1 152);
+  --color-primary-strong: oklch(0.76 0.1 152);
+  --color-green-soft: oklch(0.3 0.045 150);
+  --color-green-bar: oklch(0.66 0.11 150);
+
+  --color-blue-ink: oklch(0.76 0.08 240);
+  --color-blue-soft: oklch(0.3 0.045 240);
+  --color-amber-ink: oklch(0.8 0.11 70);
+  --color-amber-soft: oklch(0.33 0.055 75);
+  --color-red-ink: oklch(0.72 0.13 25);
+  --color-red-soft: oklch(0.3 0.05 25);
+  --color-teal-ink: oklch(0.78 0.08 165);
+  --color-teal-soft: oklch(0.3 0.05 165);
+
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35),
+    0 10px 30px oklch(0 0 0 / 0.28);
+  --shadow-card-hover: 0 16px 38px oklch(0 0 0 / 0.45);
+  --shadow-btn: 0 6px 14px oklch(0 0 0 / 0.4);
+  --shadow-btn-hover: 0 10px 22px oklch(0 0 0 / 0.5);
+
+  color-scheme: dark;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: oklch(0.38 0.015 150);
+  background-clip: content-box;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.46 0.015 150);
+  background-clip: content-box;
+}
+
+[data-theme="dark"] .btn-dark {
+  background: oklch(0.9 0.012 150);
+  color: oklch(0.22 0.014 150);
+}
+[data-theme="dark"] .btn-dark:hover {
+  background: oklch(0.96 0.008 150);
 }
 
 html,

@@ -31,6 +31,7 @@ interface ProjektContextValue {
   zaimportowano: boolean;
   importuj: (file: File) => Promise<WynikImportu>;
   wyczyscImport: () => void;
+  dodajUczestnika: (u: Uczestnik) => void;
 }
 
 const Ctx = createContext<ProjektContextValue | null>(null);
@@ -111,6 +112,26 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const uczestnicy = importowani[projekt.id] ?? projekt.uczestnicyDomyslni;
   const zaimportowano = projekt.id in importowani;
 
+  /** Dodaje uczestnika do bazy projektu (zapis lokalny — etap E1: baza online). */
+  const dodajUczestnika = useCallback(
+    (u: Uczestnik) => {
+      setImportowani((stan) => {
+        const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
+        const nowi = [...obecni, u];
+        try {
+          localStorage.setItem(
+            kluczUczestnikow(projekt.id),
+            JSON.stringify(nowi),
+          );
+        } catch {
+          /* limit localStorage — dane pozostaną w pamięci sesji */
+        }
+        return { ...stan, [projekt.id]: nowi };
+      });
+    },
+    [projekt.id, projekt.uczestnicyDomyslni],
+  );
+
   const value = useMemo(
     () => ({
       projekt,
@@ -120,8 +141,17 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       zaimportowano,
       importuj,
       wyczyscImport,
+      dodajUczestnika,
     }),
-    [projekt, zmienProjekt, uczestnicy, zaimportowano, importuj, wyczyscImport],
+    [
+      projekt,
+      zmienProjekt,
+      uczestnicy,
+      zaimportowano,
+      importuj,
+      wyczyscImport,
+      dodajUczestnika,
+    ],
   );
 
   // do czasu odczytu localStorage renderujemy dane domyślne (unikamy migotania)

@@ -58,7 +58,7 @@ export function Pasek({
 }) {
   return (
     <div
-      className="overflow-hidden rounded-[4px] bg-[oklch(0.95_0.01_150)]"
+      className="overflow-hidden rounded-[4px] bg-track"
       style={{ height: wysokosc }}
     >
       <div
@@ -142,8 +142,8 @@ export function EtapBadge({ etap }: { etap: number }) {
 
 /** Stepper 4 etapów ścieżki reintegracji — jak w projekcie graficznym. */
 export function Stepper({ etap }: { etap: number }) {
-  const G = "oklch(0.55 0.1 150)";
-  const GR = "oklch(0.9 0.012 150)";
+  const G = "var(--color-green-bar)";
+  const GR = "var(--color-line-strong)";
   return (
     <div className="flex items-start">
       {etapyNazwy.map((nazwa, si) => {
@@ -162,18 +162,18 @@ export function Stepper({ etap }: { etap: number }) {
                 className="z-[1] flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
                 style={{
                   background: done
-                    ? "oklch(0.52 0.09 152)"
+                    ? "var(--color-primary)"
                     : curr
-                      ? "oklch(1 0 0)"
-                      : "oklch(0.96 0.008 150)",
+                      ? "var(--color-surface)"
+                      : "var(--color-soft)",
                   border: `2px solid ${
-                    si <= etap ? "oklch(0.52 0.09 152)" : "oklch(0.9 0.012 150)"
+                    si <= etap ? "var(--color-primary)" : "var(--color-line-strong)"
                   }`,
                   color: done
                     ? "oklch(1 0 0)"
                     : curr
-                      ? "oklch(0.45 0.09 152)"
-                      : "oklch(0.62 0.015 150)",
+                      ? "var(--color-primary-strong)"
+                      : "var(--color-faint)",
                 }}
               >
                 {done ? (
@@ -196,7 +196,7 @@ export function Stepper({ etap }: { etap: number }) {
               style={{
                 fontWeight: curr ? 700 : 500,
                 color:
-                  si <= etap ? "oklch(0.34 0.03 150)" : "oklch(0.6 0.015 150)",
+                  si <= etap ? "var(--color-ink-mid)" : "var(--color-faint)",
               }}
             >
               {nazwa}

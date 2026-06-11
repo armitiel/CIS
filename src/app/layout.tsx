@@ -25,11 +25,21 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pl" className={`${hanken.variable} ${newsreader.variable}`}>
+    <html
+      lang="pl"
+      className={`${hanken.variable} ${newsreader.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block"
           rel="stylesheet"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var m=localStorage.getItem("cis-app:motyw");if(m)document.documentElement.dataset.theme=m;}catch(e){}',
+          }}
         />
       </head>
       <body className="font-sans antialiased">

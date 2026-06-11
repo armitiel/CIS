@@ -140,7 +140,7 @@ export default function Obecnosci() {
                 </div>
               ))}
               <div className="flex items-center justify-end gap-2">
-                <div className="h-1.5 w-[42px] overflow-hidden rounded-[4px] bg-[oklch(0.95_0.01_150)]">
+                <div className="h-1.5 w-[42px] overflow-hidden rounded-[4px] bg-track">
                   <div
                     className="anim-bar h-full rounded-[4px] bg-green-bar"
                     style={{
@@ -163,11 +163,11 @@ export default function Obecnosci() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-line bg-[oklch(0.98_0.008_150)] px-[22px] py-[15px]">
+        <div className="flex items-center justify-between border-t border-line bg-hover-row px-[22px] py-[15px]">
           <span className="text-[13.5px] text-muted">
             Średnia frekwencja grupy w tym tygodniu
           </span>
-          <span className="font-serif text-xl font-bold text-[oklch(0.44_0.09_152)]">
+          <span className="font-serif text-xl font-bold text-primary-strong">
             {srednia}%
           </span>
         </div>
