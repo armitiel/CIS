@@ -51,6 +51,8 @@ export default function Dokumenty() {
   const [generuje, setGeneruje] = useState<string | null>(null);
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
+  const [pokazWybor, setPokazWybor] = useState(false);
+  const [wybrane, setWybrane] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const szablonRef = useRef<HTMLInputElement>(null);
 
@@ -122,6 +124,42 @@ export default function Dokumenty() {
     } finally {
       setGeneruje(null);
     }
+  }
+
+  /** Wsadowo: tylko dokumenty wybrane w popupie, dla wszystkich aktywnych. */
+  async function pobierzWybraneWsadowo() {
+    setPokazWybor(false);
+    setGeneruje("wsad");
+    setKomunikat(null);
+    try {
+      const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
+      const pakiety = aktywni.map((u) => ({
+        uczestnik: u,
+        dokumenty: spec.dokumenty.filter(
+          (d) =>
+            wybrane.has(d.id) &&
+            d.generowalny &&
+            (d.dotyczy === "wszyscy" || d.dotyczy === u.kategoria),
+        ),
+      }));
+      const n = await generujPakietyZbiorczo(pakiety, spec, "Pakiety_wybrane");
+      setKomunikat(
+        n > 0
+          ? `✓ Wygenerowano ZIP z wybranymi dokumentami (${wybrane.size} typów) dla ${n} uczestników.`
+          : "Żaden z wybranych dokumentów nie pasuje do uczestników (sprawdź kategorie).",
+      );
+    } finally {
+      setGeneruje(null);
+    }
+  }
+
+  function przelaczWybor(id: string) {
+    setWybrane((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   }
 
   /** Dodanie własnego szablonu .docx z polami {{pole}}. */
@@ -320,6 +358,17 @@ export default function Dokumenty() {
               title="Jeden ZIP: komplet wymaganych dokumentów dla każdego uczestnika"
             >
               Komplety (ZIP)
+            </button>
+            <button
+              onClick={() => setPokazWybor(true)}
+              disabled={generuje !== null || uczestnicy.length === 0}
+              className="btn-dark"
+              title="Wybierz z listy, które dokumenty wygenerować dla wszystkich"
+            >
+              <span className="material-symbols-rounded text-[18px]">
+                checklist
+              </span>
+              Wybierz dokumenty…
             </button>
           </div>
         </div>
@@ -621,6 +670,122 @@ export default function Dokumenty() {
           „Zaświadcza się, że {"{{imie_nazwisko}}"}, PESEL {"{{pesel}}"}…”.
         </p>
       </section>
+
+      {/* POPUP: wybór dokumentów do generowania wsadowego */}
+      {pokazWybor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.2_0.02_150/0.45)] p-4"
+          onClick={() => setPokazWybor(false)}
+        >
+          <div
+            className="anim-pop card flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-line px-6 py-4">
+              <div>
+                <h3 className="m-0 font-serif text-lg font-semibold text-ink-strong">
+                  Wybierz dokumenty do wygenerowania
+                </h3>
+                <p className="m-0 mt-0.5 text-xs text-muted">
+                  Dla wszystkich aktywnych uczestników — z poszanowaniem reguł
+                  (np. IPZS trafi tylko do bezrobotnych)
+                </p>
+              </div>
+              <button
+                onClick={() => setPokazWybor(false)}
+                className="text-faint hover:text-ink"
+                title="Zamknij"
+              >
+                <span className="material-symbols-rounded text-[22px]">
+                  close
+                </span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {[...sekcje.entries()].map(([sekcja, dokumenty]) => {
+                const generowalne = dokumenty.filter((d) => d.generowalny);
+                if (generowalne.length === 0) return null;
+                return (
+                  <div key={sekcja} className="mb-4">
+                    <div className="th-label mb-1.5">{sekcjeNazwy[sekcja]}</div>
+                    <div className="space-y-1">
+                      {generowalne.map((d) => (
+                        <label
+                          key={d.id}
+                          className="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-hover-row"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={wybrane.has(d.id)}
+                            onChange={() => przelaczWybor(d.id)}
+                            className="mt-0.5 h-4 w-4 accent-[oklch(0.52_0.09_152)]"
+                          />
+                          <span className="text-sm">
+                            <span className="font-mono text-xs text-faint">
+                              {d.symbol}
+                            </span>{" "}
+                            <span className="font-medium text-ink">
+                              {d.nazwa}
+                            </span>
+                            {d.dotyczy !== "wszyscy" && (
+                              <span className="ml-1.5 text-xs text-muted">
+                                (
+                                {d.dotyczy === "bezrobotny"
+                                  ? "tylko bezrobotni"
+                                  : "tylko bierni zawodowo"}
+                                )
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-line bg-soft px-6 py-4">
+              <div className="flex gap-2 text-sm">
+                <button
+                  onClick={() =>
+                    setWybrane(
+                      new Set(
+                        spec.dokumenty
+                          .filter(
+                            (d) => d.generowalny && d.rodzaj === "uczestnik",
+                          )
+                          .map((d) => d.id),
+                      ),
+                    )
+                  }
+                  className="font-semibold text-primary-strong hover:underline"
+                >
+                  Teczka uczestnika
+                </button>
+                <span className="text-faint">·</span>
+                <button
+                  onClick={() => setWybrane(new Set())}
+                  className="font-semibold text-muted hover:underline"
+                >
+                  Wyczyść
+                </button>
+              </div>
+              <button
+                onClick={pobierzWybraneWsadowo}
+                disabled={wybrane.size === 0}
+                className="btn-primary"
+              >
+                <span className="material-symbols-rounded text-[19px]">
+                  folder_zip
+                </span>
+                Generuj ZIP ({wybrane.size})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
