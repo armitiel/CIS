@@ -32,6 +32,9 @@ import {
   type SzablonZapisany,
 } from "@/lib/szablony";
 import WyborGeneratora from "@/components/WyborGeneratora";
+import WyborUczestnikow from "@/components/WyborUczestnikow";
+import Portal from "@/components/Portal";
+import type { Uczestnik } from "@/lib/types";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
   uczestnik: "teczka uczestnika",
@@ -63,6 +66,9 @@ export default function Dokumenty() {
     linie: LiniaPodgladu[];
   } | null>(null);
   const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
+  const [wyborSzablonu, setWyborSzablonu] = useState<SzablonZapisany | null>(
+    null,
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const szablonRef = useRef<HTMLInputElement>(null);
 
@@ -180,15 +186,42 @@ export default function Dokumenty() {
     }
   }
 
-  function generujSzablonDlaUczestnika(s: SzablonZapisany, uczestnikId: string) {
-    const u = uczestnicy.find((x) => x.id === uczestnikId);
-    if (!u) return;
+  /** Generowanie z szablonu dla wybranych uczestników: 1 → .docx, kilku → ZIP. */
+  async function generujSzablonDlaWybranych(
+    s: SzablonZapisany,
+    wybrani: Uczestnik[],
+  ) {
+    if (wybrani.length === 0) return;
+    setGeneruje(`szablon:${s.nazwa}`);
+    setKomunikat(null);
     try {
-      generujZSzablonu(arrayBufferZBase64(s.base64), s.nazwa, u, spec);
+      if (wybrani.length === 1) {
+        generujZSzablonu(
+          arrayBufferZBase64(s.base64),
+          s.nazwa,
+          wybrani[0],
+          spec,
+        );
+        setKomunikat(
+          `✓ Wygenerowano „${s.nazwa}” dla: ${wybrani[0].nazwisko} ${wybrani[0].imie}.`,
+        );
+      } else {
+        await generujZSzablonuZbiorczo(
+          arrayBufferZBase64(s.base64),
+          s.nazwa,
+          wybrani,
+          spec,
+        );
+        setKomunikat(
+          `✓ Wygenerowano „${s.nazwa}” dla ${wybrani.length} wybranych uczestników (ZIP).`,
+        );
+      }
     } catch (e) {
       setKomunikat(
         `Błąd szablonu: ${e instanceof Error ? e.message : "sprawdź znaczniki {{pole}}"}`,
       );
+    } finally {
+      setGeneruje(null);
     }
   }
 
@@ -518,24 +551,17 @@ export default function Dokumenty() {
                     </td>
                     <td className="px-4 py-2.5 text-muted">{s.dodano}</td>
                     <td className="px-4 py-2.5">
-                      <select
-                        defaultValue=""
-                        onChange={(e) => {
-                          if (e.target.value)
-                            generujSzablonDlaUczestnika(s, e.target.value);
-                          e.target.value = "";
-                        }}
-                        className="w-48 cursor-pointer rounded-lg border border-line-strong bg-surface px-2 py-1.5 text-sm text-ink outline-none"
+                      <button
+                        onClick={() => setWyborSzablonu(s)}
+                        disabled={generuje !== null || uczestnicy.length === 0}
+                        className="btn-dark"
+                        title="Wybierz z listy jednego lub kilku uczestników (widok jak w zakładce Uczestnicy)"
                       >
-                        <option value="" disabled>
-                          wybierz uczestnika…
-                        </option>
-                        {uczestnicy.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.nazwisko} {u.imie}
-                          </option>
-                        ))}
-                      </select>
+                        <span className="material-symbols-rounded text-[18px]">
+                          group_add
+                        </span>
+                        Wybierz uczestników…
+                      </button>
                     </td>
                     <td className="px-4 py-2.5">
                       <button
@@ -603,10 +629,28 @@ export default function Dokumenty() {
         </p>
       </section>
 
+      {/* POPUP: wybór uczestników do generowania z szablonu własnego */}
+      {wyborSzablonu && (
+        <WyborUczestnikow
+          uczestnicy={uczestnicy}
+          spec={spec}
+          tytul={`Generowanie z szablonu: ${wyborSzablonu.nazwa}`}
+          podtytul="Zaznacz jednego lub kilku uczestników — jeden plik .docx albo wspólny ZIP"
+          etykieta="Generuj"
+          onClose={() => setWyborSzablonu(null)}
+          onConfirm={(wybrani) => {
+            const s = wyborSzablonu;
+            setWyborSzablonu(null);
+            if (s) void generujSzablonDlaWybranych(s, wybrani);
+          }}
+        />
+      )}
+
       {/* POPUP: podgląd dokumentu / szablonu */}
       {podglad && (
+        <Portal>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
           onClick={() => setPodglad(null)}
         >
           <div
@@ -662,6 +706,7 @@ export default function Dokumenty() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* POPUP: wybór uczestników × dokumentów (wspólny komponent) */}

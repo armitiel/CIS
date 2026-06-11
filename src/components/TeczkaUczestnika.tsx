@@ -22,6 +22,7 @@ import {
   type SzablonZapisany,
 } from "@/lib/szablony";
 import { BrakiPill } from "@/components/ui";
+import Portal from "@/components/Portal";
 import type { Uczestnik } from "@/lib/types";
 
 export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }) {
@@ -221,8 +222,9 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
 
       {/* POPUP: podgląd dokumentu */}
       {podglad && (
+        <Portal>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
           onClick={() => setPodglad(null)}
         >
           <div
@@ -278,6 +280,7 @@ export default function TeczkaUczestnika({ uczestnik }: { uczestnik: Uczestnik }
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

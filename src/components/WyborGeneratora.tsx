@@ -11,6 +11,7 @@ import {
   type WymaganyDokument,
 } from "@/lib/projekt-spec";
 import { generujPakietyZbiorczo } from "@/lib/generator";
+import Portal from "@/components/Portal";
 import type { Uczestnik } from "@/lib/types";
 
 /** Dokumenty zalecane = indywidualne dokumenty teczki z rozpoznanej specyfikacji projektu. */
@@ -97,8 +98,9 @@ export default function WyborGeneratora({
   }
 
   return (
+    <Portal>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.2_0.02_150/0.45)] p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[oklch(0.2_0.02_150/0.45)] p-4"
       onClick={onClose}
     >
       <div
@@ -274,5 +276,6 @@ export default function WyborGeneratora({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
