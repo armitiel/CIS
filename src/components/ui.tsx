@@ -114,7 +114,7 @@ export function BrakiPill({ braki }: { braki: number }) {
       className={`inline-flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12.5px] font-bold ${
         komplet
           ? "bg-green-soft text-primary-strong"
-          : "bg-[oklch(0.96_0.05_72)] text-[oklch(0.5_0.12_55)]"
+          : "bg-amber-soft text-amber-ink"
       }`}
     >
       {komplet ? "Komplet" : `${braki} do uzup.`}

@@ -61,8 +61,8 @@ export default function Sidebar() {
               href={m.href}
               className={`flex w-full items-center gap-[13px] rounded-xl px-[13px] py-[11px] text-left text-[14.5px] transition-colors duration-200 ${
                 active
-                  ? "bg-green-soft font-bold text-[oklch(0.38_0.09_152)]"
-                  : "font-semibold text-[oklch(0.44_0.02_150)] hover:bg-soft"
+                  ? "bg-green-soft font-bold text-primary-strong"
+                  : "font-semibold text-ink-mid hover:bg-soft hover:text-ink"
               }`}
             >
               <span className="material-symbols-rounded notranslate text-[22px]">

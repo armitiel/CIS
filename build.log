@@ -1,0 +1,36 @@
+
+> cis-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.19
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 8.5s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/9) ...
+   Generating static pages (2/9) 
+   Generating static pages (4/9) 
+   Generating static pages (6/9) 
+ ✓ Generating static pages (9/9)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    3.54 kB         226 kB
+├ ○ /_not-found                            995 B         103 kB
+├ ○ /dokumenty                           9.41 kB         464 kB
+├ ○ /harmonogram                         4.51 kB         107 kB
+├ ○ /obecnosci                           4.45 kB         227 kB
+├ ○ /sciezki                             2.02 kB         225 kB
+├ ○ /uczestnicy                            10 kB         380 kB
+└ ƒ /uczestnicy/[id]                     5.91 kB         461 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/255-98a0bdaa30757bda.js       46.2 kB
+  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB
+  └ other shared chunks (total)             2 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
