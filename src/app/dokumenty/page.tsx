@@ -31,6 +31,10 @@ import {
   zapiszSzablony,
   type SzablonZapisany,
 } from "@/lib/szablony";
+import {
+  analizujDokument,
+  wyciagnijTekstZPliku,
+} from "@/lib/analiza-wniosku";
 import WyborGeneratora from "@/components/WyborGeneratora";
 import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
@@ -52,11 +56,16 @@ const rodzajStyl: Record<WymaganyDokument["rodzaj"], string> = {
 };
 
 export default function Dokumenty() {
-  const { projekt, uczestnicy } = useProjekt();
+  const { projekt, uczestnicy, projektWlasny, aktualizujProjekt } =
+    useProjekt();
   const spec = projekt.spec;
 
-  const [wniosekNazwa, setWniosekNazwa] = useState<string | null>(null);
-  const [rozpoznano, setRozpoznano] = useState(false);
+  const [wniosekStatus, setWniosekStatus] = useState<{
+    typ: "zgodny" | "obcy" | "nierozpoznany" | "blad";
+    tekst: string;
+    szczegoly: string[];
+  } | null>(null);
+  const [analizujeWniosek, setAnalizujeWniosek] = useState(false);
   const [generuje, setGeneruje] = useState<string | null>(null);
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
@@ -90,11 +99,96 @@ export default function Dokumenty() {
     [uczestnicy, spec],
   );
 
-  function wczytajWniosek(file: File | undefined) {
+  /** Normalizacja numeru naboru do porównań (bez spacji i dopisków typu „(ZIT)”). */
+  const normNabor = (s: string) =>
+    s.toUpperCase().replace(/\(.*?\)/g, "").replace(/[^A-Z0-9./-]/g, "");
+
+  /**
+   * Odświeżenie danych z wniosku: analizuje plik i sprawdza, czy to wniosek
+   * TEGO projektu (numer naboru / tytuł). Zgodny → odświeża dane (projekty
+   * własne); obcy → ostrzeżenie z podpowiedzią „Nowy projekt…”.
+   */
+  async function wczytajWniosek(file: File | undefined) {
     if (!file) return;
-    setWniosekNazwa(file.name);
-    setRozpoznano(false);
-    setTimeout(() => setRozpoznano(true), 600);
+    setAnalizujeWniosek(true);
+    setWniosekStatus(null);
+    try {
+      const tekst = await wyciagnijTekstZPliku(file);
+      const wynik = analizujDokument(tekst);
+
+      if (wynik.rozpoznanie === "nierozpoznany") {
+        setWniosekStatus({
+          typ: "nierozpoznany",
+          tekst: `„${file.name}” nie wygląda na wniosek o dofinansowanie — dane projektu pozostały bez zmian.`,
+          szczegoly: [],
+        });
+        return;
+      }
+
+      const naborWniosku = wynik.pola.nabor ?? "";
+      const naborProjektu = normNabor(projekt.nabor);
+      const zgodnyNabor =
+        naborWniosku !== "" &&
+        naborProjektu !== "" &&
+        (naborProjektu.includes(normNabor(naborWniosku)) ||
+          normNabor(naborWniosku).includes(naborProjektu));
+      const tytulWniosku = (wynik.pola.nazwa ?? "").toLowerCase();
+      const tytulProjektu = projekt.nazwa.toLowerCase();
+      const zgodnyTytul =
+        tytulWniosku.length > 10 &&
+        (tytulProjektu.includes(tytulWniosku.slice(0, 25)) ||
+          tytulWniosku.includes(tytulProjektu.slice(0, 25)));
+
+      if (zgodnyNabor || zgodnyTytul) {
+        const szczegoly: string[] = [];
+        if (projektWlasny) {
+          const zmiany: Record<string, string> = {};
+          if (wynik.pola.nazwa) zmiany.nazwa = wynik.pola.nazwa;
+          if (wynik.pola.nabor) zmiany.nabor = wynik.pola.nabor;
+          if (wynik.pola.wnioskodawca)
+            zmiany.wnioskodawca = wynik.pola.wnioskodawca;
+          if (wynik.pola.okres) zmiany.okres = wynik.pola.okres;
+          zmiany.zrodlo = `odświeżono z wniosku: ${file.name}`;
+          aktualizujProjekt(projekt.id, zmiany);
+          for (const t of wynik.trafienia)
+            szczegoly.push(`${t.pole}: ${t.wartosc}`);
+          setWniosekStatus({
+            typ: "zgodny",
+            tekst: `✓ Wniosek zgodny z projektem (${zgodnyNabor ? "numer naboru" : "tytuł"}) — dane projektu odświeżone z „${file.name}”.`,
+            szczegoly,
+          });
+        } else {
+          setWniosekStatus({
+            typ: "zgodny",
+            tekst: `✓ Wniosek zgodny z projektem „${projekt.skrot}” (${zgodnyNabor ? "numer naboru" : "tytuł"}). Dane projektu wbudowanego są stałe — nic nie zmieniono.`,
+            szczegoly: wynik.trafienia.map((t) => `${t.pole}: ${t.wartosc}`),
+          });
+        }
+      } else {
+        setWniosekStatus({
+          typ: "obcy",
+          tekst: `„${file.name}” to wniosek INNEGO projektu — dane nie zostały zmienione.`,
+          szczegoly: [
+            ...(wynik.pola.nabor
+              ? [`Nabór we wniosku: ${wynik.pola.nabor} · w projekcie: ${projekt.nabor}`]
+              : []),
+            ...(wynik.pola.nazwa
+              ? [`Tytuł we wniosku: ${wynik.pola.nazwa}`]
+              : []),
+            "Aby założyć projekt z tego wniosku, użyj „Nowy projekt…” w menu projektów (lewy panel).",
+          ],
+        });
+      }
+    } catch (e) {
+      setWniosekStatus({
+        typ: "blad",
+        tekst: e instanceof Error ? e.message : "Nie udało się odczytać pliku.",
+        szczegoly: [],
+      });
+    } finally {
+      setAnalizujeWniosek(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   function przelaczZaznaczenie(id: string) {
@@ -281,8 +375,9 @@ export default function Dokumenty() {
               1. Wniosek / specyfikacja projektu
             </h2>
             <p className="m-0 mt-[5px] text-[13.5px] text-muted">
-              Wczytaj wniosek o dofinansowanie, aby rozpoznać wymagane
-              dokumenty
+              Katalog formularzy pochodzi ze specyfikacji projektu. Wgranie
+              wniosku weryfikuje zgodność i odświeża dane projektu
+              (automatyczne wyznaczanie katalogu z treści wniosku — etap E6).
             </p>
             <div className="mt-[13px] inline-flex items-center gap-[7px] rounded-[10px] bg-green-soft px-[13px] py-[7px] text-[13px] font-semibold text-primary-strong">
               <span className="material-symbols-rounded notranslate text-lg">
@@ -296,33 +391,43 @@ export default function Dokumenty() {
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.docx,.doc"
+              accept=".pdf,.docx,.txt"
               className="hidden"
               onChange={(e) => wczytajWniosek(e.target.files?.[0])}
             />
             <button
               onClick={() => fileRef.current?.click()}
+              disabled={analizujeWniosek}
               className="btn-primary"
+              title="Wgraj wniosek TEGO projektu (.pdf/.docx/.txt) — zgodność sprawdzana po numerze naboru i tytule"
             >
               <span className="material-symbols-rounded notranslate text-[19px]">
-                upload_file
+                sync
               </span>
-              Wczytaj wniosek
+              {analizujeWniosek ? "Analizuję…" : "Odśwież dane z wniosku"}
             </button>
           </div>
         </div>
 
-        {wniosekNazwa && (
-          <div className="anim-fade-in mt-4 rounded-xl bg-soft px-4 py-3 text-sm">
-            <p className="text-ink-mid">
-              Plik: <span className="font-medium">{wniosekNazwa}</span>
-            </p>
-            {rozpoznano ? (
-              <p className="mt-1 font-medium text-primary-strong">
-                ✓ Rozpoznano projekt: {spec.nazwa}
-              </p>
-            ) : (
-              <p className="mt-1 text-muted">Analizowanie…</p>
+        {wniosekStatus && (
+          <div
+            className={`anim-fade-in mt-4 rounded-xl px-4 py-3 text-sm ${
+              wniosekStatus.typ === "zgodny"
+                ? "bg-green-soft text-primary-strong"
+                : wniosekStatus.typ === "obcy"
+                  ? "bg-amber-soft text-amber-ink"
+                  : "bg-red-soft text-red-ink"
+            }`}
+          >
+            <p className="m-0 font-semibold">{wniosekStatus.tekst}</p>
+            {wniosekStatus.szczegoly.length > 0 && (
+              <ul className="m-0 mt-1.5 list-none p-0 text-xs">
+                {wniosekStatus.szczegoly.map((s, i) => (
+                  <li key={i} className="mt-0.5">
+                    {s}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}

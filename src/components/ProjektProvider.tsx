@@ -42,6 +42,11 @@ interface ProjektContextValue {
   dodajUczestnika: (u: Uczestnik) => void;
   /** dodaje projekt własny (zapis w przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
+  /** aktualizuje dane projektu własnego; zwraca false dla projektów wbudowanych */
+  aktualizujProjekt: (
+    id: string,
+    zmiany: Partial<Omit<ProjektWlasnyZapis, "id">>,
+  ) => boolean;
   /** usuwa projekt własny (wbudowanych nie można usunąć) */
   usunProjekt: (id: string) => void;
   /** true, jeśli aktywny projekt jest własny (dodany przez użytkownika) */
@@ -171,6 +176,24 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [zmienProjekt],
   );
 
+  /** Aktualizuje dane projektu własnego (np. po odświeżeniu z wniosku). */
+  const aktualizujProjekt = useCallback(
+    (id: string, zmiany: Partial<Omit<ProjektWlasnyZapis, "id">>): boolean => {
+      let zaktualizowano = false;
+      setWlasne((stan) => {
+        if (!stan.some((p) => p.id === id)) return stan;
+        zaktualizowano = true;
+        const nowe = stan.map((p) =>
+          p.id === id ? { ...p, ...zmiany, id } : p,
+        );
+        zapiszProjektyWlasne(nowe);
+        return nowe;
+      });
+      return zaktualizowano;
+    },
+    [],
+  );
+
   /** Usuwa projekt własny wraz z jego bazą uczestników. */
   const usunProjekt = useCallback(
     (id: string) => {
@@ -208,6 +231,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       wyczyscImport,
       dodajUczestnika,
       dodajProjekt,
+      aktualizujProjekt,
       usunProjekt,
       projektWlasny,
     }),
@@ -221,6 +245,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       wyczyscImport,
       dodajUczestnika,
       dodajProjekt,
+      aktualizujProjekt,
       usunProjekt,
       projektWlasny,
     ],
