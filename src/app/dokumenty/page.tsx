@@ -1,20 +1,26 @@
 "use client";
 
+// Moduł Dokumenty — perspektywa PROJEKTOWA: specyfikacja i katalog formularzy,
+// generowanie zbiorcze (ZIP), akcje dla wybranej osoby oraz szablony własne.
+// Pełna teczka pojedynczego uczestnika jest w jego kartotece (moduł Uczestnicy).
+
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
   brakiWTeczce,
-  dokumentyAdHoc,
   sekcjeNazwy,
   wymaganeDokumenty,
   type Sekcja,
   type WymaganyDokument,
 } from "@/lib/projekt-spec";
 import {
-  generujDokument,
+  dokumentBlob,
   generujPakiet,
   generujPakietyZbiorczo,
+  uczestnikWzor,
 } from "@/lib/generator";
+import { podgladDocx, type LiniaPodgladu } from "@/lib/podglad-docx";
 import {
   LISTA_POL,
   arrayBufferZBase64,
@@ -25,9 +31,7 @@ import {
   zapiszSzablony,
   type SzablonZapisany,
 } from "@/lib/szablony";
-import { generujInteraktywnyFormularz } from "@/lib/pdf-interaktywny";
 import WyborGeneratora from "@/components/WyborGeneratora";
-import { Avatar, BrakiPill } from "@/components/ui";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
   uczestnik: "teczka uczestnika",
@@ -49,11 +53,16 @@ export default function Dokumenty() {
 
   const [wniosekNazwa, setWniosekNazwa] = useState<string | null>(null);
   const [rozpoznano, setRozpoznano] = useState(false);
-  const [rozwiniety, setRozwiniety] = useState<string | null>(null);
   const [generuje, setGeneruje] = useState<string | null>(null);
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [szablony, setSzablony] = useState<SzablonZapisany[]>([]);
   const [pokazWybor, setPokazWybor] = useState(false);
+  const [wybranyId, setWybranyId] = useState("");
+  const [podglad, setPodglad] = useState<{
+    tytul: string;
+    linie: LiniaPodgladu[];
+  } | null>(null);
+  const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const szablonRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +78,16 @@ export default function Dokumenty() {
     return m;
   }, [spec]);
 
+  const zBrakami = useMemo(
+    () => uczestnicy.filter((u) => brakiWTeczce(u, spec).length > 0).length,
+    [uczestnicy, spec],
+  );
+
+  const wybrany = uczestnicy.find((u) => u.id === wybranyId);
+  const brakiWybranego = wybrany
+    ? brakiWTeczce(wybrany, spec).filter((d) => d.generowalny).length
+    : 0;
+
   function wczytajWniosek(file: File | undefined) {
     if (!file) return;
     setWniosekNazwa(file.name);
@@ -76,31 +95,20 @@ export default function Dokumenty() {
     setTimeout(() => setRozpoznano(true), 600);
   }
 
-  async function pobierzDokument(d: WymaganyDokument, uczestnikId: string) {
-    const u = uczestnicy.find((x) => x.id === uczestnikId);
-    if (!u) return;
-    setGeneruje(`${uczestnikId}:${d.id}`);
-    try {
-      await generujDokument(d, u, spec);
-    } finally {
-      setGeneruje(null);
-    }
-  }
-
-  async function pobierzPakiet(uczestnikId: string) {
-    const u = uczestnicy.find((x) => x.id === uczestnikId);
-    if (!u) return;
-    const dokumenty = brakiWTeczce(u, spec).filter((d) => d.generowalny);
+  /** Pakiet braków dla wybranej osoby. */
+  async function pobierzPakietWybranego() {
+    if (!wybrany) return;
+    const dokumenty = brakiWTeczce(wybrany, spec).filter((d) => d.generowalny);
     if (dokumenty.length === 0) return;
-    setGeneruje(`${uczestnikId}:pakiet`);
+    setGeneruje(`${wybrany.id}:pakiet`);
     try {
-      await generujPakiet(dokumenty, u, spec);
+      await generujPakiet(dokumenty, wybrany, spec);
     } finally {
       setGeneruje(null);
     }
   }
 
-  /** Wsadowo: pakiety braków dla wszystkich uczestników → jeden ZIP. */
+  /** Wsadowo: pakiety dokumentów dla wszystkich uczestników → jeden ZIP. */
   async function pobierzPakietyWsadowo(tylkoBraki: boolean) {
     setGeneruje("wsad");
     setKomunikat(null);
@@ -184,6 +192,41 @@ export default function Dokumenty() {
     }
   }
 
+  /** Podgląd wzoru formularza z listy specyfikacji (uczestnik wzorcowy). */
+  async function pokazPodgladWzoru(d: WymaganyDokument) {
+    setPodgladLaduje(`wzor:${d.id}`);
+    try {
+      const blob = await dokumentBlob(d, uczestnikWzor(d.dotyczy), spec);
+      setPodglad({
+        tytul: `${d.symbol} · ${d.nazwa} — wzór (pola puste)`,
+        linie: await podgladDocx(blob),
+      });
+    } catch (e) {
+      setKomunikat(
+        `Błąd podglądu: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    } finally {
+      setPodgladLaduje(null);
+    }
+  }
+
+  /** Podgląd szablonu własnego — znaczniki {{pole}} pozostają widoczne. */
+  async function pokazPodgladSzablonu(s: SzablonZapisany) {
+    setPodgladLaduje(`podglad-szablon:${s.nazwa}`);
+    try {
+      setPodglad({
+        tytul: `${s.nazwa} — szablon (znaczniki {{pole}})`,
+        linie: await podgladDocx(arrayBufferZBase64(s.base64)),
+      });
+    } catch (e) {
+      setKomunikat(
+        `Błąd podglądu: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    } finally {
+      setPodgladLaduje(null);
+    }
+  }
+
   return (
     <div className="flex max-w-[1240px] flex-col gap-[18px]">
       {/* KROK 1: wniosek / specyfikacja */}
@@ -213,44 +256,15 @@ export default function Dokumenty() {
               className="hidden"
               onChange={(e) => wczytajWniosek(e.target.files?.[0])}
             />
-            <div className="flex flex-col items-end gap-2">
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="btn-primary"
-              >
-                <span className="material-symbols-rounded text-[19px]">
-                  upload_file
-                </span>
-                Wczytaj wniosek
-              </button>
-              <button
-                onClick={async () => {
-                  setGeneruje("pdf-int");
-                  try {
-                    await generujInteraktywnyFormularz(spec);
-                    setKomunikat(
-                      "✓ Pobrano interaktywny PDF — pola tekstowe i listy rozwijane wypełnisz w Adobe Reader/przeglądarce.",
-                    );
-                  } catch (e) {
-                    setKomunikat(
-                      `Błąd PDF: ${e instanceof Error ? e.message : "nieznany"}`,
-                    );
-                  } finally {
-                    setGeneruje(null);
-                  }
-                }}
-                disabled={generuje !== null}
-                className="btn-dark"
-                title="Wypełnialny PDF: pola tekstowe, listy rozwijane ze słowników SOWA, pola wyboru"
-              >
-                <span className="material-symbols-rounded text-[18px]">
-                  picture_as_pdf
-                </span>
-                {generuje === "pdf-int"
-                  ? "Generuję…"
-                  : "Formularz interaktywny (PDF)"}
-              </button>
-            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="btn-primary"
+            >
+              <span className="material-symbols-rounded text-[19px]">
+                upload_file
+              </span>
+              Wczytaj wniosek
+            </button>
           </div>
         </div>
 
@@ -306,6 +320,19 @@ export default function Dokumenty() {
                           </p>
                         )}
                       </td>
+                      <td className="w-28 px-4 py-2 text-right align-top">
+                        <button
+                          onClick={() => pokazPodgladWzoru(d)}
+                          disabled={podgladLaduje !== null}
+                          className="inline-flex items-center gap-1 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
+                          title="Podgląd wzoru formularza (pola puste)"
+                        >
+                          <span className="material-symbols-rounded text-[16px]">
+                            visibility
+                          </span>
+                          {podgladLaduje === `wzor:${d.id}` ? "…" : "Podgląd"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -319,7 +346,7 @@ export default function Dokumenty() {
         </p>
       </section>
 
-      {/* KROK 2: teczki i generowanie */}
+      {/* KROK 2: generowanie — zbiorczo i dla wybranej osoby */}
       <section
         className="card anim-card-in px-6 py-[22px]"
         style={{ animationDelay: "0.1s" }}
@@ -327,11 +354,11 @@ export default function Dokumenty() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
-              2. Teczki uczestników i generowanie
+              2. Generowanie dokumentów
             </h2>
             <p className="m-0 mt-[5px] text-[13.5px] text-muted">
-              Silnik reguł wskazuje braki. Kliknij uczestnika, aby pobrać
-              komplet dokumentów .docx.
+              Zbiorczo dla całej grupy ({uczestnicy.length} osób, w tym{" "}
+              {zBrakami} z brakami) albo dla wybranej osoby.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -344,9 +371,7 @@ export default function Dokumenty() {
               <span className="material-symbols-rounded text-[19px]">
                 folder_zip
               </span>
-              {generuje === "wsad"
-                ? "Generuję…"
-                : "Pakiety dla wszystkich (ZIP)"}
+              {generuje === "wsad" ? "Generuję…" : "Pakiety braków (ZIP)"}
             </button>
             <button
               onClick={() => pobierzPakietyWsadowo(false)}
@@ -370,168 +395,68 @@ export default function Dokumenty() {
           </div>
         </div>
 
+        {/* Akcje dla wybranej osoby */}
+        <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-soft/60 px-4 py-3">
+          <span className="text-[13px] font-semibold text-ink-mid">
+            Dla wybranej osoby:
+          </span>
+          <select
+            value={wybranyId}
+            onChange={(e) => setWybranyId(e.target.value)}
+            className="w-56 cursor-pointer rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-sm text-ink outline-none"
+          >
+            <option value="">wybierz uczestnika…</option>
+            {uczestnicy.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nazwisko} {u.imie}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={pobierzPakietWybranego}
+            disabled={!wybrany || brakiWybranego === 0 || generuje !== null}
+            className="btn-dark"
+            title={
+              wybrany && brakiWybranego === 0
+                ? "Teczka kompletna — brak dokumentów do wygenerowania"
+                : "Pakiet brakujących dokumentów (.docx) dla wybranej osoby"
+            }
+          >
+            <span className="material-symbols-rounded text-[18px]">
+              download
+            </span>
+            {generuje === `${wybranyId}:pakiet`
+              ? "Generuję…"
+              : `Pakiet braków${wybrany ? ` (${brakiWybranego})` : ""}`}
+          </button>
+          {wybrany && (
+            <Link
+              href={`/uczestnicy/${wybrany.id}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-[13px] font-semibold text-primary-strong hover:bg-green-soft"
+              title="Pełna teczka: pojedyncze dokumenty, podgląd, szablony"
+            >
+              <span className="material-symbols-rounded text-[18px]">
+                folder_open
+              </span>
+              Otwórz teczkę
+            </Link>
+          )}
+        </div>
+
         {komunikat && (
           <div className="anim-fade-in mt-3 rounded-xl bg-soft px-4 py-2.5 text-sm text-ink">
             {komunikat}
           </div>
         )}
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-line">
-          <table className="w-full text-left text-[15px]">
-            <thead className="bg-soft">
-              <tr>
-                <th className="th-label px-4 py-2">Uczestnik</th>
-                <th className="th-label px-4 py-2">Wymagane</th>
-                <th className="th-label px-4 py-2">W teczce</th>
-                <th className="th-label px-4 py-2">Braki</th>
-                <th className="th-label px-4 py-2">Akcje</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-soft">
-              {uczestnicy.map((u) => {
-                const wymagane = wymaganeDokumenty(u, spec);
-                const braki = brakiWTeczce(u, spec);
-                const adHoc = dokumentyAdHoc(u, spec);
-                const otwarty = rozwiniety === u.id;
-                return (
-                  <Wiersz
-                    key={u.id}
-                    otwarty={otwarty}
-                    onToggle={() => setRozwiniety(otwarty ? null : u.id)}
-                    naglowek={
-                      <>
-                        <td className="px-4 py-3">
-                          <span className="flex items-center gap-3">
-                            <Avatar nazwa={`${u.imie} ${u.nazwisko}`} size={36} />
-                            <span className="font-bold text-ink">
-                              {u.nazwisko} {u.imie}
-                              <span className="ml-2 text-xs font-normal text-faint">
-                                {u.sciezka} · {u.status}
-                              </span>
-                            </span>
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-ink-mid">
-                          {wymagane.length}
-                        </td>
-                        <td className="px-4 py-3 text-ink-mid">
-                          {wymagane.length - braki.length}
-                        </td>
-                        <td className="px-4 py-3">
-                          <BrakiPill braki={braki.length} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              pobierzPakiet(u.id);
-                            }}
-                            disabled={
-                              braki.filter((b) => b.generowalny).length === 0 ||
-                              generuje !== null
-                            }
-                            className="btn-dark"
-                          >
-                            {generuje === `${u.id}:pakiet`
-                              ? "Generuję…"
-                              : "Pakiet braków (.docx)"}
-                          </button>
-                        </td>
-                      </>
-                    }
-                  >
-                    <div className="space-y-3">
-                      <ul className="space-y-1.5">
-                        {wymagane.map((d) => {
-                          const wTeczce = u.posiadaneDokumenty.includes(d.id);
-                          const klucz = `${u.id}:${d.id}`;
-                          return (
-                            <li
-                              key={d.id}
-                              className="flex items-center justify-between gap-3"
-                            >
-                              <span className="text-sm">
-                                <span
-                                  className={
-                                    wTeczce
-                                      ? "text-primary-strong"
-                                      : "text-amber-ink"
-                                  }
-                                >
-                                  {wTeczce ? "✓" : "—"}
-                                </span>{" "}
-                                <span className="font-mono text-xs text-faint">
-                                  {d.symbol}
-                                </span>{" "}
-                                <span className="text-ink">{d.nazwa}</span>
-                              </span>
-                              {d.generowalny ? (
-                                <button
-                                  onClick={() => pobierzDokument(d, u.id)}
-                                  disabled={generuje !== null}
-                                  className="shrink-0 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
-                                >
-                                  {generuje === klucz
-                                    ? "Generuję…"
-                                    : "Pobierz .docx"}
-                                </button>
-                              ) : (
-                                <span className="text-xs text-faint">
-                                  wystawia OPS/PUP
-                                </span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {adHoc.length > 0 && (
-                        <div className="border-t border-line-soft pt-2">
-                          <p className="text-xs font-medium text-muted">
-                            Dokumenty „ad hoc” (gdy dotyczy):
-                          </p>
-                          <ul className="mt-1 space-y-1">
-                            {adHoc.map((d) => (
-                              <li
-                                key={d.id}
-                                className="flex items-center justify-between gap-3 text-sm"
-                              >
-                                <span>
-                                  <span className="font-mono text-xs text-faint">
-                                    {d.symbol}
-                                  </span>{" "}
-                                  <span className="text-ink-mid">{d.nazwa}</span>
-                                </span>
-                                <button
-                                  onClick={() => pobierzDokument(d, u.id)}
-                                  disabled={generuje !== null}
-                                  className="shrink-0 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
-                                >
-                                  {generuje === `${u.id}:${d.id}`
-                                    ? "Generuję…"
-                                    : "Pobierz .docx"}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </Wiersz>
-                );
-              })}
-              {uczestnicy.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-faint">
-                    Brak uczestników — zaimportuj bazę w module Uczestnicy.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-2 text-xs text-faint">
-          Dokumenty grupowe i kadrowe (listy obecności, dzienniki, protokoły)
-          będą generowane z modułów Obecności i Harmonogram (etapy E2–E4).
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-faint">
+          <span className="material-symbols-rounded text-base text-blue-ink">
+            info
+          </span>
+          Pełna teczka osoby (pojedyncze dokumenty, ad hoc) jest w jej
+          kartotece. Dokumenty grupowe i kadrowe (listy obecności, dzienniki,
+          protokoły) będą generowane z modułów Obecności i Harmonogram (etapy
+          E2–E4).
         </p>
       </section>
 
@@ -582,7 +507,7 @@ export default function Dokumenty() {
                   <th className="th-label px-4 py-2">Dodano</th>
                   <th className="th-label px-4 py-2">Generuj dla…</th>
                   <th className="th-label w-44 px-4 py-2">Wsadowo</th>
-                  <th className="th-label w-16 px-4 py-2" />
+                  <th className="th-label w-20 px-4 py-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
@@ -624,6 +549,16 @@ export default function Dokumenty() {
                       </button>
                     </td>
                     <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => pokazPodgladSzablonu(s)}
+                        disabled={podgladLaduje !== null}
+                        className="mr-2 text-faint hover:text-ink disabled:opacity-50"
+                        title="Podgląd szablonu (ze znacznikami)"
+                      >
+                        <span className="material-symbols-rounded text-[20px]">
+                          visibility
+                        </span>
+                      </button>
                       <button
                         onClick={() => usunSzablon(s.nazwa)}
                         className="text-faint hover:text-red-ink"
@@ -668,6 +603,67 @@ export default function Dokumenty() {
         </p>
       </section>
 
+      {/* POPUP: podgląd dokumentu / szablonu */}
+      {podglad && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setPodglad(null)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
+              <h3 className="m-0 truncate text-sm font-semibold text-ink">
+                {podglad.tytul}
+              </h3>
+              <button
+                onClick={() => setPodglad(null)}
+                className="shrink-0 text-faint hover:text-ink"
+                title="Zamknij podgląd"
+              >
+                <span className="material-symbols-rounded text-[22px]">
+                  close
+                </span>
+              </button>
+            </div>
+            <div className="overflow-y-auto bg-soft px-6 py-6">
+              <div className="mx-auto max-w-[640px] rounded-md bg-white px-10 py-12 shadow-sm ring-1 ring-line-soft">
+                {podglad.linie.map((l, i) =>
+                  l.tekst === "" && !l.prawa ? (
+                    <div key={i} className="h-3" />
+                  ) : l.prawa !== undefined ? (
+                    <p
+                      key={i}
+                      className={`m-0 flex justify-between gap-6 whitespace-pre-wrap py-0.5 text-[13px] leading-relaxed text-neutral-800 ${l.bold ? "font-semibold" : ""} ${l.italic ? "italic text-neutral-500" : ""}`}
+                    >
+                      <span>{l.tekst}</span>
+                      <span>{l.prawa}</span>
+                    </p>
+                  ) : (
+                    <p
+                      key={i}
+                      className={`m-0 whitespace-pre-wrap py-0.5 text-[13px] leading-relaxed text-neutral-800 ${l.bold ? "font-semibold" : ""} ${l.italic ? "italic text-neutral-500" : ""} ${l.center ? "text-center" : ""}`}
+                    >
+                      {l.tekst}
+                    </p>
+                  ),
+                )}
+                {podglad.linie.length === 0 && (
+                  <p className="m-0 text-center text-sm text-neutral-400">
+                    (pusty dokument)
+                  </p>
+                )}
+              </div>
+              <p className="mt-3 text-center text-xs text-faint">
+                Podgląd poglądowy — układ wydruku w pliku .docx może się
+                nieznacznie różnić.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* POPUP: wybór uczestników × dokumentów (wspólny komponent) */}
       {pokazWybor && (
         <WyborGeneratora
@@ -678,36 +674,5 @@ export default function Dokumenty() {
         />
       )}
     </div>
-  );
-}
-
-function Wiersz({
-  naglowek,
-  children,
-  otwarty,
-  onToggle,
-}: {
-  naglowek: React.ReactNode;
-  children: React.ReactNode;
-  otwarty: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <>
-      <tr
-        onClick={onToggle}
-        className="cursor-pointer hover:bg-hover-row"
-        title="Kliknij, aby rozwinąć"
-      >
-        {naglowek}
-      </tr>
-      {otwarty && (
-        <tr className="bg-soft/60">
-          <td colSpan={5} className="px-6 py-4">
-            {children}
-          </td>
-        </tr>
-      )}
-    </>
   );
 }
