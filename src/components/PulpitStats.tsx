@@ -47,18 +47,18 @@ export default function PulpitStats({
   const cD = Math.round(braki * k);
 
   return (
-    <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-[18px] xl:grid-cols-4">
       {/* Uczestnicy aktywni */}
       <Link
         href="/uczestnicy"
-        className="card card-hover anim-card-in block p-5"
+        className="card card-hover anim-card-in block p-3.5 sm:p-5"
       >
-        <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-          <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
+        <div className="mb-2.5 flex h-9 w-9 sm:mb-[15px] sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-green-soft">
+          <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-primary-strong">
             groups
           </span>
         </div>
-        <div className="font-serif text-[40px] font-semibold leading-none text-ink-strong">
+        <div className="font-serif text-[26px] sm:text-[40px] font-semibold leading-none text-ink-strong">
           {cU}
         </div>
         <div className="mt-[7px] text-sm text-muted">Uczestnicy aktywni</div>
@@ -73,15 +73,15 @@ export default function PulpitStats({
       {/* Aktywne ścieżki */}
       <Link
         href="/sciezki"
-        className="card card-hover anim-card-in block p-5"
+        className="card card-hover anim-card-in block p-3.5 sm:p-5"
         style={{ animationDelay: "0.07s" }}
       >
-        <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-blue-soft">
-          <span className="material-symbols-rounded notranslate text-[25px] text-blue-ink">
+        <div className="mb-2.5 flex h-9 w-9 sm:mb-[15px] sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-blue-soft">
+          <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-blue-ink">
             route
           </span>
         </div>
-        <div className="font-serif text-[40px] font-semibold leading-none text-ink-strong">
+        <div className="font-serif text-[26px] sm:text-[40px] font-semibold leading-none text-ink-strong">
           {cS}
         </div>
         <div className="mt-[7px] text-sm text-muted">Aktywne ścieżki IŚR</div>
@@ -96,22 +96,22 @@ export default function PulpitStats({
       {/* Średnia obecność — pierścień */}
       <Link
         href="/obecnosci"
-        className="card card-hover anim-card-in block p-5"
+        className="card card-hover anim-card-in block p-3.5 sm:p-5"
         style={{ animationDelay: "0.14s" }}
       >
-        <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-          <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
+        <div className="mb-2.5 flex h-9 w-9 sm:mb-[15px] sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-green-soft">
+          <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-primary-strong">
             event_available
           </span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-4">
           <div
-            className="relative h-[66px] w-[66px] shrink-0 rounded-full"
+            className="relative h-[52px] w-[52px] sm:h-[66px] sm:w-[66px] shrink-0 rounded-full"
             style={{
               background: `conic-gradient(oklch(0.55 0.11 150) ${cO * 3.6}deg, var(--color-track) ${cO * 3.6}deg)`,
             }}
           >
-            <div className="absolute inset-2 flex items-center justify-center rounded-full bg-surface font-serif text-[17px] font-bold text-ink">
+            <div className="absolute inset-[6px] sm:inset-2 flex items-center justify-center rounded-full bg-surface font-serif text-[14px] sm:text-[17px] font-bold text-ink">
               {cO}%
             </div>
           </div>
@@ -127,15 +127,15 @@ export default function PulpitStats({
       {/* Teczki z brakami */}
       <Link
         href="/dokumenty"
-        className="card card-hover anim-card-in block p-5"
+        className="card card-hover anim-card-in block p-3.5 sm:p-5"
         style={{ animationDelay: "0.21s" }}
       >
-        <div className="mb-[15px] flex h-11 w-11 items-center justify-center rounded-[13px] bg-amber-soft">
-          <span className="material-symbols-rounded notranslate text-[25px] text-amber-ink">
+        <div className="mb-2.5 flex h-9 w-9 sm:mb-[15px] sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-amber-soft">
+          <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-amber-ink">
             folder_off
           </span>
         </div>
-        <div className="font-serif text-[40px] font-semibold leading-none text-ink-strong">
+        <div className="font-serif text-[26px] sm:text-[40px] font-semibold leading-none text-ink-strong">
           {cD}
         </div>
         <div className="mt-[7px] text-sm text-muted">Teczki z brakami</div>
