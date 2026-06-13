@@ -1,7 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+import { SUPABASE_KEY, SUPABASE_URL } from "./env";
 
 /**
  * Klient Supabase dla przeglądarki. Zwraca null, gdy brak konfiguracji env
@@ -9,6 +7,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  * logowania zamiast się wywalać.
  */
 export const createClient = () => {
-  if (!supabaseUrl || !supabaseKey) return null;
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  return createBrowserClient(SUPABASE_URL, SUPABASE_KEY);
 };
