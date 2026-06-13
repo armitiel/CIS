@@ -14,7 +14,7 @@ const TYTULY: [string, string, string][] = [
   ["/", "Pulpit", "Przegląd projektu i dzisiejsze działania"],
 ];
 
-export default function Header() {
+export default function Header({ onMenu }: { onMenu?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -46,14 +46,26 @@ export default function Header() {
   }
 
   return (
-    <header className="z-[2] flex shrink-0 items-center gap-5 border-b border-line bg-panel px-[34px] py-[19px]">
+    <header className="z-[2] flex shrink-0 items-center gap-3 border-b border-line bg-panel px-4 py-3.5 sm:gap-5 sm:px-6 lg:px-[34px] lg:py-[19px]">
+      <button
+        onClick={onMenu}
+        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft lg:hidden"
+        title="Menu"
+        aria-label="Otwórz menu"
+      >
+        <span className="material-symbols-rounded notranslate text-[24px]">
+          menu
+        </span>
+      </button>
       <div className="min-w-0 flex-1">
-        <h1 className="m-0 font-serif text-[27px] font-semibold leading-[1.05] text-ink-strong">
+        <h1 className="m-0 truncate font-serif text-xl font-semibold leading-[1.05] text-ink-strong sm:text-[27px]">
           {tytul}
         </h1>
-        <p className="m-0 mt-1 text-sm text-muted">{podtytul}</p>
+        <p className="m-0 mt-0.5 truncate text-[13px] text-muted sm:mt-1 sm:text-sm">
+          {podtytul}
+        </p>
       </div>
-      <label className="flex w-[248px] items-center gap-[9px] rounded-xl border border-line-strong bg-surface px-3.5 py-[9px] transition-[border-color,box-shadow] duration-200 focus-within:border-[oklch(0.62_0.09_152)] focus-within:shadow-[0_0_0_3px_oklch(0.55_0.09_152/0.12)]">
+      <label className="hidden w-[248px] items-center gap-[9px] rounded-xl border border-line-strong bg-surface px-3.5 py-[9px] transition-[border-color,box-shadow] duration-200 focus-within:border-[oklch(0.62_0.09_152)] focus-within:shadow-[0_0_0_3px_oklch(0.55_0.09_152/0.12)] md:flex">
         <span className="material-symbols-rounded notranslate text-[20px] text-faint">
           search
         </span>
@@ -67,7 +79,7 @@ export default function Header() {
       </label>
       <button
         onClick={przelaczMotyw}
-        className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
+        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
         title={ciemny ? "Przełącz na jasny motyw" : "Przełącz na ciemny motyw"}
       >
         <span className="material-symbols-rounded notranslate text-[22px]">
@@ -75,7 +87,7 @@ export default function Header() {
         </span>
       </button>
       <button
-        className="relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft"
+        className="relative hidden h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft sm:flex"
         title="Powiadomienia"
       >
         <span className="material-symbols-rounded notranslate text-[22px]">

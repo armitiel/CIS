@@ -307,8 +307,8 @@ export default function Uczestnicy() {
         </span>
       </div>
 
-      <div className="card anim-card-in overflow-hidden">
-        <div className="grid grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5">
+      <div className="card anim-card-in overflow-x-auto">
+        <div className="grid min-w-[720px] grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5">
           <input
             type="checkbox"
             checked={
@@ -344,7 +344,7 @@ export default function Uczestnicy() {
           return (
             <div
               key={u.id}
-              className={`anim-card-in grid grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-t border-line-soft px-[22px] py-[15px] transition-colors ${
+              className={`anim-card-in grid min-w-[720px] grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-t border-line-soft px-[22px] py-[15px] transition-colors ${
                 zaznaczeni.has(u.id) ? "bg-green-soft/40" : "hover:bg-hover-row"
               }`}
               style={{ animationDelay: `${i * 0.05}s` }}

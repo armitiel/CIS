@@ -14,12 +14,31 @@ const moduly = [
   { href: "/dokumenty", label: "Dokumenty", icon: "folder_open" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  otwarte = false,
+  onZamknij,
+}: {
+  otwarte?: boolean;
+  onZamknij?: () => void;
+}) {
   const pathname = usePathname();
   const { projekt } = useProjekt();
 
   return (
-    <aside className="flex w-[250px] shrink-0 flex-col border-r border-line bg-panel px-4 py-[22px]">
+    <>
+      {/* przyciemnienie tła na mobile, gdy menu otwarte */}
+      <div
+        onClick={onZamknij}
+        className={`fixed inset-0 z-40 bg-[oklch(0.2_0.02_150/0.45)] transition-opacity duration-200 lg:hidden ${
+          otwarte ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden
+      />
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[250px] shrink-0 flex-col overflow-y-auto border-r border-line bg-panel px-4 py-[22px] transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 ${
+          otwarte ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
       <div className="flex items-center gap-3 px-2 pb-6 pt-1.5">
         <div
           className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px] bg-primary text-white"
@@ -75,6 +94,7 @@ export default function Sidebar() {
           <div className="text-[11.5px] text-muted">Koordynator projektu</div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
