@@ -112,6 +112,34 @@ export async function dodajUczestnikaDB(
   return zWiersza(data as WierszUczestnika);
 }
 
+/** Aktualizuje wybrane pola uczestnika (po id). Dotyczy rekordów z bazy. */
+export async function aktualizujUczestnikaDB(
+  id: string,
+  zmiany: Partial<Uczestnik>,
+): Promise<void> {
+  const supabase = klient();
+  const patch: Record<string, unknown> = {};
+  if (zmiany.imie !== undefined) patch.imie = zmiany.imie;
+  if (zmiany.nazwisko !== undefined) patch.nazwisko = zmiany.nazwisko;
+  if (zmiany.kategoria !== undefined) patch.kategoria = zmiany.kategoria;
+  if (zmiany.sciezka !== undefined) patch.sciezka = zmiany.sciezka;
+  if (zmiany.cykl !== undefined) patch.cykl = zmiany.cykl;
+  if (zmiany.grupa !== undefined) patch.grupa = zmiany.grupa;
+  if (zmiany.status !== undefined) patch.status = zmiany.status;
+  if (zmiany.dataPrzystapienia !== undefined)
+    patch.data_przystapienia = zmiany.dataPrzystapienia;
+  if (zmiany.frekwencja !== undefined) patch.frekwencja = zmiany.frekwencja;
+  if (zmiany.posiadaneDokumenty !== undefined)
+    patch.posiadane_dokumenty = zmiany.posiadaneDokumenty;
+  if (zmiany.etapSciezki !== undefined) patch.etap_sciezki = zmiany.etapSciezki;
+  if (zmiany.postepSciezki !== undefined)
+    patch.postep_sciezki = zmiany.postepSciezki;
+  if (zmiany.sowa !== undefined) patch.sowa = zmiany.sowa;
+  if (Object.keys(patch).length === 0) return;
+  const { error } = await supabase.from("uczestnicy").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
 /** Zastępuje całą bazę uczestników projektu (import): usuwa i wstawia od nowa. */
 export async function zastapUczestnikow(
   lista: Uczestnik[],
