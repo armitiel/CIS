@@ -15,9 +15,13 @@ import {
 import {
   projekty,
   projektDomyslny,
+  projektWbudowany,
+  wczytajNadpisania,
   wczytajProjektyWlasne,
+  zapiszNadpisania,
   zapiszProjektyWlasne,
   zbudujProjektWlasny,
+  type NadpisanieProjektu,
   type Projekt,
   type ProjektWlasnyZapis,
 } from "@/lib/projekty";
@@ -68,6 +72,9 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     {},
   );
   const [wlasne, setWlasne] = useState<ProjektWlasnyZapis[]>([]);
+  const [nadpisania, setNadpisania] = useState<
+    Record<string, NadpisanieProjektu>
+  >({});
   const [gotowy, setGotowy] = useState(false);
 
   // odczyt zapisanego stanu (po stronie przeglądarki)
@@ -75,6 +82,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     try {
       const zapisaneWlasne = wczytajProjektyWlasne();
       setWlasne(zapisaneWlasne);
+      setNadpisania(wczytajNadpisania());
       const wszystkieIds = [
         ...projekty.map((p) => p.id),
         ...zapisaneWlasne.map((p) => p.id),
@@ -95,10 +103,14 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     setGotowy(true);
   }, []);
 
-  const wszystkieProjekty = useMemo(
-    () => [...projekty, ...wlasne.map(zbudujProjektWlasny)],
-    [wlasne],
-  );
+  const wszystkieProjekty = useMemo(() => {
+    // nadpisz wyświetlaną nazwę/skrót projektów wbudowanych (zapis lokalny)
+    const wbudowane = projekty.map((p) => {
+      const n = nadpisania[p.id];
+      return n ? { ...p, nazwa: n.nazwa ?? p.nazwa, skrot: n.skrot ?? p.skrot } : p;
+    });
+    return [...wbudowane, ...wlasne.map(zbudujProjektWlasny)];
+  }, [wlasne, nadpisania]);
 
   const projekt =
     wszystkieProjekty.find((p) => p.id === projektId) ?? projektDomyslny;
@@ -223,9 +235,27 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [zmienProjekt],
   );
 
-  /** Aktualizuje dane projektu własnego (np. po odświeżeniu z wniosku). */
+  /**
+   * Aktualizuje dane projektu. Dla projektu własnego zmienia jego zapis,
+   * dla wbudowanego zapisuje nadpisanie nazwy/skrótu (lokalnie). Zawsze true.
+   */
   const aktualizujProjekt = useCallback(
     (id: string, zmiany: Partial<Omit<ProjektWlasnyZapis, "id">>): boolean => {
+      if (projektWbudowany(id)) {
+        // tylko nazwa i skrót mają sens dla projektu wbudowanego
+        setNadpisania((stan) => {
+          const biezace = stan[id] ?? {};
+          const nowe: NadpisanieProjektu = {
+            ...biezace,
+            ...(zmiany.nazwa !== undefined ? { nazwa: zmiany.nazwa } : {}),
+            ...(zmiany.skrot !== undefined ? { skrot: zmiany.skrot } : {}),
+          };
+          const mapa = { ...stan, [id]: nowe };
+          zapiszNadpisania(mapa);
+          return mapa;
+        });
+        return true;
+      }
       let zaktualizowano = false;
       setWlasne((stan) => {
         if (!stan.some((p) => p.id === id)) return stan;

@@ -65,9 +65,6 @@ export default function WyborProjektu() {
     setEdytowanyId(null);
   }
 
-  const wlasny = (id: string) =>
-    !["cis-2026", "swa-6.8"].includes(id);
-
   const pole =
     "w-full rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-[oklch(0.62_0.09_152)]";
 
@@ -184,17 +181,15 @@ export default function WyborProjektu() {
                     </span>
                   </span>
                 </button>
-                {wlasny(p.id) && (
-                  <button
-                    onClick={() => rozpocznijEdycje(p.id, p.skrot, p.nazwa)}
-                    className="mr-1 mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
-                    title="Edytuj nazwę projektu"
-                  >
-                    <span className="material-symbols-rounded notranslate text-[17px]">
-                      edit
-                    </span>
-                  </button>
-                )}
+                <button
+                  onClick={() => rozpocznijEdycje(p.id, p.skrot, p.nazwa)}
+                  className="mr-1 mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
+                  title="Edytuj nazwę projektu"
+                >
+                  <span className="material-symbols-rounded notranslate text-[17px]">
+                    edit
+                  </span>
+                </button>
               </div>
             );
           })}

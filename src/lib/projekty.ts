@@ -164,6 +164,42 @@ export function zapiszProjektyWlasne(lista: ProjektWlasnyZapis[]): void {
   }
 }
 
+// ── Nadpisania nazwy/skrótu projektów WBUDOWANYCH ───────────────────────────
+// Projektów wbudowanych nie można usuwać, ale można zmienić ich wyświetlaną
+// nazwę i skrót — przechowujemy to lokalnie (per przeglądarka).
+
+export interface NadpisanieProjektu {
+  nazwa?: string;
+  skrot?: string;
+}
+
+const KLUCZ_NADPISANIA = "cis-app:projekty-nadpisania";
+
+export function wczytajNadpisania(): Record<string, NadpisanieProjektu> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(KLUCZ_NADPISANIA);
+    return raw ? (JSON.parse(raw) as Record<string, NadpisanieProjektu>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function zapiszNadpisania(
+  map: Record<string, NadpisanieProjektu>,
+): void {
+  try {
+    localStorage.setItem(KLUCZ_NADPISANIA, JSON.stringify(map));
+  } catch {
+    /* limit localStorage */
+  }
+}
+
+/** Czy dany projekt jest wbudowany (nie da się go usunąć). */
+export function projektWbudowany(id: string): boolean {
+  return projekty.some((p) => p.id === id);
+}
+
 /** Buduje pełny obiekt Projekt z zapisu własnego. */
 export function zbudujProjektWlasny(z: ProjektWlasnyZapis): Projekt {
   return {
