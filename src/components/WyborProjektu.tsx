@@ -96,7 +96,7 @@ export default function WyborProjektu() {
       {otwarte && (
         <div
           role="listbox"
-          className="absolute left-0 top-full z-30 mt-1.5 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-[0_10px_30px_rgb(0_0_0/0.16)]"
+          className="absolute left-0 top-full z-30 mt-1.5 w-full overflow-hidden rounded-xl border border-line bg-surface shadow-[0_10px_30px_rgb(0_0_0/0.16)]"
         >
           {projekty.map((p) => {
             const aktywny = p.id === projekt.id;
@@ -155,6 +155,7 @@ export default function WyborProjektu() {
                 <button
                   role="option"
                   aria-selected={aktywny}
+                  title={`${p.nazwa} (${p.nabor})`}
                   onClick={() => {
                     zmienProjekt(p.id);
                     setOtwarte(false);
@@ -168,9 +169,9 @@ export default function WyborProjektu() {
                   >
                     check
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1">
                     <span
-                      className={`block line-clamp-2 text-[13px] leading-snug ${
+                      className={`block line-clamp-2 break-words text-[13px] leading-snug ${
                         aktywny
                           ? "font-bold text-primary-strong"
                           : "font-semibold text-ink"
