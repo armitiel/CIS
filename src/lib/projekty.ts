@@ -62,7 +62,46 @@ export interface ProjektWlasnyZapis {
   /** skąd pochodzą dane (np. nazwa wczytanego pliku wniosku) */
   zrodlo: string;
   utworzono: string; // yyyy-mm-dd
+  /** sekcje katalogu (A–H) wykryte z analizy wniosku — E6 */
+  sekcje?: string[];
 }
+
+/** Reprezentatywne dokumenty per sekcja katalogu — baza dla katalogu z analizy wniosku (E6). */
+const DOKUMENTY_SEKCJI: Record<
+  string,
+  { sufiks: string; symbol: string; nazwa: string; rodzaj: string; moment: string; opis: string }[]
+> = {
+  A: [
+    { sufiks: "a-01", symbol: "A-01", nazwa: "Formularz zgłoszeniowy uczestnika", rodzaj: "uczestnik", moment: "rekrutacja", opis: "Dane uczestnika w strukturze SOWA EFS" },
+    { sufiks: "a-02", symbol: "A-02", nazwa: "Deklaracja uczestnictwa w projekcie", rodzaj: "uczestnik", moment: "przystąpienie", opis: "Podpisywana w dniu przystąpienia" },
+    { sufiks: "a-03", symbol: "A-03", nazwa: "Oświadczenie uczestnika (RODO)", rodzaj: "uczestnik", moment: "rekrutacja", opis: "Klauzula informacyjna EFS+" },
+  ],
+  B: [
+    { sufiks: "b-01", symbol: "B-01", nazwa: "Umowa / kontrakt uczestnictwa", rodzaj: "uczestnik", moment: "przystąpienie", opis: "Warunki udziału we wsparciu" },
+    { sufiks: "b-02", symbol: "B-02", nazwa: "Indywidualna ścieżka / plan działania", rodzaj: "uczestnik", moment: "udział", opis: "Diagnoza i plan wsparcia uczestnika" },
+  ],
+  C: [
+    { sufiks: "c-01", symbol: "C-01", nazwa: "Lista obecności na zajęciach", rodzaj: "grupowy", moment: "cyklicznie", opis: "Potwierdzenie udziału w formach wsparcia" },
+    { sufiks: "c-05", symbol: "C-05", nazwa: "Harmonogram realizacji wsparcia", rodzaj: "organizacyjny", moment: "cyklicznie", opis: "Plan form wsparcia" },
+  ],
+  D: [
+    { sufiks: "d-01", symbol: "D-01", nazwa: "Karta kursu / szkolenia uczestnika", rodzaj: "uczestnik", moment: "udział", opis: "Skierowanie, ocena, certyfikat" },
+  ],
+  E: [
+    { sufiks: "e-01", symbol: "E-01", nazwa: "Regulamin świadczeń + lista wypłat", rodzaj: "organizacyjny", moment: "cyklicznie", opis: "Stypendia / świadczenia uczestników" },
+  ],
+  F: [
+    { sufiks: "f-01", symbol: "F-01", nazwa: "Ankieta / pomiar wskaźników", rodzaj: "uczestnik", moment: "udział", opis: "PRE/POST, wskaźniki rezultatu" },
+    { sufiks: "f-02", symbol: "F-02", nazwa: "Zaświadczenie o udziale w projekcie", rodzaj: "uczestnik", moment: "zakończenie", opis: "Wydawane po zakończeniu udziału" },
+  ],
+  G: [
+    { sufiks: "g-01", symbol: "G-01", nazwa: "Zakres obowiązków kadry", rodzaj: "kadrowy", moment: "cyklicznie", opis: "Personel merytoryczny" },
+    { sufiks: "g-02", symbol: "G-02", nazwa: "Ewidencja czasu pracy", rodzaj: "kadrowy", moment: "cyklicznie", opis: "Rozliczenie zaangażowania" },
+  ],
+  H: [
+    { sufiks: "h-01", symbol: "H-01", nazwa: "Regulamin zarządzania projektem", rodzaj: "organizacyjny", moment: "cyklicznie", opis: "Struktura, obieg dokumentów, monitoring" },
+  ],
+};
 
 /**
  * Generyczna specyfikacja EFS dla nowego projektu — uniwersalne dokumenty
@@ -73,6 +112,27 @@ export function specyfikacjaGeneryczna(
   z: ProjektWlasnyZapis,
 ): SpecyfikacjaProjektu {
   const p = z.id;
+  // Sekcje: wykryte z wniosku (E6) albo domyślny zestaw rekrutacyjny A+F.
+  const sekcje =
+    z.sekcje && z.sekcje.length > 0
+      ? [...new Set(z.sekcje)].sort()
+      : ["A", "F"];
+
+  const dokumenty = sekcje.flatMap((litera) =>
+    (DOKUMENTY_SEKCJI[litera] ?? []).map((d) => ({
+      id: `${p}-${d.sufiks}`,
+      symbol: d.symbol,
+      nazwa: d.nazwa,
+      sekcja: litera as SpecyfikacjaProjektu["dokumenty"][number]["sekcja"],
+      rodzaj: d.rodzaj as SpecyfikacjaProjektu["dokumenty"][number]["rodzaj"],
+      dotyczy: "wszyscy" as const,
+      moment: d.moment as SpecyfikacjaProjektu["dokumenty"][number]["moment"],
+      podpisUczestnika: d.rodzaj === "uczestnik" ? "1 podpis" : "bez podpisu",
+      generowalny: true,
+      opis: d.opis,
+    })),
+  );
+
   return {
     id: p,
     nazwa: z.nazwa,
@@ -80,32 +140,7 @@ export function specyfikacjaGeneryczna(
     wnioskodawca: z.wnioskodawca || "—",
     okres: z.okres || "—",
     zrodlo: z.zrodlo,
-    dokumenty: [
-      {
-        id: `${p}-a-01`, symbol: "A-01", nazwa: "Formularz zgłoszeniowy uczestnika",
-        sekcja: "A", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "rekrutacja",
-        podpisUczestnika: "1 podpis", generowalny: true,
-        opis: "Dane uczestnika w strukturze SOWA EFS",
-      },
-      {
-        id: `${p}-a-02`, symbol: "A-02", nazwa: "Deklaracja uczestnictwa w projekcie",
-        sekcja: "A", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "przystąpienie",
-        podpisUczestnika: "1 podpis", generowalny: true,
-        opis: "Podpisywana w dniu przystąpienia do projektu",
-      },
-      {
-        id: `${p}-a-03`, symbol: "A-03", nazwa: "Oświadczenie uczestnika (RODO)",
-        sekcja: "A", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "rekrutacja",
-        podpisUczestnika: "1 podpis", generowalny: true,
-        opis: "Klauzula informacyjna programu regionalnego / EFS+",
-      },
-      {
-        id: `${p}-f-01`, symbol: "F-01", nazwa: "Zaświadczenie o udziale w projekcie",
-        sekcja: "F", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "zakończenie",
-        podpisUczestnika: "bez podpisu uczestnika", generowalny: true,
-        opis: "Wydawane po zakończeniu udziału",
-      },
-    ],
+    dokumenty,
   };
 }
 

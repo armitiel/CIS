@@ -829,6 +829,644 @@ export function trescRealna(
         ),
       ];
 
+    // ===================== SEKCJA A — REKRUTACJA =====================
+    case "a-02":
+      return [
+        tytul("REGULAMIN REKRUTACJI I UCZESTNICTWA W PROJEKCIE"),
+        ...podtytul("CIS/A-02", spec),
+        sekcja("§ 1. Postanowienia ogólne"),
+        akapit(
+          "Regulamin określa zasady rekrutacji i uczestnictwa w projekcie realizowanym w ramach Programu Fundusze Europejskie dla Lubuskiego 2021–2027, Priorytet 6, Działanie FELB.06.11, oraz funkcjonowania Centrum Integracji Społecznej zgodnie z ustawą z dnia 13 czerwca 2003 r. o zatrudnieniu socjalnym.",
+        ),
+        sekcja("§ 2. Grupa docelowa"),
+        akapit(
+          "Wsparciem obejmuje się 101 osób zagrożonych ubóstwem lub wykluczeniem społecznym z terenu gminy Świebodzin: 54 osoby bezrobotne kierowane do CIS (ścieżka IPZS) oraz 47 osób biernych zawodowo (ścieżka IPR). Wszyscy uczestnicy realizują Indywidualną Ścieżkę Reintegracji (IŚR).",
+        ),
+        sekcja("§ 3. Kryteria i etapy rekrutacji"),
+        akapit(
+          "Rekrutacja prowadzona jest w 2 cyklach. Etapy: złożenie pakietu zgłoszeniowego (CIS/A-01), ocena formalna i merytoryczna (CIS/A-03), posiedzenie komisji rekrutacyjnej (CIS/A-06), utworzenie listy podstawowej i rezerwowej (CIS/A-04).",
+        ),
+        akapit(
+          "Kryteria premiujące (punktowane): osoba długotrwale bezrobotna, z niepełnosprawnością, korzystająca z pomocy społecznej, zamieszkująca obszar wiejski, o niskich kwalifikacjach.",
+        ),
+        sekcja("§ 4. Prawa i obowiązki uczestnika"),
+        cb("regularny udział w zaplanowanych formach wsparcia (potwierdzany podpisem na liście obecności)"),
+        cb("realizacja Indywidualnej Ścieżki Reintegracji i współpraca z kadrą"),
+        cb("informowanie o zmianie danych oraz o przyczynach nieobecności"),
+        cb("udział w badaniach ankietowych (PRE/POST) i monitoringu wskaźników"),
+        sekcja("§ 5. Zasady rezygnacji i skreślenia"),
+        akapit(
+          "Uczestnik może zrezygnować z udziału w uzasadnionych przypadkach losowych. Skreślenie następuje m.in. przy przekroczeniu dopuszczalnego limitu nieusprawiedliwionych nieobecności. W miejsce osoby skreślonej wprowadza się osobę z listy rezerwowej.",
+        ),
+        ...podpisy2(
+          "data i podpis osoby zapoznającej się z regulaminem",
+          "data i podpis koordynatora projektu",
+        ),
+      ];
+
+    case "a-03":
+      return [
+        tytul("KARTA OCENY KANDYDATA"),
+        ...podtytul("CIS/A-03", spec),
+        akapit(
+          "Karta wypełniana przez komisję rekrutacyjną na podstawie pakietu zgłoszeniowego (CIS/A-01) i załączonych dokumentów. Stanowi podstawę do utworzenia listy rankingowej (CIS/A-06).",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko kandydata", imieNazwisko],
+          ["Cykl rekrutacji (I / II)", String(u.cykl)],
+          ["Data złożenia zgłoszenia", ""],
+        ]),
+        sekcja("CZĘŚĆ I. OCENA FORMALNA"),
+        cb("komplet wymaganych dokumentów (pakiet zgłoszeniowy, RODO)"),
+        cb("przynależność do grupy docelowej (mieszkaniec gminy Świebodzin)"),
+        cb("status na rynku pracy potwierdzony (zaświadczenie PUP / oświadczenie)"),
+        sekcja("CZĘŚĆ II. OCENA PUNKTOWA (kryteria premiujące)"),
+        tabelaN(
+          [5226, 1900, 1900],
+          ["Kryterium", "Maks. pkt", "Przyznano"],
+          [
+            ["Osoba długotrwale bezrobotna", "3", ""],
+            ["Osoba z niepełnosprawnością", "3", ""],
+            ["Korzystanie z pomocy społecznej", "2", ""],
+            ["Niskie kwalifikacje (ISCED 0–2)", "2", ""],
+            ["Zamieszkanie na obszarze wiejskim", "1", ""],
+            ["RAZEM", "11", ""],
+          ],
+        ),
+        pusty(),
+        akapit("Rekomendacja komisji: ☐ zakwalifikować (lista podstawowa)  ☐ lista rezerwowa  ☐ odrzucić"),
+        akapit(`Uzasadnienie: ${K} ${K}`),
+        ...podpisy2(
+          "data i podpis członka komisji",
+          "data i podpis przewodniczącego komisji",
+        ),
+      ];
+
+    case "a-04":
+      return [
+        tytul("LISTA PODSTAWOWA I REZERWOWA"),
+        ...podtytul("CIS/A-04", spec),
+        akapit(
+          `Lista utworzona na podstawie ocen punktowych (CIS/A-03) i protokołu komisji (CIS/A-06). Cykl rekrutacji: ${String(u.cykl)}. Data sporządzenia: ${dzis()}.`,
+          true,
+        ),
+        sekcja("LISTA PODSTAWOWA"),
+        tabelaN(
+          [600, 4000, 1400, 1500, 1526],
+          ["Lp.", "Imię i nazwisko", "Ścieżka", "Punkty", "Uwagi"],
+          Array.from({ length: 8 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        sekcja("LISTA REZERWOWA"),
+        tabelaN(
+          [600, 4000, 1400, 1500, 1526],
+          ["Lp.", "Imię i nazwisko", "Ścieżka", "Punkty", "Uwagi"],
+          Array.from({ length: 5 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        ...podpisy2(
+          "data i podpis koordynatora projektu",
+          "data i podpis przewodniczącego komisji",
+        ),
+      ];
+
+    case "a-05":
+      return [
+        tytul("SKIEROWANIE / WNIOSEK O PRZYJĘCIE DO CIS"),
+        ...podtytul("CIS/A-05", spec),
+        akapit(
+          "Dokument wymagany dla uczestników kierowanych do Centrum Integracji Społecznej (ścieżka IPZS — osoby bezrobotne) zgodnie z art. 12 ustawy o zatrudnieniu socjalnym. Wystawiany przez OPS / PUP albo na wniosek własny osoby zainteresowanej.",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko", imieNazwisko],
+          ["PESEL", v(s.pesel)],
+          ["Adres zamieszkania", s.miejscowosc ? `${v(s.miejscowosc)}, ${v(s.kodPocztowy)}` : ""],
+          ["Status na rynku pracy", v(s.statusRynkuPracy)],
+        ]),
+        sekcja("PODSTAWA SKIEROWANIA (właściwe zaznaczyć)"),
+        cb("skierowanie OPS (Ośrodek Pomocy Społecznej)", status.includes("bezrobot")),
+        cb("skierowanie PUP (Powiatowy Urząd Pracy)"),
+        cb("wniosek własny osoby zainteresowanej"),
+        akapit(
+          "Uzasadnienie skierowania (sytuacja życiowa, powody zagrożenia wykluczeniem społecznym, oczekiwane wsparcie):",
+        ),
+        akapit(`${K} ${K} ${K}`),
+        sekcja("OŚWIADCZENIE"),
+        akapit(
+          "Oświadczam, że spełniam przesłanki uczestnictwa w zajęciach Centrum Integracji Społecznej określone w ustawie o zatrudnieniu socjalnym, oraz że dane podane powyżej są zgodne ze stanem faktycznym.",
+        ),
+        ...podpisy2(
+          "data i podpis osoby kierowanej",
+          "data, pieczęć i podpis kierującego (OPS/PUP)",
+        ),
+      ];
+
+    case "a-06":
+      return [
+        tytul("PROTOKÓŁ POSIEDZENIA KOMISJI REKRUTACYJNEJ"),
+        ...podtytul("CIS/A-06", spec),
+        tabela2([
+          ["Data posiedzenia", dzis()],
+          ["Cykl rekrutacji (I / II)", String(u.cykl)],
+          ["Miejsce posiedzenia", "Biuro projektu, ul. Okrężna 3, Świebodzin"],
+        ]),
+        sekcja("SKŁAD KOMISJI"),
+        tabelaN(
+          [600, 4200, 4226],
+          ["Lp.", "Imię i nazwisko", "Funkcja w komisji"],
+          [
+            ["1.", "", "przewodniczący"],
+            ["2.", "", "członek"],
+            ["3.", "", "członek"],
+          ],
+        ),
+        sekcja("PRZEBIEG POSIEDZENIA"),
+        akapit(
+          `Komisja dokonała oceny zgłoszeń złożonych w ramach cyklu ${String(u.cykl)}. Liczba zgłoszeń ogółem: ………… Spełniających kryteria formalne: ………… Zakwalifikowanych na listę podstawową: ………… Na listę rezerwową: …………`,
+        ),
+        sekcja("LISTA RANKINGOWA (wg liczby punktów)"),
+        tabelaN(
+          [600, 3800, 1500, 1400, 1726],
+          ["Poz.", "Imię i nazwisko", "Ścieżka", "Punkty", "Decyzja"],
+          Array.from({ length: 8 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        akapit(`Ustalenia i uwagi komisji: ${K} ${K}`),
+        ...podpisy2(
+          "podpisy członków komisji",
+          "data i podpis przewodniczącego",
+        ),
+      ];
+
+    // ===================== SEKCJA B — ŚCIEŻKA REINTEGRACJI =====================
+    case "b-05":
+      return [
+        tytul("KARTA MONITORINGU IŚR Z OPINIĄ KOŃCOWĄ"),
+        ...podtytul("CIS/B-05", spec),
+        akapit(
+          "Karta służy okresowemu monitorowaniu postępów w realizacji Indywidualnej Ścieżki Reintegracji oraz sformułowaniu opinii końcowej po zakończeniu udziału. Wypełniana przez zespół merytoryczny we współpracy z uczestnikiem.",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko uczestnika", imieNazwisko],
+          ["Ścieżka", u.sciezka],
+          ["Cykl", String(u.cykl)],
+          ["Data rozpoczęcia IŚR", ""],
+        ]),
+        sekcja("CZĘŚĆ I. PRZEGLĄDY OKRESOWE"),
+        tabelaN(
+          [600, 1600, 4400, 2426],
+          ["Nr", "Data", "Ocena postępów / realizacja celów", "Podpis prowadzącego"],
+          [
+            ["I", "", "", ""],
+            ["II", "", "", ""],
+            ["III", "", "", ""],
+            ["IV", "", "", ""],
+          ],
+        ),
+        sekcja("CZĘŚĆ II. OPINIA KOŃCOWA"),
+        akapit(`Stopień realizacji celów IŚR: ${K} ${K}`),
+        akapit(`Nabyte kompetencje i kwalifikacje: ${K} ${K}`),
+        akapit(`Rekomendacje dalszego wsparcia: ${K} ${K}`),
+        akapit("Ocena gotowości do podjęcia/utrzymania zatrudnienia: ☐ wysoka  ☐ średnia  ☐ wymaga dalszego wsparcia"),
+        ...podpisy2(
+          "data i podpis zespołu merytorycznego",
+          "data i podpis uczestnika",
+        ),
+      ];
+
+    case "b-06":
+      return [
+        tytul("WNIOSEK I PROTOKÓŁ RACJONALNYCH USPRAWNIEŃ"),
+        ...podtytul("CIS/B-06", spec),
+        akapit(
+          "Dokument stosowany w razie potrzeby zapewnienia mechanizmu racjonalnych usprawnień (MRU) dla osoby z niepełnosprawnością, zgodnie z Wytycznymi dotyczącymi realizacji zasad równościowych w ramach funduszy unijnych na lata 2021–2027.",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko uczestnika", imieNazwisko],
+          ["Data złożenia wniosku", dzis()],
+        ]),
+        sekcja("CZĘŚĆ I. WNIOSEK UCZESTNIKA"),
+        akapit(`Opis bariery / potrzeby: ${K} ${K}`),
+        akapit("Rodzaj wnioskowanego usprawnienia (właściwe zaznaczyć):"),
+        cb("dostosowanie miejsca / sali zajęć"),
+        cb("transport specjalistyczny"),
+        cb("tłumacz języka migowego / asystent osoby z niepełnosprawnością"),
+        cb("materiały w wersji dostępnej (powiększony druk, alternatywne formaty)"),
+        cb(`inne: ${K}`),
+        ...podpisy2("data i podpis wnioskodawcy", "data i podpis koordynatora"),
+        sekcja("CZĘŚĆ II. PROTOKÓŁ ROZPATRZENIA"),
+        akapit("Decyzja: ☐ przyznano  ☐ przyznano częściowo  ☐ odmówiono"),
+        akapit(`Szacowany koszt usprawnienia: …………………… zł   Źródło finansowania: ${K}`),
+        akapit(`Uzasadnienie decyzji: ${K} ${K}`),
+        ...podpisy2(
+          "data i podpis osoby rozpatrującej",
+          "data i podpis kierownika projektu",
+        ),
+      ];
+
+    // ===================== SEKCJA C — OBECNOŚCI I WSPARCIE =====================
+    case "c-01":
+      return [
+        tytul("DZIENNA LISTA OBECNOŚCI ZE ŚWIADCZENIAMI"),
+        ...podtytul("CIS/C-01", spec),
+        akapit(
+          "Lista grupowa potwierdzająca obecność na zajęciach reintegracji zawodowej i społecznej w danym dniu. Podpis uczestnika jest podstawą naliczenia świadczenia integracyjnego (art. 15 ustawy o zatrudnieniu socjalnym).",
+          true,
+        ),
+        tabela2([
+          ["Data zajęć", ""],
+          ["Grupa", v(u.grupa)],
+          ["Rodzaj zajęć", ""],
+          ["Prowadzący", ""],
+        ]),
+        pusty(),
+        tabelaN(
+          [500, 3600, 1500, 1500, 1926],
+          ["Lp.", "Imię i nazwisko", "Godz. od–do", "Świadczenie", "Podpis uczestnika"],
+          Array.from({ length: 12 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        pusty(),
+        akapit("Liczba obecnych: …………   Liczba nieobecnych usprawiedliwionych: …………   nieusprawiedliwionych: …………"),
+        ...podpisy2(
+          "data i podpis prowadzącego zajęcia",
+          "data i podpis kierownika CIS",
+        ),
+      ];
+
+    case "c-02":
+      return [
+        tytul("MIESIĘCZNA INDYWIDUALNA KARTA OBECNOŚCI"),
+        ...podtytul("CIS/C-02", spec),
+        tabela2([
+          ["Imię i nazwisko uczestnika", imieNazwisko],
+          ["Miesiąc / rok", ""],
+          ["Ścieżka", u.sciezka],
+          ["Grupa", v(u.grupa)],
+        ]),
+        akapit("Oznaczenia: ob. = obecny, u = nieobecność usprawiedliwiona, n = nieobecność nieusprawiedliwiona.", true),
+        pusty(),
+        tabelaN(
+          [900, 2300, 1500, 1500, 2826],
+          ["Dzień", "Status", "Godz.", "Świadczenie", "Uwagi"],
+          Array.from({ length: 10 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        pusty(),
+        akapit("Razem dni obecności: …………   Frekwencja w miesiącu: …………%   Naliczone świadczenie integracyjne: …………… zł"),
+        ...podpisy2(
+          "data i podpis uczestnika",
+          "data i podpis kierownika CIS",
+        ),
+      ];
+
+    case "c-03":
+      return [
+        tytul("DZIENNIK ZAJĘĆ Z PROGRAMEM"),
+        ...podtytul("CIS/C-03", spec),
+        tabela2([
+          ["Rodzaj zajęć / forma wsparcia", ""],
+          ["Prowadzący", ""],
+          ["Grupa", v(u.grupa)],
+          ["Okres realizacji", ""],
+        ]),
+        sekcja("PROGRAM ZAJĘĆ"),
+        akapit(`Cel zajęć: ${K} ${K}`),
+        akapit(`Zakres tematyczny / efekty uczenia się: ${K} ${K}`),
+        sekcja("EWIDENCJA PRZEPROWADZONYCH ZAJĘĆ"),
+        tabelaN(
+          [500, 1500, 1400, 3700, 1926],
+          ["Lp.", "Data", "Godz.", "Temat zajęć", "Podpis prowadzącego"],
+          Array.from({ length: 10 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        ...podpisy2(
+          "data i podpis prowadzącego",
+          "data i podpis kierownika CIS",
+        ),
+      ];
+
+    case "c-05":
+      return [
+        tytul("HARMONOGRAM REALIZACJI WSPARCIA"),
+        ...podtytul("CIS/C-05", spec),
+        akapit(
+          "Harmonogram form wsparcia w projekcie. Aktualizowany na bieżąco i udostępniany uczestnikom oraz IZ zgodnie z umową o dofinansowanie.",
+          true,
+        ),
+        tabela2([
+          ["Cykl", String(u.cykl)],
+          ["Okres objęty harmonogramem", ""],
+        ]),
+        pusty(),
+        tabelaN(
+          [500, 2600, 1700, 1700, 1100, 1426],
+          ["Lp.", "Forma wsparcia", "Termin od", "Termin do", "Grupa", "Miejsce"],
+          Array.from({ length: 8 }, (_, i) => [`${i + 1}.`, "", "", "", "", ""]),
+        ),
+        ...podpisy2(
+          "data sporządzenia",
+          "data i podpis koordynatora projektu",
+        ),
+      ];
+
+    case "c-06":
+      return [
+        tytul("BROSZURA INFORMACYJNA DLA UCZESTNIKÓW"),
+        ...podtytul("CIS/C-06", spec),
+        akapit(stopkaTekst(spec), true),
+        sekcja("Czym jest projekt?"),
+        akapit(
+          "Bierzesz udział w projekcie współfinansowanym ze środków Unii Europejskiej w ramach Europejskiego Funduszu Społecznego Plus. Celem jest aktywizacja społeczna i zawodowa oraz powrót na rynek pracy.",
+        ),
+        sekcja("Z jakiego wsparcia możesz skorzystać?"),
+        cb("diagnoza i Indywidualna Ścieżka Reintegracji (IŚR)"),
+        cb("wsparcie psychologa i terapeuty"),
+        cb("warsztaty kompetencji społecznych"),
+        cb("doradztwo zawodowe i pośrednictwo pracy"),
+        cb("kursy zawodowe z certyfikatem"),
+        cb("świadczenia towarzyszące (wyżywienie, transport, opieka nad osobą zależną)"),
+        sekcja("Twoje prawa i obowiązki"),
+        akapit(
+          "Masz prawo do równego traktowania, wsparcia dostosowanego do Twoich potrzeb i ochrony danych osobowych. Twoim obowiązkiem jest regularny udział w zajęciach oraz informowanie o zmianach sytuacji.",
+        ),
+        sekcja("Kontakt"),
+        akapit(
+          "Biuro projektu: Stowarzyszenie na Rzecz Edukacji „Pomost”, ul. Okrężna 3, 66-200 Świebodzin. Koordynator projektu — dane kontaktowe dostępne w biurze.",
+        ),
+      ];
+
+    // ===================== SEKCJA E — ŚWIADCZENIA I WYDANIA =====================
+    case "e-01":
+      return [
+        tytul("REGULAMIN ŚWIADCZEŃ I PREMII"),
+        ...podtytul("CIS/E-01", spec),
+        sekcja("§ 1. Świadczenie integracyjne"),
+        akapit(
+          "Uczestnikom zajęć w Centrum Integracji Społecznej przysługuje świadczenie integracyjne, ustalane i wypłacane zgodnie z art. 15 ustawy z dnia 13 czerwca 2003 r. o zatrudnieniu socjalnym. W okresie próbnym (pierwszy miesiąc) świadczenie wynosi 50% jego wysokości.",
+        ),
+        akapit(
+          "Wysokość świadczenia odpowiada kwocie zasiłku dla bezrobotnych. Świadczenie wypłacane jest pod warunkiem uczestnictwa w zajęciach — za czas usprawiedliwionej nieobecności przysługuje proporcjonalnie.",
+        ),
+        sekcja("§ 2. Premia motywacyjna"),
+        akapit(
+          "Za aktywną postawę, sumienność i postępy w reintegracji kierownik CIS może przyznać motywacyjną premię integracyjną do wysokości 50% świadczenia integracyjnego.",
+        ),
+        sekcja("§ 3. Zasady naliczania i wypłaty"),
+        akapit(
+          "Podstawą naliczenia jest frekwencja udokumentowana dzienną listą obecności (CIS/C-01) i miesięczną kartą obecności (CIS/C-02). Wypłata realizowana przelewem na rachunek uczestnika.",
+        ),
+        sekcja("WZÓR LISTY WYPŁAT ŚWIADCZEŃ"),
+        tabelaN(
+          [500, 3200, 1700, 1700, 1926],
+          ["Lp.", "Imię i nazwisko", "Dni obecności", "Kwota świadczenia", "Potwierdzenie / nr przelewu"],
+          Array.from({ length: 8 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        ...podpisy2(
+          "sporządził: data i podpis",
+          "zatwierdził: data i podpis kierownika CIS",
+        ),
+      ];
+
+    case "e-02":
+      return [
+        tytul("ZBIORCZA LISTA WYDAŃ RZECZOWYCH"),
+        ...podtytul("CIS/E-02", spec),
+        akapit(
+          "Lista potwierdza wydanie uczestnikom świadczeń rzeczowych (np. odzież robocza, środki ochrony osobistej, materiały szkoleniowe, środki higieny). Podpis uczestnika potwierdza odbiór.",
+          true,
+        ),
+        tabela2([
+          ["Rodzaj wydania", ""],
+          ["Data wydania", dzis()],
+          ["Wydający", ""],
+        ]),
+        pusty(),
+        tabelaN(
+          [500, 3400, 2600, 2526],
+          ["Lp.", "Imię i nazwisko", "Wydane elementy / ilość", "Podpis odbioru"],
+          Array.from({ length: 10 }, (_, i) => [`${i + 1}.`, "", "", ""]),
+        ),
+        ...podpisy2(
+          "data i podpis wydającego",
+          "data i podpis kierownika CIS",
+        ),
+      ];
+
+    case "e-03":
+      return [
+        tytul("WNIOSEK O OPIEKĘ NAD OSOBĄ ZALEŻNĄ"),
+        ...podtytul("CIS/E-03", spec),
+        akapit(
+          "Świadczenie towarzyszące — zwrot kosztów opieki nad dzieckiem lub osobą zależną na czas udziału w formach wsparcia, umożliwiające pogodzenie uczestnictwa z obowiązkami opiekuńczymi.",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko uczestnika", imieNazwisko],
+          ["Numer uczestnika w projekcie", u.id === "wzor" ? "" : u.id.toUpperCase()],
+          ["Data złożenia wniosku", dzis()],
+        ]),
+        sekcja("DANE OSOBY ZALEŻNEJ / DZIECKA"),
+        akapit(`Imię i nazwisko: ${K}   Stopień pokrewieństwa: ………………   Wiek: ………`),
+        akapit("Rodzaj opieki: ☐ żłobek/przedszkole  ☐ opiekun  ☐ inna placówka"),
+        sekcja("OKRES I KOSZT"),
+        akapit(`Okres opieki: od ……………… do ………………   Wnioskowana kwota: …………… zł`),
+        akapit("Do wniosku załączam dokumenty potwierdzające poniesienie kosztu (faktura/rachunek/umowa)."),
+        ...podpisy2(
+          "data i podpis uczestnika",
+          "akceptacja: data i podpis koordynatora",
+        ),
+      ];
+
+    case "e-04":
+      return [
+        tytul("ZGŁOSZENIE ZBIORCZE NA WYJAZD INTEGRACYJNY"),
+        ...podtytul("CIS/E-04", spec),
+        tabela2([
+          ["Nazwa / cel wyjazdu", ""],
+          ["Termin", ""],
+          ["Miejsce", ""],
+          ["Opiekun grupy", ""],
+        ]),
+        sekcja("PROGRAM WYJAZDU"),
+        akapit(`Cele reintegracyjne i zakres działań: ${K} ${K}`),
+        akapit(`Ramowy program (godziny, aktywności): ${K} ${K}`),
+        sekcja("LISTA UCZESTNIKÓW"),
+        tabelaN(
+          [500, 4200, 2200, 2126],
+          ["Lp.", "Imię i nazwisko", "Zgoda / oświadczenie zdrowotne", "Podpis"],
+          Array.from({ length: 10 }, (_, i) => [`${i + 1}.`, "", "", ""]),
+        ),
+        ...podpisy2(
+          "data i podpis opiekuna grupy",
+          "data i podpis koordynatora projektu",
+        ),
+      ];
+
+    case "e-05":
+      return [
+        tytul("PROTOKÓŁ PRZEKAZANIA / OT — SAMOCHÓD BRYGADOWY CIS"),
+        ...podtytul("CIS/E-05", spec),
+        akapit(
+          "Protokół przyjęcia środka trwałego do używania (OT) oraz przekazania pojazdu do realizacji zadań reintegracji zawodowej CIS (transport brygady roboczej).",
+          true,
+        ),
+        tabela2([
+          ["Nazwa środka trwałego", "Samochód brygadowy CIS"],
+          ["Marka / model", ""],
+          ["Nr rejestracyjny", ""],
+          ["Wartość / źródło finansowania", ""],
+          ["Data przyjęcia (OT)", dzis()],
+        ]),
+        sekcja("STAN I WYPOSAŻENIE"),
+        akapit(`Opis stanu technicznego przy przekazaniu: ${K} ${K}`),
+        akapit(`Wyposażenie dodatkowe: ${K}`),
+        sekcja("OSOBA ODPOWIEDZIALNA"),
+        akapit("Pojazd powierza się instruktorowi zawodu pełniącemu funkcję kierowcy brygady CIS."),
+        ...podpisy2(
+          "przekazujący: data i podpis",
+          "przyjmujący: data i podpis",
+        ),
+      ];
+
+    // ===================== SEKCJA G — KADRA =====================
+    case "g-01":
+      return [
+        tytul("ZAKRES OBOWIĄZKÓW — KADRA MERYTORYCZNA"),
+        ...podtytul("CIS/G-01", spec),
+        akapit(
+          "Zakres obowiązków dotyczy wyłącznie pracy merytorycznej z uczestnikami projektu (koszty bezpośrednie). Zadania związane z zarządzaniem projektem ujęte są w kosztach pośrednich i nie wchodzą w ten zakres.",
+          true,
+        ),
+        tabela2([
+          ["Imię i nazwisko", ""],
+          ["Stanowisko / funkcja", ""],
+          ["Forma zatrudnienia", ""],
+          ["Wymiar / liczba godzin", ""],
+          ["Okres", ""],
+        ]),
+        sekcja("ZAKRES ZADAŃ"),
+        akapit(`1. ${K}`),
+        akapit(`2. ${K}`),
+        akapit(`3. ${K}`),
+        akapit(
+          "Kwalifikacje i doświadczenie zgodne z Koncepcją Standaryzacji CIS w województwie lubuskim oraz z potencjałem kadrowym opisanym we wniosku o dofinansowanie.",
+          true,
+        ),
+        ...podpisy2(
+          "data i podpis pracownika",
+          "data i podpis pracodawcy",
+        ),
+      ];
+
+    case "g-02":
+      return [
+        tytul("EWIDENCJA CZASU PRACY"),
+        ...podtytul("CIS/G-02", spec),
+        tabela2([
+          ["Imię i nazwisko", ""],
+          ["Stanowisko / funkcja", ""],
+          ["Miesiąc / rok", ""],
+          ["Forma zaangażowania", ""],
+        ]),
+        akapit(
+          "Ewidencja prowadzona zgodnie z Wytycznymi dotyczącymi kwalifikowalności wydatków 2021–2027. Łączne zaangażowanie zawodowe w realizację wszystkich projektów nie może przekraczać limitu określonego w wytycznych.",
+          true,
+        ),
+        pusty(),
+        tabelaN(
+          [600, 1700, 1500, 3300, 1926],
+          ["Dzień", "Godz. od–do", "Liczba godz.", "Wykonywane zadania", "Podpis"],
+          Array.from({ length: 10 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
+        ),
+        pusty(),
+        akapit("Razem godzin w miesiącu: ……………"),
+        ...podpisy2(
+          "data i podpis pracownika",
+          "zatwierdził: data i podpis przełożonego",
+        ),
+      ];
+
+    case "g-03":
+      return [
+        tytul("PROTOKÓŁ ODBIORU USŁUG ZEWNĘTRZNYCH"),
+        ...podtytul("CIS/G-03", spec),
+        tabela2([
+          ["Wykonawca", ""],
+          ["Przedmiot umowy / usługi", ""],
+          ["Nr umowy / zlecenia", ""],
+          ["Data wykonania", ""],
+        ]),
+        sekcja("ZAKRES ODEBRANYCH USŁUG"),
+        akapit(`Opis wykonanych usług / produktów: ${K} ${K}`),
+        akapit("Zgodność z umową: ☐ zgodne  ☐ zgodne z uwagami  ☐ niezgodne"),
+        akapit(`Uwagi: ${K}`),
+        sekcja("ROZLICZENIE"),
+        akapit("Liczba godzin / jednostek: ……………   Kwota do wypłaty: …………… zł"),
+        akapit("Potwierdzam odbiór usługi bez zastrzeżeń / z zastrzeżeniami (niepotrzebne skreślić)."),
+        ...podpisy2(
+          "wykonawca: data i podpis",
+          "odbierający: data i podpis",
+        ),
+      ];
+
+    // ===================== SEKCJA H — ZARZĄDZANIE =====================
+    case "h-01":
+      return [
+        tytul("REGULAMIN ZARZĄDZANIA PROJEKTEM"),
+        ...podtytul("CIS/H-01", spec),
+        sekcja("§ 1. Postanowienia ogólne"),
+        akapit(stopkaTekst(spec)),
+        sekcja("§ 2. Struktura zarządzania"),
+        akapit(
+          "Projektem kieruje koordynator. Zespół projektu obejmuje personel merytoryczny (koszty bezpośrednie) oraz personel zarządzający i obsługowy (koszty pośrednie, rozliczane ryczałtem).",
+        ),
+        sekcja("§ 3. Obieg i archiwizacja dokumentów"),
+        akapit(
+          "Dokumentacja prowadzona jest zgodnie z umową o dofinansowanie i przechowywana przez okres wskazany w umowie. Dane osobowe przetwarzane zgodnie z RODO i powierzeniem przetwarzania danych.",
+        ),
+        sekcja("§ 4. Monitoring i sprawozdawczość"),
+        akapit(
+          "Postęp rzeczowy i finansowy monitorowany w systemie SOWA EFS oraz w skoroszycie wskaźników (CIS/F-03). Wnioski o płatność składane zgodnie z harmonogramem.",
+        ),
+        sekcja("§ 5. Zasady równościowe"),
+        akapit(
+          "Projekt realizuje zasadę równości szans i niedyskryminacji, w tym dostępności dla osób z niepełnosprawnościami, oraz zasadę równości kobiet i mężczyzn.",
+        ),
+        ...podpisy2(
+          "data sporządzenia",
+          "data i podpis kierownika projektu",
+        ),
+      ];
+
+    case "h-07":
+      return [
+        tytul("POROZUMIENIE JST — ŚWIADCZENIA INTEGRACYJNE"),
+        ...podtytul("CIS/H-07", spec),
+        akapit(
+          "Porozumienie w sprawie finansowania świadczeń integracyjnych uczestników Centrum Integracji Społecznej z dotacji jednostki samorządu terytorialnego (wkład własny projektu).",
+          true,
+        ),
+        tabela2([
+          ["Strona 1 (JST)", ""],
+          ["Strona 2 (realizator CIS)", spec.wnioskodawca],
+          ["Data zawarcia", dzis()],
+        ]),
+        sekcja("§ 1. Przedmiot porozumienia"),
+        akapit(
+          "Strony ustalają zasady przekazywania środków na świadczenia integracyjne dla uczestników CIS, stanowiące wkład własny do projektu współfinansowanego z EFS+.",
+        ),
+        sekcja("§ 2. Wysokość i tryb finansowania"),
+        akapit(`Planowana kwota świadczeń: …………………… zł   Tryb przekazywania: ${K}`),
+        akapit(
+          "Rozliczenie następuje na podstawie list wypłat świadczeń (CIS/E-01) oraz dokumentacji obecności (CIS/C-01, CIS/C-02).",
+        ),
+        sekcja("§ 3. Sprawozdawczość"),
+        akapit("Realizator przedkłada JST okresowe sprawozdania z wykorzystania środków."),
+        ...podpisy2(
+          "za JST: data i podpis",
+          "za realizatora: data i podpis",
+        ),
+      ];
+
     default:
       return null;
   }

@@ -14,6 +14,17 @@ export interface Trafienie {
   fragment: string;
 }
 
+/** Typ projektu rozpoznany z treści wniosku — wpływa na sugerowany katalog. */
+export type TypProjektu = "cis" | "aktywizacja" | "szkoleniowy" | "ogolny";
+
+export interface SugerowanaSekcja {
+  /** litera sekcji katalogu (A–H) */
+  sekcja: string;
+  nazwa: string;
+  /** fraza z wniosku, która uruchomiła sugestię */
+  powod: string;
+}
+
 export interface WynikAnalizy {
   rozpoznanie: Rozpoznanie;
   /** ile słów-kluczy wniosku znaleziono (0–10) */
@@ -26,6 +37,10 @@ export interface WynikAnalizy {
   };
   trafienia: Trafienie[];
   uwagi: string[];
+  /** rozpoznany typ projektu (E6) */
+  typProjektu: TypProjektu;
+  /** sugerowane sekcje katalogu dokumentów na podstawie treści wniosku (E6) */
+  sugerowaneSekcje: SugerowanaSekcja[];
 }
 
 /** Tekst z pliku PDF — warstwa tekstowa przez pdfjs (lazy import). */
@@ -198,5 +213,51 @@ export function analizujDokument(tekstWe: string): WynikAnalizy {
     );
   }
 
-  return { rozpoznanie, punkty, pola, trafienia, uwagi };
+  // 6. Rozpoznanie typu projektu i sugerowanego katalogu dokumentów (E6)
+  const t = tekst.toLowerCase();
+  let typProjektu: TypProjektu = "ogolny";
+  if (
+    /zatrudnieni[ea] socjaln|centrum integracji|\bcis\b|świadczeni[ea] integracyjn|reintegracj[ai]/.test(
+      t,
+    )
+  ) {
+    typProjektu = "cis";
+  } else if (/sta[żz]|kurs[ya]? zawodow|szkoleni|kwalifikacj/.test(t)) {
+    typProjektu = "szkoleniowy";
+  } else if (/aktywizacj|wykluczeni|grup[aęy] docelow/.test(t)) {
+    typProjektu = "aktywizacja";
+  }
+
+  // Detektory sekcji katalogu — fraza we wniosku → sekcja A–H
+  const detektory: { re: RegExp; sekcja: string; nazwa: string }[] = [
+    { re: /rekrutacj|nab[oó]r uczestnik|grup[aęy] docelow/, sekcja: "A", nazwa: "Rekrutacja" },
+    { re: /ścieżk|reintegracj|indywidualn[ya] (program|plan|ścieżk)|diagnoz/, sekcja: "B", nazwa: "Ścieżka reintegracji" },
+    { re: /zaj[ęe]ci|obecnoś|harmonogram|warsztat/, sekcja: "C", nazwa: "Obecności i wsparcie" },
+    { re: /kurs[ya]? zawodow|szkoleni|kwalifikacj|certyfikat/, sekcja: "D", nazwa: "Kursy zawodowe" },
+    { re: /świadczeni|stypendium|wy[żz]ywieni|transport|opiek[aę] nad/, sekcja: "E", nazwa: "Świadczenia i wydania" },
+    { re: /wska[źz]nik|ankiet|ewaluacj|monitoring/, sekcja: "F", nazwa: "Ankiety i wskaźniki" },
+    { re: /kadr|personel|wynagrodzeni|umow[ya] o prac|zlecen/, sekcja: "G", nazwa: "Kadra" },
+    { re: /zarządzani[ea] projekt|rozliczeni|wniosek o płatność|trwałoś/, sekcja: "H", nazwa: "Zarządzanie" },
+  ];
+  const sugerowaneSekcje: SugerowanaSekcja[] = [];
+  for (const d of detektory) {
+    const m = t.match(d.re);
+    if (m && m.index !== undefined) {
+      sugerowaneSekcje.push({
+        sekcja: d.sekcja,
+        nazwa: d.nazwa,
+        powod: `znaleziono: „${tekst.slice(m.index, m.index + 24).replace(/\s+/g, " ").trim()}…”`,
+      });
+    }
+  }
+
+  return {
+    rozpoznanie,
+    punkty,
+    pola,
+    trafienia,
+    uwagi,
+    typProjektu,
+    sugerowaneSekcje,
+  };
 }
