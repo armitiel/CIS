@@ -449,7 +449,7 @@ export default function Obecnosci() {
       {/* ===== Widok: TYDZIEŃ ===== */}
       {widok === "tydzien" && (
         <div className="card anim-card-in overflow-x-auto">
-          <div className="grid min-w-[640px] grid-cols-[minmax(200px,1.5fr)_repeat(5,minmax(56px,1fr))_120px] items-center gap-2 border-b border-line px-[22px] py-3.5">
+          <div className="grid min-w-[440px] sm:min-w-[640px] grid-cols-[minmax(110px,1.3fr)_repeat(5,minmax(34px,1fr))_96px] sm:grid-cols-[minmax(200px,1.5fr)_repeat(5,minmax(56px,1fr))_120px] items-center gap-1.5 sm:gap-2 border-b border-line px-3 py-3 sm:px-[22px] sm:py-3.5">
             <div className="th-label">Uczestnik</div>
             {DNI_ROBOCZE.map((d, i) => {
               const data = dodajDni(pon, i);
@@ -471,7 +471,7 @@ export default function Obecnosci() {
             return (
               <div
                 key={u.id}
-                className="anim-card-in grid min-w-[640px] grid-cols-[minmax(200px,1.5fr)_repeat(5,minmax(56px,1fr))_120px] items-center gap-2 border-t border-line-soft px-[22px] py-[13px]"
+                className="anim-card-in grid min-w-[440px] sm:min-w-[640px] grid-cols-[minmax(110px,1.3fr)_repeat(5,minmax(34px,1fr))_96px] sm:grid-cols-[minmax(200px,1.5fr)_repeat(5,minmax(56px,1fr))_120px] items-center gap-1.5 sm:gap-2 border-t border-line-soft px-3 py-2.5 sm:px-[22px] sm:py-[13px]"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div className="flex min-w-0 items-center gap-[11px]">
