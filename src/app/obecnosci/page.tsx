@@ -320,27 +320,6 @@ export default function Obecnosci() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {/* legenda */}
-          {widok !== "swiadczenia" && (
-            <div className="hidden gap-3 text-[12.5px] text-muted lg:flex">
-              {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
-                <span key={z} className="flex items-center gap-1.5">
-                  <span
-                    className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
-                    style={{ background: ZNACZNIK[z].tlo }}
-                  >
-                    <span
-                      className="material-symbols-rounded notranslate text-sm"
-                      style={{ color: ZNACZNIK[z].kolor }}
-                    >
-                      {ZNACZNIK[z].ikona}
-                    </span>
-                  </span>
-                  {ZNACZNIK[z].label}
-                </span>
-              ))}
-            </div>
-          )}
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button
@@ -358,6 +337,41 @@ export default function Obecnosci() {
           </div>
         </div>
       </div>
+
+      {/* Legenda znaczników (zawsze widoczna poza widokiem świadczeń) */}
+      {widok !== "swiadczenia" && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line-soft bg-surface px-3.5 py-2.5 text-[12.5px] text-muted">
+          <span className="font-semibold text-ink-mid">Legenda:</span>
+          {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
+            <span key={z} className="flex items-center gap-1.5">
+              <span
+                className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
+                style={{ background: ZNACZNIK[z].tlo }}
+              >
+                <span
+                  className="material-symbols-rounded notranslate text-sm"
+                  style={{ color: ZNACZNIK[z].kolor }}
+                >
+                  {ZNACZNIK[z].ikona}
+                </span>
+              </span>
+              {ZNACZNIK[z].label}
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
+              style={{ background: "var(--color-soft)" }}
+            >
+              <span className="material-symbols-rounded notranslate text-sm text-faint">
+                {pustaIkona}
+              </span>
+            </span>
+            nieoznaczone
+          </span>
+          <span className="text-faint">· kliknij znacznik, aby zmienić</span>
+        </div>
+      )}
 
       {/* ===== Widok: DZIEŃ ===== */}
       {widok === "dzien" &&
