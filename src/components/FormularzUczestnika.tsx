@@ -16,30 +16,35 @@ import type { Uczestnik } from "@/lib/types";
 export default function FormularzUczestnika({
   projektId,
   istniejacy,
+  edytowany,
   onClose,
   onSave,
 }: {
   projektId: string;
   istniejacy: Uczestnik[];
+  edytowany?: Uczestnik | null;
   onClose: () => void;
   onSave: (u: Uczestnik) => void;
 }) {
   const [f, setF] = useState({
-    imie: "",
-    nazwisko: "",
-    pesel: "",
-    wyksztalcenie: "",
-    statusRynkuPracy: "",
-    miejscowosc: "",
-    gmina: "",
-    powiat: "",
-    wojewodztwo: "lubuskie",
-    kodPocztowy: "",
-    telefon: "",
-    email: "",
-    dataPrzystapienia: "",
-    grupa: "",
-    cykl: "1",
+    imie: edytowany?.imie ?? "",
+    nazwisko: edytowany?.nazwisko ?? "",
+    pesel: edytowany?.sowa?.pesel ?? "",
+    wyksztalcenie: edytowany?.sowa?.wyksztalcenie ?? "",
+    statusRynkuPracy: edytowany?.sowa?.statusRynkuPracy ?? "",
+    miejscowosc: edytowany?.sowa?.miejscowosc ?? "",
+    gmina: edytowany?.sowa?.gmina ?? "",
+    powiat: edytowany?.sowa?.powiat ?? "",
+    wojewodztwo: edytowany?.sowa?.wojewodztwo ?? "lubuskie",
+    kodPocztowy: edytowany?.sowa?.kodPocztowy ?? "",
+    telefon: edytowany?.sowa?.telefon ?? "",
+    email: edytowany?.sowa?.email ?? "",
+    dataPrzystapienia:
+      edytowany?.dataPrzystapienia && edytowany.dataPrzystapienia !== "—"
+        ? edytowany.dataPrzystapienia
+        : "",
+    grupa: edytowany?.grupa && edytowany.grupa !== "—" ? edytowany.grupa : "",
+    cykl: String(edytowany?.cykl ?? "1"),
   });
   const [bledy, setBledy] = useState<Record<string, string>>({});
 
@@ -52,7 +57,11 @@ export default function FormularzUczestnika({
     if (!f.nazwisko.trim()) b.nazwisko = "Wpisz nazwisko";
     const wp = walidujPesel(f.pesel);
     if (!wp.poprawny) b.pesel = wp.blad ?? "Niepoprawny PESEL";
-    else if (istniejacy.some((u) => u.sowa?.pesel === f.pesel))
+    else if (
+      istniejacy.some(
+        (u) => u.sowa?.pesel === f.pesel && u.id !== edytowany?.id,
+      )
+    )
       b.pesel = "Uczestnik z tym numerem PESEL już jest w bazie";
     if (!f.wyksztalcenie) b.wyksztalcenie = "Wybierz ze słownika";
     if (!f.statusRynkuPracy) b.statusRynkuPracy = "Wybierz ze słownika";
@@ -79,26 +88,34 @@ export default function FormularzUczestnika({
         ? wiekWDniu(wp.dataUrodzenia, f.dataPrzystapienia)
         : undefined;
     const u: Uczestnik = {
-      id: `${projektId}-${Date.now().toString(36)}`,
+      // przy edycji zachowujemy id oraz pola spoza formularza (frekwencja,
+      // teczka, etap/postęp ścieżki, dane SOWA jak DEGURBA)
+      ...(edytowany ?? {}),
+      id: edytowany?.id ?? `${projektId}-${Date.now().toString(36)}`,
       imie: f.imie.trim(),
       nazwisko: f.nazwisko.trim(),
       kategoria,
       sciezka: kategoria === "bezrobotny" ? "IPZS" : "IPR",
       cykl: f.cykl === "2" ? 2 : 1,
       grupa: f.grupa.trim() || "—",
-      status: f.dataPrzystapienia ? "aktywny" : "rezerwowy",
+      status: edytowany
+        ? edytowany.status
+        : f.dataPrzystapienia
+          ? "aktywny"
+          : "rezerwowy",
       dataPrzystapienia: f.dataPrzystapienia || "—",
-      frekwencja: 0,
-      posiadaneDokumenty: [],
-      etapSciezki: 0,
-      postepSciezki: 0,
+      frekwencja: edytowany?.frekwencja ?? 0,
+      posiadaneDokumenty: edytowany?.posiadaneDokumenty ?? [],
+      etapSciezki: edytowany?.etapSciezki ?? 0,
+      postepSciezki: edytowany?.postepSciezki ?? 0,
       sowa: {
+        ...(edytowany?.sowa ?? {}),
         pesel: f.pesel,
         plec: wp.plec === "Kobieta" ? "kobieta" : "mężczyzna",
-        wiek: wiek ?? undefined,
+        wiek: wiek ?? edytowany?.sowa?.wiek ?? undefined,
         wyksztalcenie: f.wyksztalcenie,
-        obywatelstwo: "polskie",
-        kraj: "Polska",
+        obywatelstwo: edytowany?.sowa?.obywatelstwo ?? "polskie",
+        kraj: edytowany?.sowa?.kraj ?? "Polska",
         wojewodztwo: f.wojewodztwo || undefined,
         powiat: f.powiat || undefined,
         gmina: f.gmina || undefined,
@@ -191,7 +208,7 @@ export default function FormularzUczestnika({
       >
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <h3 className="m-0 font-serif text-lg font-semibold text-ink-strong">
-            Nowy uczestnik
+            {edytowany ? "Edytuj uczestnika" : "Nowy uczestnik"}
           </h3>
           <button
             onClick={onClose}
@@ -260,9 +277,9 @@ export default function FormularzUczestnika({
           </span>
           <button onClick={zapisz} className="btn-primary">
             <span className="material-symbols-rounded notranslate text-[19px]">
-              person_add
+              {edytowany ? "save" : "person_add"}
             </span>
-            Dodaj uczestnika
+            {edytowany ? "Zapisz zmiany" : "Dodaj uczestnika"}
           </button>
         </div>
       </div>

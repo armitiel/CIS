@@ -160,6 +160,13 @@ export async function zastapUczestnikow(
   return (data as WierszUczestnika[]).map(zWiersza);
 }
 
+/** Usuwa pojedynczego uczestnika (po id). */
+export async function usunUczestnikaDB(id: string): Promise<void> {
+  const supabase = klient();
+  const { error } = await supabase.from("uczestnicy").delete().eq("id", id);
+  if (error) throw error;
+}
+
 /** Usuwa wszystkich uczestników projektu (np. „Wyczyść import”). */
 export async function usunUczestnikowProjektu(
   projektId: string,

@@ -37,6 +37,7 @@ import {
   bazaDostepna,
   dodajUczestnikaDB,
   pobierzUczestnikow,
+  usunUczestnikaDB,
   usunUczestnikowProjektu,
   zastapUczestnikow,
 } from "@/lib/db-uczestnicy";
@@ -67,6 +68,8 @@ interface ProjektContextValue {
   dodajUczestnika: (u: Uczestnik) => void;
   /** aktualizuje pola uczestnika (np. etap/postęp ścieżki) — zapis lokalny + baza */
   aktualizujUczestnika: (id: string, zmiany: Partial<Uczestnik>) => void;
+  /** usuwa uczestnika z projektu — zapis lokalny + baza */
+  usunUczestnika: (id: string) => void;
   /** dodaje projekt (zapis w bazie lub przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
   /** aktualizuje dane projektu; zwraca false, gdy projektu nie można edytować */
@@ -295,6 +298,31 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [projekt.id, projekt.uczestnicyDomyslni],
   );
 
+  /** Usuwa uczestnika z aktywnego projektu. */
+  const usunUczestnika = useCallback(
+    (id: string) => {
+      setImportowani((stan) => {
+        const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
+        const nowi = obecni.filter((u) => u.id !== id);
+        try {
+          localStorage.setItem(
+            kluczUczestnikow(projekt.id),
+            JSON.stringify(nowi),
+          );
+        } catch {
+          /* limit localStorage */
+        }
+        return { ...stan, [projekt.id]: nowi };
+      });
+      if (bazaDostepna()) {
+        usunUczestnikaDB(id).catch(() => {
+          /* rekord spoza bazy / brak sesji — pozostaje zapis lokalny */
+        });
+      }
+    },
+    [projekt.id, projekt.uczestnicyDomyslni],
+  );
+
   /** Czy projekt można edytować/usunąć. */
   const czyWlasny = useCallback(
     (id: string) => (trybBazy ? true : !IDS_WBUDOWANE.includes(id)),
@@ -392,6 +420,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       wyczyscImport,
       dodajUczestnika,
       aktualizujUczestnika,
+      usunUczestnika,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,
@@ -408,6 +437,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       wyczyscImport,
       dodajUczestnika,
       aktualizujUczestnika,
+      usunUczestnika,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,
