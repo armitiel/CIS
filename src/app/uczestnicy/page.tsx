@@ -307,8 +307,9 @@ export default function Uczestnicy() {
         </span>
       </div>
 
-      <div className="card anim-card-in overflow-x-auto">
-        <div className="grid min-w-[720px] grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5">
+      <div className="card anim-card-in overflow-hidden">
+        {/* nagłówek tabeli — tylko desktop */}
+        <div className="hidden grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5 lg:grid">
           <input
             type="checkbox"
             checked={
@@ -344,33 +345,49 @@ export default function Uczestnicy() {
           return (
             <div
               key={u.id}
-              className={`anim-card-in grid min-w-[720px] grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-t border-line-soft px-[22px] py-[15px] transition-colors ${
+              className={`anim-card-in flex flex-col gap-3 border-t border-line-soft px-4 py-4 transition-colors lg:grid lg:grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] lg:items-center lg:gap-4 lg:px-[22px] lg:py-[15px] ${
                 zaznaczeni.has(u.id) ? "bg-green-soft/40" : "hover:bg-hover-row"
               }`}
               style={{ animationDelay: `${i * 0.05}s` }}
             >
-              <input
-                type="checkbox"
-                checked={zaznaczeni.has(u.id)}
-                onChange={() => przelaczZaznaczenie(u.id)}
-                className="h-4 w-4 cursor-pointer accent-[oklch(0.52_0.09_152)]"
-                title="Zaznacz uczestnika"
-              />
-              <div className="flex min-w-0 items-center gap-3">
-                <Avatar nazwa={nazwa} size={40} />
-                <div className="min-w-0">
-                  <Link
-                    href={`/uczestnicy/${u.id}`}
-                    className="block truncate text-[14.5px] font-bold text-ink hover:text-primary-strong"
-                  >
-                    {u.nazwisko} {u.imie}
-                  </Link>
-                  <span className="mt-1 inline-flex items-center gap-1.5">
-                    <SciezkaPill sciezka={u.sciezka} />
-                    {u.status !== "aktywny" && <StatusPill status={u.status} />}
-                  </span>
+              {/* górny rząd: zaznaczenie + osoba + (mobile) skrót do kartoteki */}
+              <div className="flex items-center gap-3 lg:contents">
+                <input
+                  type="checkbox"
+                  checked={zaznaczeni.has(u.id)}
+                  onChange={() => przelaczZaznaczenie(u.id)}
+                  className="h-4 w-4 shrink-0 cursor-pointer accent-[oklch(0.52_0.09_152)]"
+                  title="Zaznacz uczestnika"
+                />
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar nazwa={nazwa} size={40} />
+                  <div className="min-w-0">
+                    <Link
+                      href={`/uczestnicy/${u.id}`}
+                      className="block truncate text-[14.5px] font-bold text-ink hover:text-primary-strong"
+                    >
+                      {u.nazwisko} {u.imie}
+                    </Link>
+                    <span className="mt-1 inline-flex items-center gap-1.5">
+                      <SciezkaPill sciezka={u.sciezka} />
+                      {u.status !== "aktywny" && (
+                        <StatusPill status={u.status} />
+                      )}
+                    </span>
+                  </div>
                 </div>
+                <Link
+                  href={`/uczestnicy/${u.id}`}
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong lg:hidden"
+                  title="Otwórz kartotekę"
+                >
+                  <span className="material-symbols-rounded notranslate text-[21px]">
+                    folder_open
+                  </span>
+                </Link>
               </div>
+
+              {/* ścieżka reintegracji */}
               <div>
                 <div className="mb-1.5 flex items-baseline justify-between gap-2">
                   <span className="text-[12.5px] text-muted">
@@ -382,20 +399,26 @@ export default function Uczestnicy() {
                 </div>
                 <Pasek pct={u.postepSciezki ?? 0} delay={i * 0.05} />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-rounded notranslate text-[19px] text-faint">
-                  event_available
-                </span>
-                <span className="text-[15px] font-bold text-ink-mid">
-                  {u.status === "aktywny" ? `${u.frekwencja}%` : "—"}
-                </span>
+
+              {/* obecność + dokumenty: w jednym rzędzie na mobile */}
+              <div className="flex items-center justify-between gap-4 lg:contents">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-rounded notranslate text-[19px] text-faint">
+                    event_available
+                  </span>
+                  <span className="text-[15px] font-bold text-ink-mid">
+                    {u.status === "aktywny" ? `${u.frekwencja}%` : "—"}
+                  </span>
+                </div>
+                <div>
+                  <BrakiPill braki={braki} />
+                </div>
               </div>
-              <div>
-                <BrakiPill braki={braki} />
-              </div>
+
+              {/* skrót do kartoteki — desktop */}
               <Link
                 href={`/uczestnicy/${u.id}`}
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft"
+                className="hidden h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft lg:flex"
                 title="Otwórz kartotekę"
               >
                 <span className="material-symbols-rounded notranslate text-[21px]">
