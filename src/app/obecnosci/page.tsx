@@ -1,21 +1,22 @@
 "use client";
 
-// Obecności w trzech widokach czasowych (dzień / tydzień / miesiąc) —
-// nawigacja jak w Harmonogramie. Dane testowe: bieżący tydzień z mocka,
-// pozostałe terminy generowane deterministycznie z frekwencji uczestnika.
-// Rejestracja realnych obecności i listy do podpisu — etap E2.
+// Obecności w czterech widokach: dzień / tydzień / miesiąc / świadczenia (E2).
+// Realna rejestracja — kliknięcie ustawia znak: obecny → usprawiedliwiony →
+// nieobecny → (pusty). Dane zapisywane do Supabase (po zalogowaniu) oraz do
+// localStorage. Świadczenia: miesięczne naliczanie z edytowalną stawką.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
-import { dniTygodnia, obecnosciTygodnia } from "@/lib/mock-data";
 import { Avatar } from "@/components/ui";
-import type { Uczestnik } from "@/lib/types";
+import { useObecnosci, type Znak } from "@/lib/use-obecnosci";
 
-type Znak = "p" | "u" | "a";
-type Widok = "dzien" | "tydzien" | "miesiac";
+type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
-const ZNACZNIK: Record<Znak, { ikona: string; tlo: string; kolor: string; label: string }> = {
+const ZNACZNIK: Record<
+  Znak,
+  { ikona: string; tlo: string; kolor: string; label: string }
+> = {
   p: {
     ikona: "check",
     tlo: "oklch(0.94 0.035 150)",
@@ -36,10 +37,11 @@ const ZNACZNIK: Record<Znak, { ikona: string; tlo: string; kolor: string; label:
   },
 };
 
+const DNI_KROTKIE = ["Pn", "Wt", "Śr", "Czw", "Pt", "So", "Nd"];
 const DNI_PELNE = [
   "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela",
 ];
-const DNI_KROTKIE = ["Pn", "Wt", "Śr", "Czw", "Pt", "So", "Nd"];
+const DNI_ROBOCZE = ["Pn", "Wt", "Śr", "Czw", "Pt"];
 const MIESIACE = [
   "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
   "lipca", "sierpnia", "września", "października", "listopada", "grudnia",
@@ -48,6 +50,12 @@ const MIESIACE_M = [
   "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
   "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
 ];
+const NASTEPNY: Record<"" | Znak, Znak | null> = {
+  "": "p",
+  p: "u",
+  u: "a",
+  a: null,
+};
 
 function dzienTyg(d: Date): number {
   return (d.getDay() + 6) % 7;
@@ -73,35 +81,22 @@ function tenSamDzien(a: Date, b: Date): boolean {
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-
-/** Deterministyczny „los” 0–99 z tekstu (stabilny między renderami). */
-function seed(tekst: string): number {
-  let h = 0;
-  for (let i = 0; i < tekst.length; i++) {
-    h = (h * 31 + tekst.charCodeAt(i)) % 997;
+function dniRoboczeMiesiaca(rok: number, miesiac: number): Date[] {
+  const dni: Date[] = [];
+  const d = new Date(rok, miesiac, 1);
+  while (d.getMonth() === miesiac) {
+    if (dzienTyg(d) < 5) dni.push(new Date(d));
+    d.setDate(d.getDate() + 1);
   }
-  return h % 100;
+  return dni;
 }
-
-/**
- * Znacznik obecności uczestnika danego dnia (Pn–Pt).
- * Bieżący tydzień: dane z mocka; inne terminy: deterministycznie z frekwencji.
- */
-function znakDnia(u: Uczestnik, data: Date, dzisPon: Date): Znak | null {
-  const wd = dzienTyg(data);
-  if (wd >= 5) return null; // weekend
-  const pon = poczatekTygodnia(data);
-  if (tenSamDzien(pon, dzisPon)) {
-    const wpis = obecnosciTygodnia.find((o) => o.uczestnikId === u.id);
-    if (wpis) return wpis.dni[wd];
-  }
-  const s = seed(`${u.id}|${iso(data)}`);
-  if (s < u.frekwencja) return "p";
-  return s % 3 === 0 ? "u" : "a";
-}
+const fmtPLN = (n: number) =>
+  n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Obecnosci() {
   const { projekt, uczestnicy } = useProjekt();
+  const { znak, ustaw } = useObecnosci(projekt.id);
+
   const aktywni = useMemo(
     () => uczestnicy.filter((u) => u.status === "aktywny"),
     [uczestnicy],
@@ -112,10 +107,28 @@ export default function Obecnosci() {
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const dzisPon = useMemo(() => poczatekTygodnia(dzis), [dzis]);
 
   const [widok, setWidok] = useState<Widok>("tydzien");
   const [kotwica, setKotwica] = useState<Date>(dzis);
+
+  // stawka świadczenia (PLN/mies.) — zapis per projekt w przeglądarce
+  const [stawka, setStawka] = useState<number>(0);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`cis-app:stawka:${projekt.id}`);
+      setStawka(raw ? Number(raw) || 0 : 0);
+    } catch {
+      setStawka(0);
+    }
+  }, [projekt.id]);
+  function zmienStawke(v: number) {
+    setStawka(v);
+    try {
+      localStorage.setItem(`cis-app:stawka:${projekt.id}`, String(v));
+    } catch {
+      /* limit localStorage */
+    }
+  }
 
   function przesun(kierunek: 1 | -1) {
     if (widok === "dzien") setKotwica((k) => dodajDni(k, kierunek));
@@ -141,40 +154,37 @@ export default function Obecnosci() {
           : `Tydzień ${pon.getDate()} ${MIESIACE[pon.getMonth()]} – ${pt.getDate()} ${MIESIACE[pt.getMonth()]} ${pt.getFullYear()}`
         : `${MIESIACE_M[kotwica.getMonth()]} ${kotwica.getFullYear()}`;
 
-  // wiersze widoku tygodniowego
+  function cyklUstaw(uczestnikId: string, data: Date) {
+    if (dzienTyg(data) >= 5) return; // tylko dni robocze
+    const obecny = (znak(uczestnikId, iso(data)) ?? "") as "" | Znak;
+    ustaw(uczestnikId, iso(data), NASTEPNY[obecny]);
+  }
+
+  // ===== widok tygodniowy =====
   const wiersze = useMemo(
     () =>
       aktywni.map((u) => {
-        const dni = Array.from(
-          { length: 5 },
-          (_, i) => znakDnia(u, dodajDni(pon, i), dzisPon) as Znak,
+        const dni = Array.from({ length: 5 }, (_, i) =>
+          znak(u.id, iso(dodajDni(pon, i))),
         );
-        const pct = Math.round(
-          (dni.filter((d) => d === "p").length / 5) * 100,
-        );
+        const obecne = dni.filter((d) => d === "p").length;
+        const pct = Math.round((obecne / 5) * 100);
         return { u, dni, pct };
       }),
-    [aktywni, pon, dzisPon],
+    [aktywni, pon, znak],
   );
-  const srednia = Math.round(
-    wiersze.reduce((s, w) => s + w.pct, 0) / (wiersze.length || 1),
-  );
+  const srednia = wiersze.length
+    ? Math.round(wiersze.reduce((s, w) => s + w.pct, 0) / wiersze.length)
+    : 0;
 
-  // dzień: znaczniki per uczestnik
-  const dzienZnaki = useMemo(
-    () =>
-      aktywni.map((u) => ({
-        u,
-        znak: znakDnia(u, kotwica, dzisPon),
-      })),
-    [aktywni, kotwica, dzisPon],
-  );
+  // ===== widok dzienny =====
+  const dzienRoboczy = dzienTyg(kotwica) < 5;
   const podsumowanieDnia = (["p", "u", "a"] as Znak[]).map((z) => ({
     z,
-    n: dzienZnaki.filter((d) => d.znak === z).length,
+    n: aktywni.filter((u) => znak(u.id, iso(kotwica)) === z).length,
   }));
 
-  // miesiąc: tygodnie i % obecności grupy per dzień roboczy
+  // ===== widok miesięczny =====
   const tygodnieMiesiaca = useMemo(() => {
     const pierwszy = new Date(kotwica.getFullYear(), kotwica.getMonth(), 1);
     const start = poczatekTygodnia(pierwszy);
@@ -189,16 +199,77 @@ export default function Obecnosci() {
 
   function pctDnia(data: Date): number | null {
     if (dzienTyg(data) >= 5 || aktywni.length === 0) return null;
-    const obecni = aktywni.filter(
-      (u) => znakDnia(u, data, dzisPon) === "p",
-    ).length;
-    return Math.round((obecni / aktywni.length) * 100);
+    const oznaczeni = aktywni.filter((u) => znak(u.id, iso(data)) !== null);
+    if (oznaczeni.length === 0) return null; // brak rejestracji tego dnia
+    const obecni = oznaczeni.filter((u) => znak(u.id, iso(data)) === "p").length;
+    return Math.round((obecni / oznaczeni.length) * 100);
+  }
+
+  // ===== świadczenia (miesiąc kotwicy) =====
+  const swiadczenia = useMemo(() => {
+    const dni = dniRoboczeMiesiaca(kotwica.getFullYear(), kotwica.getMonth());
+    const dniRobocze = dni.length;
+    const wiersze = aktywni.map((u) => {
+      let p = 0,
+        usp = 0,
+        nieu = 0;
+      for (const d of dni) {
+        const z = znak(u.id, iso(d));
+        if (z === "p") p++;
+        else if (z === "u") usp++;
+        else if (z === "a") nieu++;
+      }
+      const nieoznaczone = dniRobocze - p - usp - nieu;
+      const zaliczone = p + usp; // obecne + usprawiedliwione liczą się do świadczenia
+      const kwota = dniRobocze > 0 ? (stawka * zaliczone) / dniRobocze : 0;
+      const frekwencja = dniRobocze > 0 ? Math.round((p / dniRobocze) * 100) : 0;
+      return { u, p, usp, nieu, nieoznaczone, zaliczone, kwota, frekwencja };
+    });
+    const suma = wiersze.reduce((s, w) => s + w.kwota, 0);
+    return { dniRobocze, wiersze, suma };
+  }, [aktywni, kotwica, znak, stawka]);
+
+  function eksportCSV() {
+    const sep = ";";
+    const naglowek = [
+      "Uczestnik",
+      "Grupa",
+      "Dni robocze",
+      "Obecne",
+      "Usprawiedliwione",
+      "Nieusprawiedliwione",
+      "Nieoznaczone",
+      "Frekwencja %",
+      "Kwota świadczenia (PLN)",
+    ].join(sep);
+    const linie = swiadczenia.wiersze.map((w) =>
+      [
+        `${w.u.imie} ${w.u.nazwisko}`,
+        w.u.grupa,
+        swiadczenia.dniRobocze,
+        w.p,
+        w.usp,
+        w.nieu,
+        w.nieoznaczone,
+        w.frekwencja,
+        fmtPLN(w.kwota).replace(/\s/g, ""),
+      ].join(sep),
+    );
+    const tresc = "﻿" + [naglowek, ...linie].join("\r\n");
+    const blob = new Blob([tresc], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `swiadczenia_${projekt.skrot}_${MIESIACE_M[kotwica.getMonth()]}_${kotwica.getFullYear()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const WIDOKI: [Widok, string][] = [
     ["dzien", "Dzień"],
     ["tydzien", "Tydzień"],
     ["miesiac", "Miesiąc"],
+    ["swiadczenia", "Świadczenia"],
   ];
 
   const kolorPct = (pct: number) =>
@@ -207,6 +278,8 @@ export default function Obecnosci() {
       : pct >= 50
         ? "bg-amber-soft text-amber-ink"
         : "bg-red-soft text-red-ink";
+
+  const pustaIkona = "radio_button_unchecked";
 
   return (
     <div className="flex max-w-[1100px] flex-col gap-[18px]">
@@ -239,7 +312,7 @@ export default function Obecnosci() {
           </button>
           <span className="ml-2 flex items-center gap-[9px]">
             <span className="material-symbols-rounded notranslate text-[22px] text-primary">
-              fact_check
+              {widok === "swiadczenia" ? "payments" : "fact_check"}
             </span>
             <span className="font-serif text-lg font-semibold text-ink-strong">
               {etykieta}
@@ -248,24 +321,26 @@ export default function Obecnosci() {
         </div>
         <div className="flex items-center gap-3">
           {/* legenda */}
-          <div className="hidden gap-3 text-[12.5px] text-muted lg:flex">
-            {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
-              <span key={z} className="flex items-center gap-1.5">
-                <span
-                  className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
-                  style={{ background: ZNACZNIK[z].tlo }}
-                >
+          {widok !== "swiadczenia" && (
+            <div className="hidden gap-3 text-[12.5px] text-muted lg:flex">
+              {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
+                <span key={z} className="flex items-center gap-1.5">
                   <span
-                    className="material-symbols-rounded notranslate text-sm"
-                    style={{ color: ZNACZNIK[z].kolor }}
+                    className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
+                    style={{ background: ZNACZNIK[z].tlo }}
                   >
-                    {ZNACZNIK[z].ikona}
+                    <span
+                      className="material-symbols-rounded notranslate text-sm"
+                      style={{ color: ZNACZNIK[z].kolor }}
+                    >
+                      {ZNACZNIK[z].ikona}
+                    </span>
                   </span>
+                  {ZNACZNIK[z].label}
                 </span>
-                {ZNACZNIK[z].label}
-              </span>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button
@@ -286,14 +361,14 @@ export default function Obecnosci() {
 
       {/* ===== Widok: DZIEŃ ===== */}
       {widok === "dzien" &&
-        (dzienTyg(kotwica) >= 5 ? (
+        (!dzienRoboczy ? (
           <div className="card p-6 text-sm text-faint">
             Weekend — brak zajęć i rejestracji obecności.
           </div>
         ) : (
           <div className="card anim-card-in overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-[22px] py-3.5">
-              <span className="th-label">Obecność uczestników</span>
+              <span className="th-label">Rejestracja obecności</span>
               <div className="flex gap-2">
                 {podsumowanieDnia.map(({ z, n }) => (
                   <span
@@ -307,13 +382,14 @@ export default function Obecnosci() {
                     <span className="material-symbols-rounded notranslate text-[15px]">
                       {ZNACZNIK[z].ikona}
                     </span>
-                    {n} {ZNACZNIK[z].label}
+                    {n}
                   </span>
                 ))}
               </div>
             </div>
-            {dzienZnaki.map(({ u, znak }, i) => {
+            {aktywni.map((u, i) => {
               const nazwa = `${u.imie} ${u.nazwisko}`;
+              const biezacy = znak(u.id, iso(kotwica));
               return (
                 <div
                   key={u.id}
@@ -330,21 +406,35 @@ export default function Obecnosci() {
                     </Link>
                     <span className="text-xs text-faint">grupa {u.grupa}</span>
                   </div>
-                  {znak && (
-                    <span
-                      className="anim-pop inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] text-[12.5px] font-bold"
-                      style={{
-                        background: ZNACZNIK[znak].tlo,
-                        color: ZNACZNIK[znak].kolor,
-                        animationDelay: `${i * 0.04}s`,
-                      }}
-                    >
-                      <span className="material-symbols-rounded notranslate text-[15px]">
-                        {ZNACZNIK[znak].ikona}
-                      </span>
-                      {ZNACZNIK[znak].label}
-                    </span>
-                  )}
+                  <div className="flex gap-1.5">
+                    {(["p", "u", "a"] as Znak[]).map((z) => {
+                      const akt = biezacy === z;
+                      return (
+                        <button
+                          key={z}
+                          onClick={() =>
+                            ustaw(u.id, iso(kotwica), akt ? null : z)
+                          }
+                          title={ZNACZNIK[z].label}
+                          className="flex h-9 items-center gap-1.5 rounded-[10px] border px-3 text-[12.5px] font-bold transition-all"
+                          style={{
+                            background: akt ? ZNACZNIK[z].tlo : "transparent",
+                            color: akt ? ZNACZNIK[z].kolor : "var(--color-faint)",
+                            borderColor: akt
+                              ? ZNACZNIK[z].kolor
+                              : "var(--color-line-strong)",
+                          }}
+                        >
+                          <span className="material-symbols-rounded notranslate text-[17px]">
+                            {ZNACZNIK[z].ikona}
+                          </span>
+                          <span className="hidden sm:inline">
+                            {ZNACZNIK[z].label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
@@ -361,7 +451,7 @@ export default function Obecnosci() {
         <div className="card anim-card-in overflow-x-auto">
           <div className="grid min-w-[640px] grid-cols-[minmax(200px,1.5fr)_repeat(5,minmax(56px,1fr))_120px] items-center gap-2 border-b border-line px-[22px] py-3.5">
             <div className="th-label">Uczestnik</div>
-            {dniTygodnia.map((d, i) => {
+            {DNI_ROBOCZE.map((d, i) => {
               const data = dodajDni(pon, i);
               const dzisiaj = tenSamDzien(data, dzis);
               return (
@@ -393,24 +483,34 @@ export default function Obecnosci() {
                     {nazwa}
                   </Link>
                 </div>
-                {dni.map((z, di) => (
-                  <div key={di} className="flex justify-center">
-                    <span
-                      className="anim-pop flex h-[30px] w-[30px] items-center justify-center rounded-[9px]"
-                      style={{
-                        background: ZNACZNIK[z].tlo,
-                        animationDelay: `${i * 0.05 + di * 0.03}s`,
-                      }}
-                    >
-                      <span
-                        className="material-symbols-rounded notranslate text-lg"
-                        style={{ color: ZNACZNIK[z].kolor }}
+                {dni.map((z, di) => {
+                  const data = dodajDni(pon, di);
+                  return (
+                    <div key={di} className="flex justify-center">
+                      <button
+                        onClick={() => cyklUstaw(u.id, data)}
+                        title={
+                          z
+                            ? ZNACZNIK[z].label
+                            : "Kliknij, aby oznaczyć obecność"
+                        }
+                        className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] transition-colors hover:ring-2 hover:ring-line-strong"
+                        style={{
+                          background: z ? ZNACZNIK[z].tlo : "var(--color-soft)",
+                        }}
                       >
-                        {ZNACZNIK[z].ikona}
-                      </span>
-                    </span>
-                  </div>
-                ))}
+                        <span
+                          className="material-symbols-rounded notranslate text-lg"
+                          style={{
+                            color: z ? ZNACZNIK[z].kolor : "var(--color-faint)",
+                          }}
+                        >
+                          {z ? ZNACZNIK[z].ikona : pustaIkona}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
                 <div className="flex items-center justify-end gap-2">
                   <div className="h-1.5 w-[42px] overflow-hidden rounded-[4px] bg-track">
                     <div
@@ -474,13 +574,11 @@ export default function Obecnosci() {
                       setWidok("dzien");
                     }}
                     className={`flex min-h-[78px] cursor-pointer flex-col items-start gap-1.5 border-l border-line-soft p-2 text-left transition-colors first:border-l-0 ${
-                      wTymMiesiacu
-                        ? "bg-surface hover:bg-hover-row"
-                        : "bg-app"
+                      wTymMiesiacu ? "bg-surface hover:bg-hover-row" : "bg-app"
                     }`}
                     title={
-                      wTymMiesiacu && pct !== null
-                        ? "Pokaż obecności dnia"
+                      wTymMiesiacu && dzienTyg(data) < 5
+                        ? "Otwórz dzień do rejestracji"
                         : undefined
                     }
                   >
@@ -518,16 +616,135 @@ export default function Obecnosci() {
             <span className="rounded-md bg-red-soft px-1.5 py-0.5 font-bold text-red-ink">
               &lt; 50%
             </span>
-            <span className="ml-auto">kliknij dzień, aby zobaczyć szczegóły</span>
+            <span className="ml-auto">
+              dni bez rejestracji nie są liczone do frekwencji
+            </span>
           </div>
         </div>
       )}
 
-      <p className="text-xs text-faint">
-        Dane testowe (fikcyjne) — bieżący tydzień z danych projektu, pozostałe
-        terminy symulowane z frekwencji. Rejestracja obecności na zajęciach i
-        listy obecności do podpisu — etap E2.
-      </p>
+      {/* ===== Widok: ŚWIADCZENIA ===== */}
+      {widok === "swiadczenia" && (
+        <div className="flex flex-col gap-[18px]">
+          <div className="card flex flex-wrap items-end justify-between gap-4 p-[18px]">
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="stawka"
+                className="th-label"
+              >
+                Stawka świadczenia (PLN / miesiąc)
+              </label>
+              <input
+                id="stawka"
+                type="number"
+                min={0}
+                step="0.01"
+                value={stawka || ""}
+                onChange={(e) => zmienStawke(Number(e.target.value) || 0)}
+                placeholder="np. 1200"
+                className="w-[180px] rounded-lg border border-line-strong bg-surface px-3 py-2 text-[15px] font-semibold text-ink outline-none focus:border-[oklch(0.62_0.09_152)]"
+              />
+              <span className="text-[11.5px] text-faint">
+                pełna kwota za miesiąc; zapis dla projektu „{projekt.skrot}”
+              </span>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="th-label">Dni robocze w miesiącu</span>
+              <span className="font-serif text-2xl font-bold text-ink-strong">
+                {swiadczenia.dniRobocze}
+              </span>
+            </div>
+            <button
+              onClick={eksportCSV}
+              disabled={swiadczenia.wiersze.length === 0}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                download
+              </span>
+              Eksport CSV
+            </button>
+          </div>
+
+          <div className="card anim-card-in overflow-x-auto">
+            <div className="grid min-w-[760px] grid-cols-[minmax(180px,1.4fr)_repeat(5,minmax(64px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
+              <div className="th-label">Uczestnik</div>
+              <div className="th-label text-center">Obecne</div>
+              <div className="th-label text-center">Uspr.</div>
+              <div className="th-label text-center">Nieuspr.</div>
+              <div className="th-label text-center">Nieozn.</div>
+              <div className="th-label text-center">Frekw.</div>
+              <div className="th-label text-right">Świadczenie</div>
+            </div>
+
+            {swiadczenia.wiersze.map(
+              ({ u, p, usp, nieu, nieoznaczone, kwota, frekwencja }, i) => {
+                const nazwa = `${u.imie} ${u.nazwisko}`;
+                return (
+                  <div
+                    key={u.id}
+                    className="anim-card-in grid min-w-[760px] grid-cols-[minmax(180px,1.4fr)_repeat(5,minmax(64px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
+                    style={{ animationDelay: `${i * 0.04}s` }}
+                  >
+                    <div className="flex min-w-0 items-center gap-[11px]">
+                      <Avatar nazwa={nazwa} size={32} />
+                      <Link
+                        href={`/uczestnicy/${u.id}`}
+                        className="truncate text-sm font-semibold text-ink hover:text-primary-strong"
+                      >
+                        {nazwa}
+                      </Link>
+                    </div>
+                    <div className="text-center text-[13.5px] font-bold text-primary-strong">
+                      {p}
+                    </div>
+                    <div className="text-center text-[13.5px] font-semibold text-amber-ink">
+                      {usp}
+                    </div>
+                    <div className="text-center text-[13.5px] font-semibold text-red-ink">
+                      {nieu}
+                    </div>
+                    <div className="text-center text-[13.5px] text-faint">
+                      {nieoznaczone}
+                    </div>
+                    <div className="text-center text-[13px] font-semibold text-ink-mid">
+                      {frekwencja}%
+                    </div>
+                    <div className="text-right font-serif text-[15px] font-bold text-ink-strong">
+                      {fmtPLN(kwota)} zł
+                    </div>
+                  </div>
+                );
+              },
+            )}
+
+            {swiadczenia.wiersze.length === 0 && (
+              <div className="px-[22px] py-8 text-center text-sm text-faint">
+                Brak aktywnych uczestników w projekcie „{projekt.skrot}”.
+              </div>
+            )}
+
+            {swiadczenia.wiersze.length > 0 && (
+              <div className="flex items-center justify-between border-t border-line bg-hover-row px-[22px] py-[15px]">
+                <span className="text-[13.5px] text-muted">
+                  Razem do wypłaty w {MIESIACE[kotwica.getMonth()]}{" "}
+                  {kotwica.getFullYear()}
+                </span>
+                <span className="font-serif text-xl font-bold text-primary-strong">
+                  {fmtPLN(swiadczenia.suma)} zł
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-faint">
+            Wyliczenie pomocnicze: kwota = stawka × (obecne + usprawiedliwione) ÷
+            dni robocze. Dni nieoznaczone liczone są jako 0 do czasu rejestracji.
+            Zasady naliczania świadczenia integracyjnego należy zweryfikować z
+            obowiązującymi przepisami i regulaminem CIS.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
