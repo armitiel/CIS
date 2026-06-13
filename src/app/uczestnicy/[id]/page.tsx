@@ -66,15 +66,15 @@ export default function Kartoteka() {
         <StatusPill status={u.status} />
       </header>
 
-      <section className="grid grid-cols-1 gap-[18px] sm:grid-cols-3">
-        <div className="card card-hover anim-card-in p-5">
-          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] bg-blue-soft">
-            <span className="material-symbols-rounded notranslate text-[25px] text-blue-ink">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-[18px]">
+        <div className="card card-hover anim-card-in p-3.5 sm:p-5">
+          <div className="mb-2 flex h-9 w-9 sm:mb-3 sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-blue-soft">
+            <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-blue-ink">
               route
             </span>
           </div>
           <p className="m-0 text-sm text-muted">Ścieżka reintegracji</p>
-          <p className="m-0 mt-1 font-serif text-[26px] font-semibold text-ink-strong">
+          <p className="m-0 mt-1 font-serif text-[20px] sm:text-[26px] font-semibold text-ink-strong">
             IŚR + {u.sciezka}
           </p>
           <p className="m-0 mt-1 text-xs text-faint">
@@ -82,17 +82,17 @@ export default function Kartoteka() {
           </p>
         </div>
         <div
-          className="card card-hover anim-card-in p-5"
+          className="card card-hover anim-card-in p-3.5 sm:p-5"
           style={{ animationDelay: "0.07s" }}
         >
-          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] bg-green-soft">
-            <span className="material-symbols-rounded notranslate text-[25px] text-primary-strong">
+          <div className="mb-2 flex h-9 w-9 sm:mb-3 sm:h-11 sm:w-11 items-center justify-center rounded-[13px] bg-green-soft">
+            <span className="material-symbols-rounded notranslate text-[20px] sm:text-[25px] text-primary-strong">
               event_available
             </span>
           </div>
           <p className="m-0 text-sm text-muted">Frekwencja</p>
           <p
-            className={`m-0 mt-1 font-serif text-[26px] font-semibold ${
+            className={`m-0 mt-1 font-serif text-[20px] sm:text-[26px] font-semibold ${
               u.status === "aktywny" ? frekKolor : "text-faint"
             }`}
           >
@@ -101,16 +101,16 @@ export default function Kartoteka() {
           <p className="m-0 mt-1 text-xs text-faint">bieżący miesiąc</p>
         </div>
         <div
-          className="card card-hover anim-card-in p-5"
+          className="card card-hover anim-card-in p-3.5 sm:p-5"
           style={{ animationDelay: "0.14s" }}
         >
           <div
-            className={`mb-3 flex h-11 w-11 items-center justify-center rounded-[13px] ${
+            className={`mb-2 flex h-9 w-9 sm:mb-3 sm:h-11 sm:w-11 items-center justify-center rounded-[13px] ${
               braki.length === 0 ? "bg-green-soft" : "bg-amber-soft"
             }`}
           >
             <span
-              className={`material-symbols-rounded notranslate text-[25px] ${
+              className={`material-symbols-rounded notranslate text-[20px] sm:text-[25px] ${
                 braki.length === 0 ? "text-primary-strong" : "text-amber-ink"
               }`}
             >
@@ -119,12 +119,12 @@ export default function Kartoteka() {
           </div>
           <p className="m-0 text-sm text-muted">Teczka dokumentów</p>
           {braki.length === 0 ? (
-            <p className="m-0 mt-1 font-serif text-[26px] font-semibold text-primary-strong">
+            <p className="m-0 mt-1 font-serif text-[20px] sm:text-[26px] font-semibold text-primary-strong">
               komplet
             </p>
           ) : (
             <>
-              <p className="m-0 mt-1 font-serif text-[26px] font-semibold text-amber-ink">
+              <p className="m-0 mt-1 font-serif text-[20px] sm:text-[26px] font-semibold text-amber-ink">
                 braki: {braki.length}
               </p>
               <ul className="m-0 mt-1 list-none p-0 text-xs text-muted">
