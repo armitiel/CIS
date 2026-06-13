@@ -12,6 +12,7 @@ import { useProjekt } from "@/components/ProjektProvider";
 import Portal from "@/components/Portal";
 import {
   analizujDokument,
+  analizujPrzezAI,
   wyciagnijTekstZPliku,
   type Rozpoznanie,
   type WynikAnalizy,
@@ -83,7 +84,19 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
   const [pokazWklej, setPokazWklej] = useState(false);
   const [wklejony, setWklejony] = useState("");
   const [analizuje, setAnalizuje] = useState(false);
+  const [uzytoAI, setUzytoAI] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  /** Analiza tekstu: najpierw AI (endpoint serwerowy), w razie niepowodzenia — lokalnie. */
+  async function przeanalizuj(tekst: string, nazwaDok: string) {
+    const ai = await analizujPrzezAI(tekst);
+    if (ai) {
+      setUzytoAI(true);
+      dolozAnalize(ai, nazwaDok);
+    } else {
+      dolozAnalize(analizujDokument(tekst), nazwaDok);
+    }
+  }
 
   /**
    * Dokłada wynik analizy kolejnego dokumentu: wypełnia TYLKO puste pola.

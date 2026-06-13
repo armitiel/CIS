@@ -261,3 +261,76 @@ export function analizujDokument(tekstWe: string): WynikAnalizy {
     sugerowaneSekcje,
   };
 }
+
+/**
+ * Analiza przez Anthropic API (endpoint serwerowy /api/analiza-wniosku).
+ * Zwraca wynik w tym samym formacie co analizujDokument, z polem `zrodloAI`.
+ * Gdy klucza brak lub API zawiedzie — zwraca null (klient użyje analizy lokalnej).
+ */
+export async function analizujPrzezAI(
+  tekst: string,
+): Promise<(WynikAnalizy & { zrodloAI: true }) | null> {
+  try {
+    const odp = await fetch("/api/analiza-wniosku", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tekst }),
+    });
+    if (!odp.ok) return null;
+    const dane = (await odp.json()) as {
+      ok: boolean;
+      wynik?: {
+        nazwa?: string;
+        nabor?: string;
+        wnioskodawca?: string;
+        okres?: string;
+        typProjektu?: string;
+        sekcje?: { sekcja: string; nazwa: string; powod: string }[];
+        pewnosc?: number;
+      };
+    };
+    if (!dane.ok || !dane.wynik) return null;
+    const w = dane.wynik;
+
+    const pola = {
+      nazwa: w.nazwa || undefined,
+      nabor: w.nabor || undefined,
+      wnioskodawca: w.wnioskodawca || undefined,
+      okres: w.okres || undefined,
+    };
+    const trafienia: Trafienie[] = [];
+    if (pola.nazwa) trafienia.push({ pole: "Tytuł projektu", wartosc: pola.nazwa, fragment: "analiza AI" });
+    if (pola.nabor) trafienia.push({ pole: "Nabór", wartosc: pola.nabor, fragment: "analiza AI" });
+    if (pola.wnioskodawca) trafienia.push({ pole: "Wnioskodawca", wartosc: pola.wnioskodawca, fragment: "analiza AI" });
+    if (pola.okres) trafienia.push({ pole: "Okres realizacji", wartosc: pola.okres, fragment: "analiza AI" });
+
+    const liczbaPol = Object.values(pola).filter(Boolean).length;
+    const rozpoznanie: Rozpoznanie =
+      liczbaPol >= 2 ? "wniosek" : liczbaPol >= 1 ? "czesciowe" : "nierozpoznany";
+
+    const tp = (w.typProjektu ?? "ogolny") as TypProjektu;
+    const typProjektu: TypProjektu = ["cis", "szkoleniowy", "aktywizacja", "ogolny"].includes(tp)
+      ? tp
+      : "ogolny";
+
+    const sugerowaneSekcje: SugerowanaSekcja[] = (w.sekcje ?? [])
+      .filter((s) => /^[A-H]$/.test(s.sekcja))
+      .map((s) => ({ sekcja: s.sekcja, nazwa: s.nazwa, powod: s.powod }));
+
+    return {
+      rozpoznanie,
+      punkty: Math.round((w.pewnosc ?? 0) / 10),
+      pola,
+      trafienia,
+      uwagi:
+        rozpoznanie === "nierozpoznany"
+          ? ["Analiza AI nie rozpoznała danych projektu — uzupełnij pola ręcznie."]
+          : [],
+      typProjektu,
+      sugerowaneSekcje,
+      zrodloAI: true,
+    };
+  } catch {
+    return null;
+  }
+}
