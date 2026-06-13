@@ -159,7 +159,7 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
     setBlad(null);
     try {
       const tekst = await wyciagnijTekstZPliku(file);
-      dolozAnalize(analizujDokument(tekst), file.name);
+      await przeanalizuj(tekst, file.name);
     } catch (e) {
       setBlad(e instanceof Error ? e.message : "Nie udało się odczytać pliku.");
     } finally {
@@ -168,14 +168,16 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
     }
   }
 
-  function analizujWklejony() {
+  async function analizujWklejony() {
     if (wklejony.trim().length === 0) return;
-    dolozAnalize(
-      analizujDokument(wklejony),
-      `wklejony tekst #${dokumenty.length + 1}`,
-    );
-    setWklejony("");
-    setPokazWklej(false);
+    setAnalizuje(true);
+    try {
+      await przeanalizuj(wklejony, `wklejony tekst #${dokumenty.length + 1}`);
+      setWklejony("");
+      setPokazWklej(false);
+    } finally {
+      setAnalizuje(false);
+    }
   }
 
   function utworz() {
@@ -282,7 +284,23 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
 
             {/* Lista przeanalizowanych dokumentów — dane się kumulują */}
             {dokumenty.length > 0 && (
-              <div className="anim-fade-in mt-3 flex flex-wrap gap-1.5">
+              <div className="anim-fade-in mt-2 flex items-center gap-1.5 text-[11px] font-semibold">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 ${
+                    uzytoAI
+                      ? "bg-blue-soft text-blue-ink"
+                      : "bg-soft text-muted"
+                  }`}
+                >
+                  <span className="material-symbols-rounded notranslate text-[14px]">
+                    {uzytoAI ? "auto_awesome" : "rule"}
+                  </span>
+                  {uzytoAI ? "analiza AI (Anthropic)" : "analiza lokalna"}
+                </span>
+              </div>
+            )}
+            {dokumenty.length > 0 && (
+              <div className="anim-fade-in mt-2 flex flex-wrap gap-1.5">
                 {dokumenty.map((d, i) => (
                   <span
                     key={i}
