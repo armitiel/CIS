@@ -441,39 +441,42 @@ export default function Dokumenty() {
                   {dokumenty.length} formularzy
                 </span>
               </summary>
-              <table className="w-full border-t border-line-soft text-left text-sm">
-                <tbody className="divide-y divide-line-soft">
+              <div className="border-t border-line-soft text-sm">
+                <div className="divide-y divide-line-soft">
                   {dokumenty.map((d) => (
-                    <tr key={d.id}>
-                      <td className="w-24 px-4 py-2 align-top font-mono text-xs text-muted">
+                    <div
+                      key={d.id}
+                      className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-start sm:gap-3"
+                    >
+                      <div className="font-mono text-xs text-muted sm:w-20 sm:shrink-0 sm:pt-0.5">
                         {d.symbol}
-                      </td>
-                      <td className="px-2 py-2">
+                      </div>
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-ink">{d.nazwa}</p>
                         <p className="text-xs text-faint">{d.opis}</p>
                         <p className="text-xs text-faint">
                           Podpisy: {d.podpisUczestnika}
                         </p>
-                      </td>
-                      <td className="w-40 px-4 py-2 align-top">
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:w-36 sm:shrink-0 sm:flex-col sm:items-start">
                         <span
                           className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${rodzajStyl[d.rodzaj]}`}
                         >
                           {rodzajLabel[d.rodzaj]}
                         </span>
                         {d.dotyczy !== "wszyscy" && (
-                          <p className="mt-1 text-xs text-faint">
+                          <span className="text-xs text-faint">
                             {d.dotyczy === "bezrobotny"
                               ? "bezrobotni (CIS)"
                               : "bierni zawodowo"}
-                          </p>
+                          </span>
                         )}
-                      </td>
-                      <td className="w-28 px-4 py-2 text-right align-top">
+                      </div>
+                      <div className="sm:shrink-0">
                         <button
                           onClick={() => pokazPodgladWzoru(d)}
                           disabled={podgladLaduje !== null}
-                          className="inline-flex items-center gap-1 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50"
+                          className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-line-strong px-2.5 py-1.5 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50 sm:w-auto sm:py-1"
                           title="Podgląd wzoru formularza (pola puste)"
                         >
                           <span className="material-symbols-rounded notranslate text-[16px]">
@@ -481,11 +484,11 @@ export default function Dokumenty() {
                           </span>
                           {podgladLaduje === `wzor:${d.id}` ? "…" : "Podgląd"}
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </details>
           ))}
         </div>
