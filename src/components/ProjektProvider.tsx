@@ -1,8 +1,13 @@
 "use client";
 
 // Kontekst aktywnego projektu: wybór projektu + baza uczestników per projekt.
-// Uczestnicy zaimportowani z Excel/CSV są zapisywani w localStorage przeglądarki
-// (dane nie opuszczają komputera — etap E1 przeniesie je do bazy z logowaniem).
+//
+// Model danych (etap E1):
+//  • Tryb BAZY (zalogowany, Supabase dostępny) — projekty i uczestnicy są
+//    PRYWATNE per użytkownik (RLS po user_id). Przykładowe projekty są
+//    zaszczepiane przy pierwszym logowaniu i można je usunąć.
+//  • Tryb LOKALNY (brak Supabase/sesji) — projekty wbudowane z kodu +
+//    projekty własne i uczestnicy w localStorage przeglądarki.
 
 import {
   createContext,
@@ -10,18 +15,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
-  projekty,
+  projekty as projektyWbudowane,
   projektDomyslny,
-  projektWbudowany,
-  wczytajNadpisania,
   wczytajProjektyWlasne,
-  zapiszNadpisania,
   zapiszProjektyWlasne,
   zbudujProjektWlasny,
-  type NadpisanieProjektu,
   type Projekt,
   type ProjektWlasnyZapis,
 } from "@/lib/projekty";
@@ -37,10 +39,21 @@ import {
   usunUczestnikowProjektu,
   zastapUczestnikow,
 } from "@/lib/db-uczestnicy";
+import {
+  aktualizujProjektDB,
+  czySesja,
+  czyZasiano,
+  pobierzProjekty,
+  usunProjektDB,
+  zapiszProjektDB,
+  zasiejPrzykladowe,
+} from "@/lib/db-projekty";
 
 const KLUCZ_PROJEKT = "cis-app:aktywny-projekt";
 const kluczUczestnikow = (projektId: string) =>
   `cis-app:uczestnicy:${projektId}`;
+
+const IDS_WBUDOWANE = projektyWbudowane.map((p) => p.id);
 
 interface ProjektContextValue {
   projekt: Projekt;
@@ -51,17 +64,19 @@ interface ProjektContextValue {
   importuj: (file: File) => Promise<WynikImportu>;
   wyczyscImport: () => void;
   dodajUczestnika: (u: Uczestnik) => void;
-  /** dodaje projekt własny (zapis w przeglądarce) i przełącza na niego */
+  /** dodaje projekt (zapis w bazie lub przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
-  /** aktualizuje dane projektu własnego; zwraca false dla projektów wbudowanych */
+  /** aktualizuje dane projektu; zwraca false, gdy projektu nie można edytować */
   aktualizujProjekt: (
     id: string,
     zmiany: Partial<Omit<ProjektWlasnyZapis, "id">>,
   ) => boolean;
-  /** usuwa projekt własny (wbudowanych nie można usunąć) */
+  /** usuwa projekt (tryb bazy — dowolny; tryb lokalny — tylko własny) */
   usunProjekt: (id: string) => void;
-  /** true, jeśli aktywny projekt jest własny (dodany przez użytkownika) */
+  /** true, jeśli aktywny projekt można edytować/usunąć */
   projektWlasny: boolean;
+  /** sprawdza, czy dany projekt można edytować/usunąć */
+  czyWlasny: (id: string) => boolean;
 }
 
 const Ctx = createContext<ProjektContextValue | null>(null);
@@ -71,20 +86,20 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const [importowani, setImportowani] = useState<Record<string, Uczestnik[]>>(
     {},
   );
-  const [wlasne, setWlasne] = useState<ProjektWlasnyZapis[]>([]);
-  const [nadpisania, setNadpisania] = useState<
-    Record<string, NadpisanieProjektu>
-  >({});
+  // Lista projektów dynamicznych: tryb lokalny = własne z localStorage,
+  // tryb bazy = wszystkie projekty użytkownika z Supabase.
+  const [zapisy, setZapisy] = useState<ProjektWlasnyZapis[]>([]);
+  const [trybBazy, setTrybBazy] = useState(false);
   const [gotowy, setGotowy] = useState(false);
+  const zaladowanoBaze = useRef(false);
 
-  // odczyt zapisanego stanu (po stronie przeglądarki)
+  // 1) Szybki odczyt stanu lokalnego (działa zanim odpowie baza / dla fallbacku).
   useEffect(() => {
     try {
       const zapisaneWlasne = wczytajProjektyWlasne();
-      setWlasne(zapisaneWlasne);
-      setNadpisania(wczytajNadpisania());
+      setZapisy(zapisaneWlasne);
       const wszystkieIds = [
-        ...projekty.map((p) => p.id),
+        ...IDS_WBUDOWANE,
         ...zapisaneWlasne.map((p) => p.id),
       ];
       const zapisany = localStorage.getItem(KLUCZ_PROJEKT);
@@ -103,21 +118,52 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     setGotowy(true);
   }, []);
 
-  const wszystkieProjekty = useMemo(() => {
-    // nadpisz wyświetlaną nazwę/skrót projektów wbudowanych (zapis lokalny)
-    const wbudowane = projekty.map((p) => {
-      const n = nadpisania[p.id];
-      return n ? { ...p, nazwa: n.nazwa ?? p.nazwa, skrot: n.skrot ?? p.skrot } : p;
-    });
-    return [...wbudowane, ...wlasne.map(zbudujProjektWlasny)];
-  }, [wlasne, nadpisania]);
+  // 2) Po starcie: jeśli Supabase skonfigurowany i jest sesja — przełącz na
+  //    tryb bazy. Przy pierwszym logowaniu zaszczep przykładowe projekty.
+  useEffect(() => {
+    if (!gotowy || zaladowanoBaze.current || !bazaDostepna()) return;
+    let anulowane = false;
+    (async () => {
+      try {
+        if (!(await czySesja())) return; // niezalogowany → zostajemy lokalnie
+        if (!(await czyZasiano())) {
+          await zasiejPrzykladowe();
+        }
+        const zBazy = await pobierzProjekty();
+        if (anulowane) return;
+        zaladowanoBaze.current = true;
+        setZapisy(zBazy);
+        setTrybBazy(true);
+        // dopasuj aktywny projekt do tego, co jest w bazie
+        setProjektId((biezacy) =>
+          zBazy.some((p) => p.id === biezacy)
+            ? biezacy
+            : (zBazy[0]?.id ?? biezacy),
+        );
+      } catch {
+        // brak tabel / brak uprawnień → zostajemy w trybie lokalnym
+      }
+    })();
+    return () => {
+      anulowane = true;
+    };
+  }, [gotowy]);
+
+  const wszystkieProjekty = useMemo(
+    () =>
+      trybBazy
+        ? zapisy.map(zbudujProjektWlasny)
+        : [...projektyWbudowane, ...zapisy.map(zbudujProjektWlasny)],
+    [trybBazy, zapisy],
+  );
 
   const projekt =
-    wszystkieProjekty.find((p) => p.id === projektId) ?? projektDomyslny;
+    wszystkieProjekty.find((p) => p.id === projektId) ??
+    wszystkieProjekty[0] ??
+    projektDomyslny;
 
-  // E1: po zalogowaniu pobierz uczestników aktywnego projektu z bazy (Supabase).
-  // Gdy baza zwróci rekordy — stają się źródłem prawdy; gdy pusto/błąd —
-  // zostaje localStorage/dane domyślne (tryb offline/niezalogowany).
+  // E1: pobierz uczestników aktywnego projektu z bazy. Gdy baza zwróci rekordy
+  // — stają się źródłem prawdy; gdy pusto/błąd — zostaje localStorage/domyślne.
   useEffect(() => {
     if (!gotowy || !bazaDostepna()) return;
     let anulowane = false;
@@ -161,7 +207,6 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         } catch {
           /* np. brak miejsca — dane pozostaną tylko w pamięci sesji */
         }
-        // E1: zapis do bazy (best-effort; gdy niezalogowany/brak bazy — pomijamy)
         if (bazaDostepna()) {
           try {
             await zastapUczestnikow(wynik.uczestnicy, projekt.id);
@@ -196,7 +241,6 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const uczestnicy = importowani[projekt.id] ?? projekt.uczestnicyDomyslni;
   const zaimportowano = projekt.id in importowani;
 
-  /** Dodaje uczestnika do bazy projektu (zapis lokalny — etap E1: baza online). */
   const dodajUczestnika = useCallback(
     (u: Uczestnik) => {
       setImportowani((stan) => {
@@ -212,7 +256,6 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         }
         return { ...stan, [projekt.id]: nowi };
       });
-      // E1: zapis do bazy (best-effort)
       if (bazaDostepna()) {
         dodajUczestnikaDB(u, projekt.id).catch(() => {
           /* brak sesji/tabeli — pozostaje zapis lokalny */
@@ -222,62 +265,68 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [projekt.id, projekt.uczestnicyDomyslni],
   );
 
-  /** Dodaje projekt własny i przełącza na niego. */
-  const dodajProjekt = useCallback(
-    (zapis: ProjektWlasnyZapis) => {
-      setWlasne((stan) => {
-        const nowe = [...stan.filter((p) => p.id !== zapis.id), zapis];
-        zapiszProjektyWlasne(nowe);
-        return nowe;
-      });
-      zmienProjekt(zapis.id);
-    },
-    [zmienProjekt],
+  /** Czy projekt można edytować/usunąć. */
+  const czyWlasny = useCallback(
+    (id: string) => (trybBazy ? true : !IDS_WBUDOWANE.includes(id)),
+    [trybBazy],
   );
 
-  /**
-   * Aktualizuje dane projektu. Dla projektu własnego zmienia jego zapis,
-   * dla wbudowanego zapisuje nadpisanie nazwy/skrótu (lokalnie). Zawsze true.
-   */
+  /** Dodaje projekt i przełącza na niego. */
+  const dodajProjekt = useCallback(
+    (zapis: ProjektWlasnyZapis) => {
+      setZapisy((stan) => {
+        const nowe = [...stan.filter((p) => p.id !== zapis.id), zapis];
+        if (!trybBazy) zapiszProjektyWlasne(nowe);
+        return nowe;
+      });
+      if (trybBazy) {
+        zapiszProjektDB(zapis).catch(() => {
+          /* zapis nie powiódł się — projekt pozostaje w stanie sesji */
+        });
+      }
+      zmienProjekt(zapis.id);
+    },
+    [trybBazy, zmienProjekt],
+  );
+
+  /** Aktualizuje dane projektu (skrót/nazwa albo odświeżenie z wniosku). */
   const aktualizujProjekt = useCallback(
     (id: string, zmiany: Partial<Omit<ProjektWlasnyZapis, "id">>): boolean => {
-      if (projektWbudowany(id)) {
-        // tylko nazwa i skrót mają sens dla projektu wbudowanego
-        setNadpisania((stan) => {
-          const biezace = stan[id] ?? {};
-          const nowe: NadpisanieProjektu = {
-            ...biezace,
-            ...(zmiany.nazwa !== undefined ? { nazwa: zmiany.nazwa } : {}),
-            ...(zmiany.skrot !== undefined ? { skrot: zmiany.skrot } : {}),
-          };
-          const mapa = { ...stan, [id]: nowe };
-          zapiszNadpisania(mapa);
-          return mapa;
-        });
-        return true;
-      }
+      if (!czyWlasny(id)) return false;
       let zaktualizowano = false;
-      setWlasne((stan) => {
+      setZapisy((stan) => {
         if (!stan.some((p) => p.id === id)) return stan;
         zaktualizowano = true;
         const nowe = stan.map((p) =>
           p.id === id ? { ...p, ...zmiany, id } : p,
         );
-        zapiszProjektyWlasne(nowe);
+        if (!trybBazy) zapiszProjektyWlasne(nowe);
         return nowe;
       });
+      if (zaktualizowano && trybBazy) {
+        aktualizujProjektDB(id, zmiany).catch(() => {
+          /* zapis nie powiódł się — zmiana pozostaje w stanie sesji */
+        });
+      }
       return zaktualizowano;
     },
-    [],
+    [czyWlasny, trybBazy],
   );
 
-  /** Usuwa projekt własny wraz z jego bazą uczestników. */
+  /** Usuwa projekt wraz z jego bazą uczestników. */
   const usunProjekt = useCallback(
     (id: string) => {
-      setWlasne((stan) => {
-        if (!stan.some((p) => p.id === id)) return stan; // wbudowane nietykalne
+      if (!czyWlasny(id)) return;
+      let cel: string | null = null;
+      setZapisy((stan) => {
+        if (!stan.some((p) => p.id === id)) return stan;
         const nowe = stan.filter((p) => p.id !== id);
-        zapiszProjektyWlasne(nowe);
+        if (!trybBazy) zapiszProjektyWlasne(nowe);
+        if (projektId === id) {
+          cel = trybBazy
+            ? (nowe[0]?.id ?? projektDomyslny.id)
+            : projektDomyslny.id;
+        }
         return nowe;
       });
       setImportowani((stan) => {
@@ -290,12 +339,17 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       } catch {
         /* ignoruj */
       }
-      if (projektId === id) zmienProjekt(projektDomyslny.id);
+      if (trybBazy) {
+        usunProjektDB(id).catch(() => {
+          /* zapis nie powiódł się — usunięcie pozostaje w stanie sesji */
+        });
+      }
+      if (cel) zmienProjekt(cel);
     },
-    [projektId, zmienProjekt],
+    [czyWlasny, trybBazy, projektId, zmienProjekt],
   );
 
-  const projektWlasny = wlasne.some((p) => p.id === projekt.id);
+  const projektWlasny = czyWlasny(projekt.id);
 
   const value = useMemo(
     () => ({
@@ -311,6 +365,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       aktualizujProjekt,
       usunProjekt,
       projektWlasny,
+      czyWlasny,
     }),
     [
       projekt,
@@ -325,6 +380,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       aktualizujProjekt,
       usunProjekt,
       projektWlasny,
+      czyWlasny,
     ],
   );
 

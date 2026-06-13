@@ -51,7 +51,10 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
   ],
 };
 
-/** Dane projektu własnego zapisywane w przeglądarce (localStorage). */
+/**
+ * Dane projektu zapisywane poza kodem — w bazie Supabase (tryb prywatny,
+ * per użytkownik) albo, gdy baza niedostępna, w localStorage przeglądarki.
+ */
 export interface ProjektWlasnyZapis {
   id: string;
   nazwa: string;
@@ -64,7 +67,41 @@ export interface ProjektWlasnyZapis {
   utworzono: string; // yyyy-mm-dd
   /** sekcje katalogu (A–H) wykryte z analizy wniosku — E6 */
   sekcje?: string[];
+  /**
+   * Szablon dla projektów przykładowych: "cis" → pełny katalog CIS + przykładowi
+   * uczestnicy, "swa" → katalog 6.8. Brak → katalog generyczny z sekcji.
+   */
+  szablon?: "cis" | "swa";
 }
+
+/**
+ * Przykładowe projekty zaszczepiane do bazy przy pierwszym logowaniu użytkownika.
+ * Są zwykłymi rekordami (z szablonem) — można je edytować i usunąć.
+ */
+export const SEEDY_PRZYKLADOWE: ProjektWlasnyZapis[] = [
+  {
+    id: "cis-2026",
+    nazwa: specyfikacjaCIS.nazwa,
+    skrot: "CIS Świebodzin",
+    nabor: specyfikacjaCIS.nabor,
+    wnioskodawca: specyfikacjaCIS.wnioskodawca,
+    okres: specyfikacjaCIS.okres,
+    zrodlo: "Projekt przykładowy (szablon CIS)",
+    utworzono: "2026-06-01",
+    szablon: "cis",
+  },
+  {
+    id: "swa-6.8",
+    nazwa: "Smartfon w Akcji (6.8)",
+    skrot: "6.8 Smartfon",
+    nabor: specyfikacjaSWA.nabor,
+    wnioskodawca: specyfikacjaSWA.wnioskodawca,
+    okres: specyfikacjaSWA.okres,
+    zrodlo: "Projekt przykładowy (szablon 6.8)",
+    utworzono: "2025-01-01",
+    szablon: "swa",
+  },
+];
 
 /** Reprezentatywne dokumenty per sekcja katalogu — baza dla katalogu z analizy wniosku (E6). */
 const DOKUMENTY_SEKCJI: Record<
@@ -200,8 +237,33 @@ export function projektWbudowany(id: string): boolean {
   return projekty.some((p) => p.id === id);
 }
 
-/** Buduje pełny obiekt Projekt z zapisu własnego. */
+/**
+ * Buduje pełny obiekt Projekt z zapisu.
+ * Dla projektów przykładowych (szablon) używa pełnego katalogu z kodu
+ * (CIS: katalog A–H + przykładowi uczestnicy; 6.8: katalog wstępny).
+ * Pozostałe projekty dostają katalog generyczny wyliczony z sekcji.
+ */
 export function zbudujProjektWlasny(z: ProjektWlasnyZapis): Projekt {
+  if (z.szablon === "cis") {
+    return {
+      id: z.id,
+      nazwa: z.nazwa,
+      skrot: z.skrot,
+      nabor: z.nabor || specyfikacjaCIS.nabor,
+      spec: specyfikacjaCIS,
+      uczestnicyDomyslni: uczestnicyCIS,
+    };
+  }
+  if (z.szablon === "swa") {
+    return {
+      id: z.id,
+      nazwa: z.nazwa,
+      skrot: z.skrot,
+      nabor: z.nabor || specyfikacjaSWA.nabor,
+      spec: specyfikacjaSWA,
+      uczestnicyDomyslni: [],
+    };
+  }
   return {
     id: z.id,
     nazwa: z.nazwa,

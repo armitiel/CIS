@@ -18,6 +18,7 @@ export default function WyborProjektu() {
     usunProjekt,
     aktualizujProjekt,
     projektWlasny,
+    czyWlasny,
   } = useProjekt();
   const [otwarte, setOtwarte] = useState(false);
   const [pokazNowy, setPokazNowy] = useState(false);
@@ -181,15 +182,17 @@ export default function WyborProjektu() {
                     </span>
                   </span>
                 </button>
-                <button
-                  onClick={() => rozpocznijEdycje(p.id, p.skrot, p.nazwa)}
-                  className="mr-1 mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
-                  title="Edytuj nazwę projektu"
-                >
-                  <span className="material-symbols-rounded notranslate text-[17px]">
-                    edit
-                  </span>
-                </button>
+                {czyWlasny(p.id) && (
+                  <button
+                    onClick={() => rozpocznijEdycje(p.id, p.skrot, p.nazwa)}
+                    className="mr-1 mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
+                    title="Edytuj nazwę projektu"
+                  >
+                    <span className="material-symbols-rounded notranslate text-[17px]">
+                      edit
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
@@ -219,7 +222,7 @@ export default function WyborProjektu() {
               onClick={() => {
                 if (
                   window.confirm(
-                    `Usunąć projekt „${projekt.skrot}” wraz z jego bazą uczestników (zapis lokalny)?`,
+                    `Usunąć projekt „${projekt.skrot}” wraz z jego bazą uczestników? Tej operacji nie można cofnąć.`,
                   )
                 ) {
                   usunProjekt(projekt.id);
