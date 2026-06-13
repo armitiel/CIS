@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function Login() {
   const [bladKonfig, setBladKonfig] = useState(false);
   const [trwa, setTrwa] = useState(false);
+  const [bladUrl, setBladUrl] = useState<string | null>(null);
+
+  // odczytaj ewentualny błąd przekazany przez /auth/callback
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const blad = p.get("blad");
+    if (!blad) return;
+    const msg = p.get("msg");
+    if (blad === "auth")
+      setBladUrl(
+        msg ? decodeURIComponent(msg) : "Wymiana kodu nie powiodła się.",
+      );
+    else if (blad === "brak-kodu")
+      setBladUrl("Google nie zwrócił kodu autoryzacji.");
+    else if (blad === "brak-konfiguracji")
+      setBladUrl("Brak zmiennych Supabase na serwerze (env).");
+  }, []);
 
   async function zalogujGoogle() {
     setTrwa(true);
@@ -77,6 +94,12 @@ export default function Login() {
           </svg>
           {trwa ? "Przekierowanie…" : "Zaloguj się przez Google"}
         </button>
+
+        {bladUrl && (
+          <p className="mt-4 break-words rounded-lg bg-amber-soft px-3 py-2 text-left text-xs text-amber-ink">
+            Błąd logowania: {bladUrl}
+          </p>
+        )}
 
         {bladKonfig && (
           <p className="mt-4 rounded-lg bg-amber-soft px-3 py-2 text-left text-xs text-amber-ink">

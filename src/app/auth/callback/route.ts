@@ -29,8 +29,12 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    // wymiana kodu nie powiodła się — przekaż treść błędu do diagnozy
+    const msg = encodeURIComponent(error.message ?? "nieznany");
+    return NextResponse.redirect(`${origin}/login?blad=auth&msg=${msg}`);
   }
 
-  // niepowodzenie — wróć na stronę logowania z informacją
-  return NextResponse.redirect(`${origin}/login?blad=auth`);
+  // brak kodu / brak konfiguracji
+  const powod = !code ? "brak-kodu" : "brak-konfiguracji";
+  return NextResponse.redirect(`${origin}/login?blad=${powod}`);
 }
