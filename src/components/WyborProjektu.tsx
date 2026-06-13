@@ -2,27 +2,42 @@
 
 // Responsywny przełącznik projektu w menu bocznym. Zastępuje natywny <select>,
 // którego opcji nie da się ostylować: zamknięty pokazuje skrót (mieści się
-// w wąskim pasku), rozwinięty — pełne nazwy zawinięte w czytelnym panelu.
+// w wąskim pasku), rozwinięty — pełne nazwy (przycięte do 2 linii) w panelu
+// dopasowanym do szerokości ekranu. Projekty własne można edytować (skrót +
+// pełna nazwa) i usuwać.
 
 import { useEffect, useRef, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
 import NowyProjekt from "@/components/NowyProjekt";
 
 export default function WyborProjektu() {
-  const { projekt, projekty, zmienProjekt, usunProjekt, projektWlasny } =
-    useProjekt();
+  const {
+    projekt,
+    projekty,
+    zmienProjekt,
+    usunProjekt,
+    aktualizujProjekt,
+    projektWlasny,
+  } = useProjekt();
   const [otwarte, setOtwarte] = useState(false);
   const [pokazNowy, setPokazNowy] = useState(false);
+  const [edytowanyId, setEdytowanyId] = useState<string | null>(null);
+  const [edSkrot, setEdSkrot] = useState("");
+  const [edNazwa, setEdNazwa] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function klik(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOtwarte(false);
+        setEdytowanyId(null);
       }
     }
     function esc(e: KeyboardEvent) {
-      if (e.key === "Escape") setOtwarte(false);
+      if (e.key === "Escape") {
+        setOtwarte(false);
+        setEdytowanyId(null);
+      }
     }
     document.addEventListener("mousedown", klik);
     document.addEventListener("keydown", esc);
@@ -31,6 +46,30 @@ export default function WyborProjektu() {
       document.removeEventListener("keydown", esc);
     };
   }, []);
+
+  function rozpocznijEdycje(id: string, skrot: string, nazwa: string) {
+    setEdytowanyId(id);
+    setEdSkrot(skrot);
+    setEdNazwa(nazwa);
+  }
+
+  function zapiszEdycje() {
+    if (!edytowanyId) return;
+    const skrot = edSkrot.trim();
+    const nazwa = edNazwa.trim();
+    if (!skrot && !nazwa) return;
+    aktualizujProjekt(edytowanyId, {
+      ...(skrot ? { skrot } : {}),
+      ...(nazwa ? { nazwa } : {}),
+    });
+    setEdytowanyId(null);
+  }
+
+  const wlasny = (id: string) =>
+    !["cis-2026", "swa-6.8"].includes(id);
+
+  const pole =
+    "w-full rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-[oklch(0.62_0.09_152)]";
 
   return (
     <div ref={ref} className="relative mx-1 mb-4">
@@ -57,24 +96,71 @@ export default function WyborProjektu() {
       {otwarte && (
         <div
           role="listbox"
-          className="absolute left-0 top-full z-30 mt-1.5 w-[290px] max-w-[calc(100vw-32px)] overflow-hidden rounded-xl border border-line bg-surface shadow-[0_10px_30px_rgb(0_0_0/0.16)]"
+          className="absolute left-0 top-full z-30 mt-1.5 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-[0_10px_30px_rgb(0_0_0/0.16)]"
         >
           {projekty.map((p) => {
             const aktywny = p.id === projekt.id;
+            const wEdycji = edytowanyId === p.id;
+
+            if (wEdycji) {
+              return (
+                <div
+                  key={p.id}
+                  className="border-b border-line-soft bg-soft/40 px-3 py-2.5 last:border-b-0"
+                >
+                  <label className="mb-1 block text-[10.5px] font-semibold uppercase tracking-wide text-faint">
+                    Skrót (w menu)
+                  </label>
+                  <input
+                    value={edSkrot}
+                    onChange={(e) => setEdSkrot(e.target.value)}
+                    className={pole}
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && zapiszEdycje()}
+                  />
+                  <label className="mb-1 mt-2 block text-[10.5px] font-semibold uppercase tracking-wide text-faint">
+                    Pełna nazwa
+                  </label>
+                  <textarea
+                    value={edNazwa}
+                    onChange={(e) => setEdNazwa(e.target.value)}
+                    rows={2}
+                    className={`${pole} resize-none`}
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={zapiszEdycje}
+                      className="flex-1 rounded-lg bg-primary px-2 py-1.5 text-[12px] font-semibold text-white"
+                    >
+                      Zapisz
+                    </button>
+                    <button
+                      onClick={() => setEdytowanyId(null)}
+                      className="rounded-lg border border-line-strong px-2.5 py-1.5 text-[12px] font-semibold text-ink-mid hover:bg-soft"
+                    >
+                      Anuluj
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <button
+              <div
                 key={p.id}
-                role="option"
-                aria-selected={aktywny}
-                onClick={() => {
-                  zmienProjekt(p.id);
-                  setOtwarte(false);
-                }}
-                className={`block w-full border-b border-line-soft px-3 py-2.5 text-left transition-colors last:border-b-0 ${
+                className={`flex items-start gap-1 border-b border-line-soft last:border-b-0 ${
                   aktywny ? "bg-green-soft/60" : "hover:bg-soft"
                 }`}
               >
-                <span className="flex items-start gap-2">
+                <button
+                  role="option"
+                  aria-selected={aktywny}
+                  onClick={() => {
+                    zmienProjekt(p.id);
+                    setOtwarte(false);
+                  }}
+                  className="flex min-w-0 flex-1 items-start gap-2 px-3 py-2.5 text-left"
+                >
                   <span
                     className={`material-symbols-rounded notranslate mt-px shrink-0 text-[18px] ${
                       aktywny ? "text-primary-strong" : "text-transparent"
@@ -84,7 +170,7 @@ export default function WyborProjektu() {
                   </span>
                   <span className="min-w-0">
                     <span
-                      className={`block text-[13px] leading-snug ${
+                      className={`block line-clamp-2 text-[13px] leading-snug ${
                         aktywny
                           ? "font-bold text-primary-strong"
                           : "font-semibold text-ink"
@@ -92,12 +178,23 @@ export default function WyborProjektu() {
                     >
                       {p.nazwa}
                     </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
+                    <span className="mt-0.5 block truncate text-[11px] text-muted">
                       {p.nabor}
                     </span>
                   </span>
-                </span>
-              </button>
+                </button>
+                {wlasny(p.id) && (
+                  <button
+                    onClick={() => rozpocznijEdycje(p.id, p.skrot, p.nazwa)}
+                    className="mr-1 mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
+                    title="Edytuj nazwę projektu"
+                  >
+                    <span className="material-symbols-rounded notranslate text-[17px]">
+                      edit
+                    </span>
+                  </button>
+                )}
+              </div>
             );
           })}
 

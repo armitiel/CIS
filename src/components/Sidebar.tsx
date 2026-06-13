@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProjekt } from "@/components/ProjektProvider";
 import WyborProjektu from "@/components/WyborProjektu";
+import PanelUzytkownika from "@/components/PanelUzytkownika";
 
 const moduly = [
   { href: "/", label: "Pulpit", icon: "space_dashboard" },
@@ -83,17 +84,7 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="mt-auto flex items-center gap-[11px] rounded-[14px] border border-line bg-soft p-[11px]">
-        <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[oklch(0.55_0.08_200)] text-sm font-bold text-white">
-          NK
-        </div>
-        <div className="min-w-0">
-          <div className="truncate text-[13.5px] font-bold text-ink">
-            Natalia Kruk
-          </div>
-          <div className="text-[11.5px] text-muted">Koordynator projektu</div>
-        </div>
-      </div>
+      <PanelUzytkownika />
       </aside>
     </>
   );

@@ -29,7 +29,27 @@ export const updateSession = async (request: NextRequest) => {
   });
 
   // wywołanie odświeża token, jeśli wygasł
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // brama dostępu: niezalogowany → /login (poza ścieżkami publicznymi)
+  const sciezka = request.nextUrl.pathname;
+  const publiczna =
+    sciezka === "/login" ||
+    sciezka.startsWith("/auth") ||
+    sciezka.startsWith("/api");
+  if (!user && !publiczna) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+  // zalogowany na /login → przekieruj na pulpit
+  if (user && sciezka === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 };

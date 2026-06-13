@@ -25,6 +25,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [menuOtwarte]);
 
+  // strona logowania renderuje się bez powłoki (menu/nagłówek)
+  if (pathname === "/login") return <>{children}</>;
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <Sidebar otwarte={menuOtwarte} onZamknij={() => setMenuOtwarte(false)} />
