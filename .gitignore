@@ -32,3 +32,6 @@ next-env.d.ts
 # tymczasowe pliki z sekretami (migracje/konfiguracja Supabase)
 .mig-body.json
 .auth-body.json
+
+# logi dev
+dev*.log
