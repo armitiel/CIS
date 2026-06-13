@@ -28,3 +28,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# tymczasowe pliki z sekretami (migracje/konfiguracja Supabase)
+.mig-body.json
+.auth-body.json

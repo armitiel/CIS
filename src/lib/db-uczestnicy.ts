@@ -76,9 +76,9 @@ export function bazaDostepna(): boolean {
   );
 }
 
-/** Klient Supabase lub błąd — gdy baza niedostępna, woła to wyłapuje provider. */
+/** Klient Supabase lub błąd — gdy baza niedostępna, wołającego łapie provider. */
 function klient() {
-  const supabase = createClient();
+  const supabase = createClient(); // createClient z utils/supabase/client
   if (!supabase) throw new Error("Supabase nie jest skonfigurowane.");
   return supabase;
 }

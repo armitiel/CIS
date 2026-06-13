@@ -26,6 +26,13 @@ import {
   importujUczestnikow,
   type WynikImportu,
 } from "@/lib/import-uczestnikow";
+import {
+  bazaDostepna,
+  dodajUczestnikaDB,
+  pobierzUczestnikow,
+  usunUczestnikowProjektu,
+  zastapUczestnikow,
+} from "@/lib/db-uczestnicy";
 
 const KLUCZ_PROJEKT = "cis-app:aktywny-projekt";
 const kluczUczestnikow = (projektId: string) =>
@@ -96,6 +103,27 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const projekt =
     wszystkieProjekty.find((p) => p.id === projektId) ?? projektDomyslny;
 
+  // E1: po zalogowaniu pobierz uczestników aktywnego projektu z bazy (Supabase).
+  // Gdy baza zwróci rekordy — stają się źródłem prawdy; gdy pusto/błąd —
+  // zostaje localStorage/dane domyślne (tryb offline/niezalogowany).
+  useEffect(() => {
+    if (!gotowy || !bazaDostepna()) return;
+    let anulowane = false;
+    (async () => {
+      try {
+        const zBazy = await pobierzUczestnikow(projekt.id);
+        if (!anulowane && zBazy.length > 0) {
+          setImportowani((stan) => ({ ...stan, [projekt.id]: zBazy }));
+        }
+      } catch {
+        /* brak sesji / tabeli — zostajemy na danych lokalnych */
+      }
+    })();
+    return () => {
+      anulowane = true;
+    };
+  }, [gotowy, projekt.id]);
+
   const zmienProjekt = useCallback((id: string) => {
     setProjektId(id);
     try {
@@ -121,6 +149,14 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         } catch {
           /* np. brak miejsca — dane pozostaną tylko w pamięci sesji */
         }
+        // E1: zapis do bazy (best-effort; gdy niezalogowany/brak bazy — pomijamy)
+        if (bazaDostepna()) {
+          try {
+            await zastapUczestnikow(wynik.uczestnicy, projekt.id);
+          } catch {
+            /* brak sesji/tabeli — pozostaje zapis lokalny */
+          }
+        }
       }
       return wynik;
     },
@@ -137,6 +173,11 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(kluczUczestnikow(projekt.id));
     } catch {
       /* ignoruj */
+    }
+    if (bazaDostepna()) {
+      usunUczestnikowProjektu(projekt.id).catch(() => {
+        /* brak sesji/tabeli — pomijamy */
+      });
     }
   }, [projekt.id]);
 
@@ -159,6 +200,12 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         }
         return { ...stan, [projekt.id]: nowi };
       });
+      // E1: zapis do bazy (best-effort)
+      if (bazaDostepna()) {
+        dodajUczestnikaDB(u, projekt.id).catch(() => {
+          /* brak sesji/tabeli — pozostaje zapis lokalny */
+        });
+      }
     },
     [projekt.id, projekt.uczestnicyDomyslni],
   );
