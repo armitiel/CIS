@@ -76,11 +76,18 @@ export function bazaDostepna(): boolean {
   );
 }
 
+/** Klient Supabase lub błąd — gdy baza niedostępna, woła to wyłapuje provider. */
+function klient() {
+  const supabase = createClient();
+  if (!supabase) throw new Error("Supabase nie jest skonfigurowane.");
+  return supabase;
+}
+
 /** Pobiera uczestników danego projektu z bazy. */
 export async function pobierzUczestnikow(
   projektId: string,
 ): Promise<Uczestnik[]> {
-  const supabase = createClient();
+  const supabase = klient();
   const { data, error } = await supabase
     .from("uczestnicy")
     .select("*")
@@ -95,7 +102,7 @@ export async function dodajUczestnikaDB(
   u: Uczestnik,
   projektId: string,
 ): Promise<Uczestnik> {
-  const supabase = createClient();
+  const supabase = klient();
   const { data, error } = await supabase
     .from("uczestnicy")
     .insert(doWiersza(u, projektId))
@@ -110,7 +117,7 @@ export async function zastapUczestnikow(
   lista: Uczestnik[],
   projektId: string,
 ): Promise<Uczestnik[]> {
-  const supabase = createClient();
+  const supabase = klient();
   const { error: errDel } = await supabase
     .from("uczestnicy")
     .delete()
@@ -129,7 +136,7 @@ export async function zastapUczestnikow(
 export async function usunUczestnikowProjektu(
   projektId: string,
 ): Promise<void> {
-  const supabase = createClient();
+  const supabase = klient();
   const { error } = await supabase
     .from("uczestnicy")
     .delete()

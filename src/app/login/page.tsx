@@ -12,6 +12,11 @@ export default function Login() {
     setBladKonfig(false);
     try {
       const supabase = createClient();
+      if (!supabase) {
+        setBladKonfig(true);
+        setTrwa(false);
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

@@ -10,6 +10,7 @@ export default function PanelUzytkownika() {
 
   useEffect(() => {
     const supabase = createClient();
+    if (!supabase) return; // brak konfiguracji Supabase — tryb bez logowania
     supabase.auth.getUser().then(({ data }) => {
       const u = data.user;
       if (!u) return;
