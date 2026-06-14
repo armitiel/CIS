@@ -358,17 +358,6 @@ export default function Obecnosci() {
               {ZNACZNIK[z].label}
             </span>
           ))}
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
-              style={{ background: "var(--color-soft)" }}
-            >
-              <span className="material-symbols-rounded notranslate text-sm text-faint">
-                {pustaIkona}
-              </span>
-            </span>
-            nieoznaczone
-          </span>
           <span className="text-faint">· kliknij znacznik, aby zmienić</span>
         </div>
       )}
