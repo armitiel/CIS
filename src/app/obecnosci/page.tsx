@@ -341,7 +341,6 @@ export default function Obecnosci() {
       {/* Legenda znaczników (zawsze widoczna poza widokiem świadczeń) */}
       {widok !== "swiadczenia" && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line-soft bg-surface px-3.5 py-2.5 text-[12.5px] text-muted">
-          <span className="font-semibold text-ink-mid">Legenda:</span>
           {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
             <span key={z} className="flex items-center gap-1.5">
               <span
