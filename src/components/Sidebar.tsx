@@ -69,6 +69,7 @@ export default function Sidebar({
             <Link
               key={m.href}
               href={m.href}
+              onClick={onZamknij}
               className={`flex w-full items-center gap-[13px] rounded-xl px-[13px] py-[11px] text-left text-[14.5px] transition-colors duration-200 ${
                 active
                   ? "bg-green-soft font-bold text-primary-strong"

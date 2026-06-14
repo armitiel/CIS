@@ -12,6 +12,26 @@ export const SLOWNIK_WYKSZTALCENIE = [
   "Wyższe (ISCED 5–8)",
 ] as const;
 
+/** 16 województw RP — pisownia małymi literami, zgodnie z importem SOWA. */
+export const SLOWNIK_WOJEWODZTWA = [
+  "dolnośląskie",
+  "kujawsko-pomorskie",
+  "lubelskie",
+  "lubuskie",
+  "łódzkie",
+  "małopolskie",
+  "mazowieckie",
+  "opolskie",
+  "podkarpackie",
+  "podlaskie",
+  "pomorskie",
+  "śląskie",
+  "świętokrzyskie",
+  "warmińsko-mazurskie",
+  "wielkopolskie",
+  "zachodniopomorskie",
+] as const;
+
 export const SLOWNIK_STATUS_RYNKU_PRACY = [
   "Osoba bezrobotna",
   "Osoba bierna zawodowo",

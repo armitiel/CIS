@@ -7,6 +7,7 @@ import { useState } from "react";
 import {
   FORMATY,
   SLOWNIK_STATUS_RYNKU_PRACY,
+  SLOWNIK_WOJEWODZTWA,
   SLOWNIK_WYKSZTALCENIE,
   walidujPesel,
   wiekWDniu,
@@ -83,10 +84,13 @@ export default function FormularzUczestnika({
     const wp = walidujPesel(f.pesel);
     const kategoria =
       f.statusRynkuPracy === "Osoba bezrobotna" ? "bezrobotny" : "bierny";
-    const wiek =
-      wp.dataUrodzenia && f.dataPrzystapienia
-        ? wiekWDniu(wp.dataUrodzenia, f.dataPrzystapienia)
-        : undefined;
+    // wiek liczony na dzień przystąpienia, a dla listy rezerwowej (brak daty)
+    // — na dziś; data urodzenia bierze się zawsze z numeru PESEL
+    const dataOdniesienia =
+      f.dataPrzystapienia || new Date().toISOString().slice(0, 10);
+    const wiek = wp.dataUrodzenia
+      ? wiekWDniu(wp.dataUrodzenia, dataOdniesienia)
+      : undefined;
     const u: Uczestnik = {
       // przy edycji zachowujemy id oraz pola spoza formularza (frekwencja,
       // teczka, etap/postęp ścieżki, dane SOWA jak DEGURBA)
@@ -112,6 +116,7 @@ export default function FormularzUczestnika({
         ...(edytowany?.sowa ?? {}),
         pesel: f.pesel,
         plec: wp.plec === "Kobieta" ? "kobieta" : "mężczyzna",
+        dataUrodzenia: wp.dataUrodzenia ?? edytowany?.sowa?.dataUrodzenia,
         wiek: wiek ?? edytowany?.sowa?.wiek ?? undefined,
         wyksztalcenie: f.wyksztalcenie,
         obywatelstwo: edytowany?.sowa?.obywatelstwo ?? "polskie",
@@ -131,6 +136,13 @@ export default function FormularzUczestnika({
   }
 
   const wp = f.pesel.length === 11 ? walidujPesel(f.pesel) : null;
+  const wiekHint =
+    wp?.poprawny && wp.dataUrodzenia
+      ? wiekWDniu(
+          wp.dataUrodzenia,
+          f.dataPrzystapienia || new Date().toISOString().slice(0, 10),
+        )
+      : null;
 
   const Pole = ({
     label,
@@ -168,12 +180,14 @@ export default function FormularzUczestnika({
     label,
     klucz,
     opcje,
+    szeroki = true,
   }: {
     label: string;
     klucz: keyof typeof f;
     opcje: readonly string[];
+    szeroki?: boolean;
   }) => (
-    <div className="sm:col-span-2">
+    <div className={szeroki ? "sm:col-span-2" : ""}>
       <label className="th-label mb-1 block">{label}</label>
       <select
         value={f[klucz]}
@@ -242,6 +256,7 @@ export default function FormularzUczestnika({
             {wp?.poprawny && (
               <p className="m-0 mt-1 text-xs text-primary-strong">
                 ✓ PESEL poprawny — {wp.plec}, ur. {wp.dataUrodzenia}
+                {wiekHint != null && ` · ${wiekHint} l.`}
               </p>
             )}
           </div>
@@ -258,7 +273,12 @@ export default function FormularzUczestnika({
           <Pole label="Miejscowość (TERYT)" klucz="miejscowosc" />
           <Pole label="Gmina (TERYT)" klucz="gmina" />
           <Pole label="Powiat" klucz="powiat" hint="np. świebodziński" />
-          <Pole label="Województwo" klucz="wojewodztwo" />
+          <Slownik
+            label="Województwo"
+            klucz="wojewodztwo"
+            opcje={SLOWNIK_WOJEWODZTWA}
+            szeroki={false}
+          />
           <Pole label="Kod pocztowy" klucz="kodPocztowy" hint="00-000" />
           <Pole label="Telefon" klucz="telefon" />
           <Pole label="E-mail" klucz="email" hint="bez polskich znaków" szeroki />

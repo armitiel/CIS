@@ -15,6 +15,7 @@ export interface DaneSOWA {
   obywatelstwo?: string;
   pesel?: string; // UWAGA RODO: w wersji rozwojowej wyłącznie wartości fikcyjne
   plec?: "kobieta" | "mężczyzna";
+  dataUrodzenia?: string; // RRRR-MM-DD — rozpoznawana z numeru PESEL
   wiek?: number;
   wyksztalcenie?: string; // słownik ISCED
   kraj?: string;
