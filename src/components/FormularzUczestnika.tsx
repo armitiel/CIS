@@ -12,6 +12,7 @@ import {
   walidujPesel,
   wiekWDniu,
 } from "@/lib/slowniki";
+import { powiatyDlaWojewodztwa } from "@/lib/powiaty";
 import type { Uczestnik } from "@/lib/types";
 
 export default function FormularzUczestnika({
@@ -144,6 +145,14 @@ export default function FormularzUczestnika({
         )
       : null;
 
+  // powiaty zależne od wybranego województwa; zachowaj istniejącą wartość
+  // (np. z importu), nawet jeśli nie ma jej w słowniku
+  const powiatyBaza = powiatyDlaWojewodztwa(f.wojewodztwo);
+  const powiatyOpcje =
+    f.powiat && !powiatyBaza.includes(f.powiat)
+      ? [...powiatyBaza, f.powiat]
+      : powiatyBaza;
+
   const Pole = ({
     label,
     klucz,
@@ -181,24 +190,34 @@ export default function FormularzUczestnika({
     klucz,
     opcje,
     szeroki = true,
+    placeholder = "— wybierz ze słownika —",
+    przyZmianie,
+    wylaczony,
   }: {
     label: string;
     klucz: keyof typeof f;
     opcje: readonly string[];
     szeroki?: boolean;
+    placeholder?: string;
+    przyZmianie?: (v: string) => void;
+    wylaczony?: boolean;
   }) => (
     <div className={szeroki ? "sm:col-span-2" : ""}>
       <label className="th-label mb-1 block">{label}</label>
       <select
         value={f[klucz]}
-        onChange={(e) => set(klucz)(e.target.value)}
-        className={`w-full cursor-pointer rounded-xl border px-3 py-2 text-sm text-ink outline-none ${
+        disabled={wylaczony}
+        onChange={(e) => {
+          set(klucz)(e.target.value);
+          przyZmianie?.(e.target.value);
+        }}
+        className={`w-full cursor-pointer rounded-xl border px-3 py-2 text-sm text-ink outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
           bledy[klucz]
             ? "border-red-ink bg-red-soft/40"
             : "border-line-strong bg-surface"
         }`}
       >
-        <option value="">— wybierz ze słownika —</option>
+        <option value="">{placeholder}</option>
         {opcje.map((o) => (
           <option key={o} value={o}>
             {o}
@@ -272,12 +291,24 @@ export default function FormularzUczestnika({
           />
           <Pole label="Miejscowość (TERYT)" klucz="miejscowosc" />
           <Pole label="Gmina (TERYT)" klucz="gmina" />
-          <Pole label="Powiat" klucz="powiat" hint="np. świebodziński" />
           <Slownik
             label="Województwo"
             klucz="wojewodztwo"
             opcje={SLOWNIK_WOJEWODZTWA}
             szeroki={false}
+            przyZmianie={() => set("powiat")("")}
+          />
+          <Slownik
+            label="Powiat"
+            klucz="powiat"
+            opcje={powiatyOpcje}
+            szeroki={false}
+            wylaczony={!f.wojewodztwo}
+            placeholder={
+              f.wojewodztwo
+                ? "— wybierz powiat —"
+                : "— najpierw wybierz województwo —"
+            }
           />
           <Pole label="Kod pocztowy" klucz="kodPocztowy" hint="00-000" />
           <Pole label="Telefon" klucz="telefon" />
