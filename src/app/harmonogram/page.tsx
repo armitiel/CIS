@@ -426,6 +426,7 @@ export default function Harmonogram() {
                 const wTymMiesiacu = data.getMonth() === kotwica.getMonth();
                 const lista = wTymMiesiacu ? zajeciaDnia(data) : [];
                 const dzisiaj = tenSamDzien(data, dzis);
+                const aktywny = lista.length > 0;
                 return (
                   <button
                     key={di}
@@ -435,20 +436,36 @@ export default function Harmonogram() {
                       setWidok("dzien");
                     }}
                     className={`flex min-h-[92px] cursor-pointer flex-col items-start gap-1 border-l border-line-soft p-2 text-left transition-colors first:border-l-0 ${
-                      wTymMiesiacu ? "bg-surface hover:bg-hover-row" : "bg-app"
+                      !wTymMiesiacu
+                        ? "bg-app"
+                        : aktywny
+                          ? "bg-green-soft/40 hover:bg-green-soft/60"
+                          : "bg-surface hover:bg-hover-row"
                     }`}
                     title={wTymMiesiacu ? "Pokaż dzień" : undefined}
                   >
-                    <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[12.5px] font-bold ${
-                        dzisiaj
-                          ? "bg-primary text-white"
-                          : wTymMiesiacu
-                            ? "text-ink-mid"
-                            : "text-faint opacity-50"
-                      }`}
-                    >
-                      {data.getDate()}
+                    <span className="flex w-full items-center justify-between gap-1">
+                      <span
+                        className={`flex h-6 w-6 items-center justify-center rounded-full text-[12.5px] font-bold ${
+                          dzisiaj
+                            ? "bg-primary text-white"
+                            : aktywny
+                              ? "bg-green-soft text-primary-strong"
+                              : wTymMiesiacu
+                                ? "text-ink-mid"
+                                : "text-faint opacity-50"
+                        }`}
+                      >
+                        {data.getDate()}
+                      </span>
+                      {aktywny && (
+                        <span
+                          className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white"
+                          title={`${lista.length} zajęć`}
+                        >
+                          {lista.length}
+                        </span>
+                      )}
                     </span>
                     {lista.slice(0, 2).map((z) => {
                       const k = KOLORY[z.kolor];
