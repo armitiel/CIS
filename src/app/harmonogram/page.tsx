@@ -155,6 +155,14 @@ export default function Harmonogram() {
   function importujWpisy(wpisy: WpisHarmonogramu[]) {
     for (const w of wpisy) zapisz(w);
     setPokazImport(false);
+    // przeskocz do pierwszego zaimportowanego terminu (widok miesiąca),
+    // żeby od razu było widać dodane zajęcia
+    const daty = wpisy.map((w) => w.data).filter(Boolean).sort();
+    if (daty.length > 0) {
+      const [r, m, d] = daty[0].split("-").map(Number);
+      setKotwica(new Date(r, m - 1, d));
+      setWidok("miesiac");
+    }
   }
 
   const wgDnia = useMemo(() => {
