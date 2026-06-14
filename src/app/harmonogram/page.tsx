@@ -8,6 +8,8 @@ import { useMemo, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
 import { useZajecia, type Zajecie } from "@/lib/use-zajecia";
 import ZajeciaPanel from "@/components/ZajeciaPanel";
+import ImportHarmonogramu from "@/components/ImportHarmonogramu";
+import type { WpisHarmonogramu } from "@/lib/import-harmonogramu";
 import type { KolorZajec } from "@/lib/types";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "kadra";
@@ -148,6 +150,12 @@ export default function Harmonogram() {
   const [panel, setPanel] = useState<
     { tryb: "nowy"; data: string } | { tryb: "edytuj"; zajecie: Zajecie } | null
   >(null);
+  const [pokazImport, setPokazImport] = useState(false);
+
+  function importujWpisy(wpisy: WpisHarmonogramu[]) {
+    for (const w of wpisy) zapisz(w);
+    setPokazImport(false);
+  }
 
   const wgDnia = useMemo(() => {
     const m: Record<string, Zajecie[]> = {};
@@ -275,6 +283,16 @@ export default function Harmonogram() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPokazImport(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
+            title="Zbuduj harmonogram z pliku (Excel/CSV/Word/PDF) albo wygeneruj propozycję"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              upload_file
+            </span>
+            Importuj
+          </button>
           <button
             onClick={() => setPanel({ tryb: "nowy", data: iso(kotwica) })}
             className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90"
@@ -525,6 +543,14 @@ export default function Harmonogram() {
           onZapisz={zapisz}
           onUsun={usun}
           onClose={() => setPanel(null)}
+        />
+      )}
+
+      {pokazImport && (
+        <ImportHarmonogramu
+          okres={projekt.spec.okres}
+          onZapisz={importujWpisy}
+          onClose={() => setPokazImport(false)}
         />
       )}
     </div>
