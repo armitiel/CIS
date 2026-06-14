@@ -4,7 +4,7 @@
 // generowanie zbiorcze (ZIP), akcje dla wybranej osoby oraz szablony własne.
 // Pełna teczka pojedynczego uczestnika jest w jego kartotece (moduł Uczestnicy).
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
@@ -35,6 +35,14 @@ import {
   analizujDokument,
   wyciagnijTekstZPliku,
 } from "@/lib/analiza-wniosku";
+import {
+  listaDokumentow,
+  pobierzDokument,
+  storageDostepny,
+  usunDokument,
+  wgrajDokument,
+  type DokumentProjektu,
+} from "@/lib/db-dokumenty-projektu";
 import WyborGeneratora from "@/components/WyborGeneratora";
 import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
@@ -82,10 +90,92 @@ export default function Dokumenty() {
   );
   const fileRef = useRef<HTMLInputElement>(null);
   const szablonRef = useRef<HTMLInputElement>(null);
+  const dokRef = useRef<HTMLInputElement>(null);
+
+  // Współdzielone dokumenty projektu (Supabase Storage)
+  const [storageOK, setStorageOK] = useState<boolean | null>(null);
+  const [dokProjektu, setDokProjektu] = useState<DokumentProjektu[]>([]);
+  const [ladujeDok, setLadujeDok] = useState(false);
+  const [wgrywaDok, setWgrywaDok] = useState(false);
+  const [bladDok, setBladDok] = useState<string | null>(null);
 
   useEffect(() => {
     setSzablony(wczytajSzablony(projekt.id));
   }, [projekt.id]);
+
+  const odswiezDokumenty = useCallback(async () => {
+    setBladDok(null);
+    const ok = await storageDostepny();
+    setStorageOK(ok);
+    if (!ok) {
+      setDokProjektu([]);
+      return;
+    }
+    setLadujeDok(true);
+    try {
+      setDokProjektu(await listaDokumentow(projekt.id));
+    } catch (e) {
+      setBladDok(
+        e instanceof Error
+          ? `Nie udało się wczytać dokumentów: ${e.message}. Sprawdź, czy w Supabase istnieje bucket „dokumenty-projektu”.`
+          : "Nie udało się wczytać dokumentów.",
+      );
+    } finally {
+      setLadujeDok(false);
+    }
+  }, [projekt.id]);
+
+  useEffect(() => {
+    void odswiezDokumenty();
+  }, [odswiezDokumenty]);
+
+  async function wgrajPlik(file: File | undefined) {
+    if (!file) return;
+    setWgrywaDok(true);
+    setBladDok(null);
+    try {
+      await wgrajDokument(projekt.id, file);
+      await odswiezDokumenty();
+    } catch (e) {
+      setBladDok(
+        e instanceof Error ? e.message : "Nie udało się wgrać pliku.",
+      );
+    } finally {
+      setWgrywaDok(false);
+      if (dokRef.current) dokRef.current.value = "";
+    }
+  }
+
+  async function pobierzPlik(d: DokumentProjektu) {
+    try {
+      const blob = await pobierzDokument(d.sciezka);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.nazwa;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setBladDok(e instanceof Error ? e.message : "Nie udało się pobrać pliku.");
+    }
+  }
+
+  async function usunPlik(d: DokumentProjektu) {
+    if (!window.confirm(`Usunąć dokument „${d.nazwa}” z projektu?`)) return;
+    try {
+      await usunDokument(d.sciezka);
+      await odswiezDokumenty();
+    } catch (e) {
+      setBladDok(e instanceof Error ? e.message : "Nie udało się usunąć pliku.");
+    }
+  }
+
+  const fmtRozmiar = (b: number) =>
+    b < 1024
+      ? `${b} B`
+      : b < 1024 * 1024
+        ? `${Math.round(b / 1024)} KB`
+        : `${(b / (1024 * 1024)).toFixed(1)} MB`;
 
   const sekcje = useMemo(() => {
     const m = new Map<Sekcja, WymaganyDokument[]>();
@@ -840,6 +930,120 @@ export default function Dokumenty() {
           uzupełnienia. Wzór: w Wordzie wpisz znacznik w miejscu danych, np.
           „Zaświadcza się, że {"{{imie_nazwisko}}"}, PESEL {"{{pesel}}"}…”.
         </p>
+      </section>
+
+      {/* KROK 4: współdzielone dokumenty projektu (Supabase Storage) */}
+      <section
+        className="card anim-card-in px-6 py-[22px]"
+        style={{ animationDelay: "0.3s" }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
+              4. Dokumenty projektu (współdzielone)
+            </h2>
+            <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
+              Pliki referencyjne projektu — regulaminy, wzory umów, decyzje,
+              procedury, skany. Przechowywane w chmurze (Supabase Storage),
+              dostępne z każdego urządzenia po zalogowaniu. Bez ograniczenia
+              5 MB; nie wgrywaj dokumentów z danymi osobowymi w nazwie pliku.
+            </p>
+          </div>
+          {storageOK && (
+            <div>
+              <input
+                ref={dokRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => wgrajPlik(e.target.files?.[0])}
+              />
+              <button
+                onClick={() => dokRef.current?.click()}
+                disabled={wgrywaDok}
+                className="btn-primary"
+              >
+                <span className="material-symbols-rounded notranslate text-[19px]">
+                  upload_file
+                </span>
+                {wgrywaDok ? "Wgrywam…" : "Wgraj dokument"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {storageOK === false && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-soft px-4 py-3 text-sm text-ink-mid">
+            <span className="material-symbols-rounded notranslate shrink-0 text-[20px] text-blue-ink">
+              info
+            </span>
+            <span>
+              Współdzielone dokumenty wymagają zalogowania (baza online).
+              Zaloguj się, aby wgrywać i pobierać pliki projektu z chmury.
+            </span>
+          </div>
+        )}
+
+        {bladDok && (
+          <div className="anim-fade-in mt-4 rounded-xl bg-red-soft px-4 py-3 text-sm text-red-ink">
+            {bladDok}
+          </div>
+        )}
+
+        {storageOK && (
+          <div className="mt-4 overflow-hidden rounded-xl border border-line">
+            {ladujeDok ? (
+              <div className="px-4 py-6 text-center text-sm text-faint">
+                Wczytuję dokumenty…
+              </div>
+            ) : dokProjektu.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-faint">
+                Brak dokumentów w tym projekcie. Wgraj pierwszy plik powyżej.
+              </div>
+            ) : (
+              <div className="divide-y divide-line-soft">
+                {dokProjektu.map((d) => (
+                  <div
+                    key={d.sciezka}
+                    className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-hover-row"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-blue-soft text-blue-ink">
+                      <span className="material-symbols-rounded notranslate text-[20px]">
+                        description
+                      </span>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 truncate text-sm font-semibold text-ink">
+                        {d.nazwa}
+                      </p>
+                      <p className="m-0 text-xs text-faint">
+                        {fmtRozmiar(d.rozmiar)}
+                        {d.dodano && ` · ${d.dodano.slice(0, 10)}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => pobierzPlik(d)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary-strong hover:bg-green-soft"
+                      title="Pobierz"
+                    >
+                      <span className="material-symbols-rounded notranslate text-[20px]">
+                        download
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => usunPlik(d)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-faint hover:text-red-ink"
+                      title="Usuń"
+                    >
+                      <span className="material-symbols-rounded notranslate text-[20px]">
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* POPUP: wybór uczestników do generowania z szablonu własnego */}
