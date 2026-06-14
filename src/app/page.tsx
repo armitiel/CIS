@@ -25,6 +25,16 @@ const KROPKI = [
   "oklch(0.62 0.1 60)",
 ];
 
+// Skróty do zakładek aplikacji (kafelki na pulpicie)
+const MODULY: { href: string; label: string; ikona: string; odcien: keyof typeof ODCIEN }[] = [
+  { href: "/uczestnicy", label: "Uczestnicy", ikona: "groups", odcien: "green" },
+  { href: "/sciezki", label: "Ścieżki IŚR", ikona: "route", odcien: "blue" },
+  { href: "/obecnosci", label: "Obecności", ikona: "fact_check", odcien: "teal" },
+  { href: "/harmonogram", label: "Harmonogram", ikona: "calendar_month", odcien: "amber" },
+  { href: "/dokumenty", label: "Dokumenty", ikona: "folder_open", odcien: "blue" },
+  { href: "/projekty", label: "Projekty", ikona: "workspaces", odcien: "green" },
+];
+
 export default function Pulpit() {
   const { projekt, uczestnicy } = useProjekt();
   const czyCIS = projekt.id === "cis-2026";
@@ -63,6 +73,34 @@ export default function Pulpit() {
         sredniPostep={sredniPostep}
         limityTekst={limityTekst}
       />
+
+      {/* Szybki dostęp do zakładek aplikacji */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {MODULY.map((m, i) => {
+          const o = ODCIEN[m.odcien];
+          return (
+            <Link
+              key={m.href}
+              href={m.href}
+              className="card card-hover anim-card-in flex flex-col items-start gap-2.5 px-4 py-4"
+              style={{ animationDelay: `${0.04 * i}s` }}
+            >
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-[13px] ${o.tlo}`}
+              >
+                <span
+                  className={`material-symbols-rounded notranslate text-[24px] ${o.ikona}`}
+                >
+                  {m.ikona}
+                </span>
+              </span>
+              <span className="text-[13.5px] font-semibold text-ink">
+                {m.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
 
       <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[1.45fr_1fr]">
         {/* Postęp ścieżek reintegracji */}

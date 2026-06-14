@@ -13,6 +13,7 @@ const moduly = [
   { href: "/obecnosci", label: "Obecności", icon: "fact_check" },
   { href: "/harmonogram", label: "Harmonogram", icon: "calendar_month" },
   { href: "/dokumenty", label: "Dokumenty", icon: "folder_open" },
+  { href: "/projekty", label: "Projekty", icon: "workspaces" },
 ];
 
 export default function Sidebar({
