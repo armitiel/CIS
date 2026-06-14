@@ -16,6 +16,7 @@ import {
 } from "@/lib/projekt-spec";
 import {
   dokumentBlob,
+  dokumentPodgladowy,
   generujPakiet,
   generujPakietyZbiorczo,
   uczestnikWzor,
@@ -46,8 +47,7 @@ import {
 } from "@/lib/db-dokumenty-projektu";
 import {
   listaLogo,
-  pobierzBrandingDomyslny,
-  pobierzBrandingStopki,
+  pobierzBrandingFinalny,
   usunLogo,
   wgrajLogo,
   type LogoProjektu,
@@ -151,14 +151,7 @@ export default function Dokumenty() {
   // logotypami projektu, jeśli zostały wgrane. Działa też bez logowania.
   const odswiezBranding = useCallback(async () => {
     const zest = wykryjZestaw(projekt.nabor);
-    let branding = await pobierzBrandingDomyslny(zest.domyslnePliki);
-    try {
-      const wlasne = await pobierzBrandingStopki(projekt.id);
-      if (wlasne.length > 0) branding = wlasne;
-    } catch {
-      // brak logowania / własnych logo — zostaje zestaw domyślny
-    }
-    ustawBrandingStopki(branding);
+    ustawBrandingStopki(await pobierzBrandingFinalny(projekt.id, zest));
   }, [projekt.id, projekt.nabor]);
 
   useEffect(() => {
@@ -200,6 +193,23 @@ export default function Dokumenty() {
   }
 
   const logoWgRoli = (rola: RolaLogo) => logo.find((l) => l.rola === rola);
+
+  /** Podgląd układu dokumentu z aktualnymi logotypami w stopce. */
+  async function podgladDokumentu() {
+    setBladDok(null);
+    try {
+      await odswiezBranding();
+      const blob = await dokumentPodgladowy(spec);
+      setPodglad({
+        tytul: `Podgląd dokumentu — stopka z logotypami (${zestaw.skrot})`,
+        blob,
+      });
+    } catch (e) {
+      setBladDok(
+        e instanceof Error ? e.message : "Nie udało się utworzyć podglądu.",
+      );
+    }
+  }
 
   useEffect(() => {
     void odswiezDokumenty();
@@ -1163,6 +1173,20 @@ export default function Dokumenty() {
           </a>
         </div>
 
+        <div className="mt-3">
+          <button
+            onClick={podgladDokumentu}
+            disabled={podgladLaduje !== null}
+            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13px] font-semibold text-ink-mid transition-colors hover:bg-soft"
+            title="Zobacz, jak logotypy wyglądają w stopce dokumentu"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              visibility
+            </span>
+            Podgląd dokumentu (stopka z logotypami)
+          </button>
+        </div>
+
         {storageOK === false ? (
           <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-soft px-4 py-3 text-sm text-ink-mid">
             <span className="material-symbols-rounded notranslate shrink-0 text-[20px] text-blue-ink">
@@ -1177,16 +1201,18 @@ export default function Dokumenty() {
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {zestaw.sloty.map((slot) => {
               const l = logoWgRoli(slot.rola);
+              const domyslny = zestaw.domyslneZnaki?.[slot.rola];
+              const podgladSrc = l?.url ?? domyslny;
               return (
                 <div
                   key={slot.rola}
                   className="flex items-center gap-3 rounded-xl border border-line p-3"
                 >
                   <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line-soft bg-white">
-                    {l?.url ? (
+                    {podgladSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={l.url}
+                        src={podgladSrc}
                         alt={slot.nazwa}
                         className="max-h-full max-w-full object-contain"
                       />
@@ -1205,8 +1231,16 @@ export default function Dokumenty() {
                         </span>
                       )}
                     </p>
-                    <p className="m-0 mt-0.5 truncate text-xs text-faint">
-                      {l ? l.nazwa : "brak pliku"}
+                    <p className="m-0 mt-0.5 flex items-center gap-1.5 truncate text-xs text-faint">
+                      {l ? (
+                        l.nazwa
+                      ) : domyslny ? (
+                        <span className="rounded bg-green-soft px-1.5 py-px text-[10px] font-bold text-primary-strong">
+                          znak domyślny
+                        </span>
+                      ) : (
+                        "brak pliku"
+                      )}
                     </p>
                     <div className="mt-1.5 flex gap-2">
                       <button
@@ -1218,12 +1252,13 @@ export default function Dokumenty() {
                           ? "Wgrywam…"
                           : l
                             ? "Zmień"
-                            : "Wgraj"}
+                            : "Wgraj własny"}
                       </button>
                       {l && (
                         <button
                           onClick={() => usunLogoSlot(l)}
                           className="rounded-lg border border-line-strong px-2.5 py-1 text-xs font-semibold text-red-ink hover:bg-red-soft/40"
+                          title="Usuń własny plik (wróci znak domyślny)"
                         >
                           Usuń
                         </button>

@@ -6,7 +6,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { BUCKET_DOKUMENTY, bezpiecznaNazwa } from "./db-dokumenty-projektu";
-import type { RolaLogo } from "./logotypy";
+import type { RolaLogo, ZestawLogotypow } from "./logotypy";
 import type { ObrazStopki } from "./generator";
 
 /** Docelowa wysokość logo w stopce (px) — wszystkie znaki w równej linii. */
@@ -101,70 +101,80 @@ function wymiaryObrazu(url: string): Promise<{ w: number; h: number }> {
   });
 }
 
-/**
- * Pobiera logotypy projektu jako obrazy gotowe do nadruku w stopce (.docx):
- * kolejność FE → barwy RP → UE → logo dodatkowe (partner), równa wysokość.
- * Obsługiwane PNG/JPG (SVG pomijane — wymaga rastrowego fallbacku w .docx).
- */
-export async function pobierzBrandingStopki(
-  projektId: string,
-): Promise<ObrazStopki[]> {
-  const lista = await listaLogo(projektId);
-  const kolejnosc: RolaLogo[] = ["fe", "rp", "ue", "dodatkowe"];
-  const posortowane = [...lista].sort(
-    (a, b) => kolejnosc.indexOf(a.rola) - kolejnosc.indexOf(b.rola),
-  );
-  const wynik: ObrazStopki[] = [];
-  for (const l of posortowane) {
-    const n = l.nazwa.toLowerCase();
-    const typ: "png" | "jpg" | null = n.endsWith(".png")
-      ? "png"
-      : n.endsWith(".jpg") || n.endsWith(".jpeg")
-        ? "jpg"
-        : null;
-    if (!typ || !l.url) continue; // pomijamy SVG / nieobsługiwane
-    try {
-      const resp = await fetch(l.url);
-      const data = new Uint8Array(await resp.arrayBuffer());
-      const { w, h } = await wymiaryObrazu(l.url);
-      if (!w || !h) continue;
-      const szer = Math.max(1, Math.round((WYS_LOGO_STOPKA * w) / h));
-      wynik.push({ data, szer, wys: WYS_LOGO_STOPKA, typ });
-    } catch {
-      // pomiń pojedynczy plik, którego nie udało się pobrać
-    }
-  }
-  return wynik;
+/** Maks. szerokość pojedynczego obrazu w stopce (px) — by pasek mieścił się
+ *  w obszarze strony A4 (margines 2,54 cm). */
+const MAX_SZER_STOPKA = 600;
+
+function typObrazu(nazwa: string): "png" | "jpg" | null {
+  const n = nazwa.toLowerCase();
+  if (n.endsWith(".png")) return "png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "jpg";
+  return null;
 }
 
-/**
- * Domyślny (wbudowany) branding z plików w public/ — używany, gdy projekt
- * nie ma własnych logotypów. Działa bez logowania (pliki serwowane publicznie).
- * Pliki nieobecne (404) są pomijane, więc brak pliku = brak nadruku.
- */
-export async function pobierzBrandingDomyslny(
-  sciezki: string[],
-): Promise<ObrazStopki[]> {
-  const wynik: ObrazStopki[] = [];
-  for (const src of sciezki) {
-    const n = src.toLowerCase();
-    const typ: "png" | "jpg" | null = n.endsWith(".png")
-      ? "png"
-      : n.endsWith(".jpg") || n.endsWith(".jpeg")
-        ? "jpg"
-        : null;
-    if (!typ) continue;
-    try {
-      const resp = await fetch(src);
-      if (!resp.ok) continue;
-      const data = new Uint8Array(await resp.arrayBuffer());
-      const { w, h } = await wymiaryObrazu(src);
-      if (!w || !h) continue;
-      const szer = Math.max(1, Math.round((WYS_LOGO_STOPKA * w) / h));
-      wynik.push({ data, szer, wys: WYS_LOGO_STOPKA, typ });
-    } catch {
-      // pomiń niedostępny plik
+/** Pobiera obraz z URL i skaluje do stopki (równa wysokość, limit szerokości). */
+async function obrazZUrl(
+  url: string,
+  nazwaDoTypu: string,
+): Promise<ObrazStopki | null> {
+  const typ = typObrazu(nazwaDoTypu);
+  if (!typ || !url) return null; // SVG/nieobsługiwane pomijamy
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = new Uint8Array(await resp.arrayBuffer());
+    const { w, h } = await wymiaryObrazu(url);
+    if (!w || !h) return null;
+    let wys = WYS_LOGO_STOPKA;
+    let szer = Math.max(1, Math.round((WYS_LOGO_STOPKA * w) / h));
+    if (szer > MAX_SZER_STOPKA) {
+      szer = MAX_SZER_STOPKA;
+      wys = Math.max(1, Math.round((MAX_SZER_STOPKA * h) / w));
     }
+    return { data, szer, wys, typ };
+  } catch {
+    return null;
+  }
+}
+
+const KOLEJNOSC_ROL: RolaLogo[] = ["fe", "rp", "ue", "dodatkowe"];
+
+/**
+ * Finalny branding stopki dla projektu:
+ *  • jeśli projekt ma JAKIEKOLWIEK własne logo — składa per slot: własny znak
+ *    tam gdzie wgrany, w pozostałych slotach znak domyślny programu;
+ *  • w przeciwnym razie — używa oficjalnego, złożonego paska (domyslnePliki).
+ * Działa też bez logowania (wtedy zawsze pasek/znaki domyślne z public/).
+ */
+export async function pobierzBrandingFinalny(
+  projektId: string,
+  zestaw: ZestawLogotypow,
+): Promise<ObrazStopki[]> {
+  let custom: Partial<Record<RolaLogo, LogoProjektu>> = {};
+  try {
+    for (const l of await listaLogo(projektId)) custom[l.rola] = l;
+  } catch {
+    custom = {};
+  }
+
+  const wynik: ObrazStopki[] = [];
+
+  if (Object.keys(custom).length > 0) {
+    for (const rola of KOLEJNOSC_ROL) {
+      const wlasny = custom[rola];
+      const url = wlasny?.url ?? zestaw.domyslneZnaki?.[rola] ?? "";
+      const nazwa = wlasny?.nazwa ?? zestaw.domyslneZnaki?.[rola] ?? "";
+      if (!url) continue;
+      const o = await obrazZUrl(url, nazwa);
+      if (o) wynik.push(o);
+    }
+    if (wynik.length > 0) return wynik;
+  }
+
+  // brak własnych logo → oficjalny złożony pasek programu
+  for (const src of zestaw.domyslnePliki) {
+    const o = await obrazZUrl(src, src);
+    if (o) wynik.push(o);
   }
   return wynik;
 }

@@ -405,6 +405,36 @@ export async function dokumentBlob(
   return Packer.toBlob(dokumentDocx(trescDokumentu(d, u, spec)));
 }
 
+/**
+ * Krótki dokument podglądowy — pokazuje, jak wygląda strona z aktualnym
+ * brandingiem (logotypy w stopce). Używany w sekcji „Wizualizacja projektu".
+ */
+export async function dokumentPodgladowy(
+  spec: SpecyfikacjaProjektu = specyfikacjaCIS,
+): Promise<Blob> {
+  const children: Blok[] = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: spec.nazwa, bold: true, size: 28 })],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: `Nabór: ${spec.nabor}`, size: 20 })],
+    }),
+    new Paragraph({ children: [new TextRun("")] }),
+    new Paragraph({
+      children: [
+        new TextRun(
+          "To jest podgląd układu dokumentu. Logotypy projektu są nadrukowane " +
+            "w stopce strony — tak samo trafią na wszystkie dokumenty generowane " +
+            "z katalogu formularzy.",
+        ),
+      ],
+    }),
+  ];
+  return Packer.toBlob(dokumentDocx(children));
+}
+
 function pobierzBlob(blob: Blob, nazwaPliku: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

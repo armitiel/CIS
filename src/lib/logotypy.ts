@@ -21,9 +21,14 @@ export interface ZestawLogotypow {
   sloty: SlotLogo[];
   /**
    * Wbudowany domyślny pasek znaków (pliki w public/) — używany automatycznie,
-   * gdy projekt nie ma własnych logotypów. Pusta lista = brak domyślnego.
+   * gdy projekt nie ma żadnych własnych logotypów. Pusta lista = brak domyślnego.
    */
   domyslnePliki: string[];
+  /**
+   * Domyślny plik per slot/rola (public/) — pokazywany w bibliotece i używany
+   * jako wypełnienie slotu, gdy użytkownik nie wgrał własnego.
+   */
+  domyslneZnaki?: Partial<Record<RolaLogo, string>>;
 }
 
 /** Obowiązkowy zestaw znaków dla projektów EFS+ 2021–2027. */
@@ -57,6 +62,12 @@ export const ZESTAW_FELB: ZestawLogotypow = {
     "https://funduszeue.lubuskie.pl/dokumenty-list/zasady-oznakowania-projektow-fewl/",
   sloty: SLOTY_EFS,
   domyslnePliki: ["/logo/felb/zestaw-felb-efs.png"],
+  domyslneZnaki: {
+    fe: "/logo/felb/znaki/fe.png",
+    rp: "/logo/felb/znaki/rp.png",
+    ue: "/logo/felb/znaki/ue.png",
+    dodatkowe: "/logo/felb/znaki/dodatkowe.png",
+  },
 };
 
 export const ZESTAW_FERS: ZestawLogotypow = {
