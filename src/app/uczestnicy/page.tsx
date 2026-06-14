@@ -10,7 +10,7 @@ import { walidujBaze, type WynikWalidacji } from "@/lib/sowa-walidacja";
 import { eksportujCSV, pobierzCSV } from "@/lib/sowa-eksport";
 import WyborGeneratora from "@/components/WyborGeneratora";
 import FormularzUczestnika from "@/components/FormularzUczestnika";
-import type { KategoriaUczestnika } from "@/lib/types";
+import type { KategoriaUczestnika, Uczestnik } from "@/lib/types";
 
 type FiltrKategorii = "wszyscy" | KategoriaUczestnika;
 
@@ -22,6 +22,7 @@ export default function Uczestnicy() {
     importuj,
     wyczyscImport,
     dodajUczestnika,
+    aktualizujUczestnika,
   } = useProjekt();
   const [szukaj, setSzukaj] = useState("");
   const [kategoria, setKategoria] = useState<FiltrKategorii>("wszyscy");
@@ -31,6 +32,7 @@ export default function Uczestnicy() {
   const [zaznaczeni, setZaznaczeni] = useState<Set<string>>(new Set());
   const [pokazGenerator, setPokazGenerator] = useState(false);
   const [pokazFormularz, setPokazFormularz] = useState(false);
+  const [edytowany, setEdytowany] = useState<Uczestnik | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function przelaczZaznaczenie(id: string) {
@@ -309,7 +311,7 @@ export default function Uczestnicy() {
 
       <div className="card anim-card-in overflow-hidden">
         {/* nagłówek tabeli — tylko desktop */}
-        <div className="hidden grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] items-center gap-4 border-b border-line px-[22px] py-3.5 lg:grid">
+        <div className="hidden grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_92px] items-center gap-4 border-b border-line px-[22px] py-3.5 lg:grid">
           <input
             type="checkbox"
             checked={
@@ -345,7 +347,7 @@ export default function Uczestnicy() {
           return (
             <div
               key={u.id}
-              className={`anim-card-in flex flex-col gap-3 border-t border-line-soft px-4 py-4 transition-colors lg:grid lg:grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_52px] lg:items-center lg:gap-4 lg:px-[22px] lg:py-[15px] ${
+              className={`anim-card-in flex flex-col gap-3 border-t border-line-soft px-4 py-4 transition-colors lg:grid lg:grid-cols-[28px_minmax(200px,1.7fr)_minmax(190px,1.9fr)_130px_140px_92px] lg:items-center lg:gap-4 lg:px-[22px] lg:py-[15px] ${
                 zaznaczeni.has(u.id) ? "bg-green-soft/40" : "hover:bg-hover-row"
               }`}
               style={{ animationDelay: `${i * 0.05}s` }}
@@ -376,6 +378,15 @@ export default function Uczestnicy() {
                     </span>
                   </div>
                 </div>
+                <button
+                  onClick={() => setEdytowany(u)}
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] border border-line bg-surface text-ink-mid lg:hidden"
+                  title="Edytuj / uzupełnij dane"
+                >
+                  <span className="material-symbols-rounded notranslate text-[20px]">
+                    edit
+                  </span>
+                </button>
                 <Link
                   href={`/uczestnicy/${u.id}`}
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong lg:hidden"
@@ -415,16 +426,27 @@ export default function Uczestnicy() {
                 </div>
               </div>
 
-              {/* skrót do kartoteki — desktop */}
-              <Link
-                href={`/uczestnicy/${u.id}`}
-                className="hidden h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft lg:flex"
-                title="Otwórz kartotekę"
-              >
-                <span className="material-symbols-rounded notranslate text-[21px]">
-                  folder_open
-                </span>
-              </Link>
+              {/* akcje — desktop: edycja + kartoteka */}
+              <div className="hidden items-center justify-end gap-1.5 lg:flex">
+                <button
+                  onClick={() => setEdytowany(u)}
+                  className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-ink-mid transition-colors hover:bg-soft"
+                  title="Edytuj / uzupełnij dane uczestnika"
+                >
+                  <span className="material-symbols-rounded notranslate text-[20px]">
+                    edit
+                  </span>
+                </button>
+                <Link
+                  href={`/uczestnicy/${u.id}`}
+                  className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-primary-strong transition-[background,transform] hover:translate-x-0.5 hover:bg-green-soft"
+                  title="Otwórz kartotekę"
+                >
+                  <span className="material-symbols-rounded notranslate text-[21px]">
+                    folder_open
+                  </span>
+                </Link>
+              </div>
             </div>
           );
         })}
@@ -464,6 +486,21 @@ export default function Uczestnicy() {
             dodajUczestnika(u);
             setKomunikat(
               `✓ Dodano uczestnika: ${u.nazwisko} ${u.imie} (${u.sciezka}, ${u.status}).`,
+            );
+          }}
+        />
+      )}
+
+      {edytowany && (
+        <FormularzUczestnika
+          projektId={projekt.id}
+          istniejacy={uczestnicy}
+          edytowany={edytowany}
+          onClose={() => setEdytowany(null)}
+          onSave={(zm) => {
+            aktualizujUczestnika(edytowany.id, zm);
+            setKomunikat(
+              `✓ Zaktualizowano dane: ${zm.nazwisko} ${zm.imie}.`,
             );
           }}
         />

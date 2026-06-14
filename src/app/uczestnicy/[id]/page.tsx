@@ -197,16 +197,18 @@ export default function Kartoteka() {
           </h2>
           <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             {[
+              ["PESEL", u.sowa.pesel],
               ["Płeć", u.sowa.plec],
+              ["Data urodzenia", u.sowa.dataUrodzenia],
               ["Wiek przy przystąpieniu", u.sowa.wiek],
+              ["Obywatelstwo", u.sowa.obywatelstwo],
               ["Wykształcenie", u.sowa.wyksztalcenie],
               ["Status na rynku pracy", u.sowa.statusRynkuPracy],
-              [
-                "Adres",
-                u.sowa.miejscowosc
-                  ? `${u.sowa.miejscowosc}, gm. ${u.sowa.gmina ?? "—"}, ${u.sowa.kodPocztowy ?? ""}`
-                  : undefined,
-              ],
+              ["Miejscowość", u.sowa.miejscowosc],
+              ["Gmina", u.sowa.gmina],
+              ["Powiat", u.sowa.powiat],
+              ["Województwo", u.sowa.wojewodztwo],
+              ["Kod pocztowy", u.sowa.kodPocztowy],
               ["DEGURBA", u.sowa.degurba],
               ["Telefon", u.sowa.telefon],
               ["E-mail", u.sowa.email],
