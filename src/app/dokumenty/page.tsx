@@ -19,6 +19,7 @@ import {
   generujPakiet,
   generujPakietyZbiorczo,
   uczestnikWzor,
+  ustawBrandingStopki,
 } from "@/lib/generator";
 import PodgladDocxModal from "@/components/PodgladDocxModal";
 import {
@@ -45,6 +46,7 @@ import {
 } from "@/lib/db-dokumenty-projektu";
 import {
   listaLogo,
+  pobierzBrandingStopki,
   usunLogo,
   wgrajLogo,
   type LogoProjektu,
@@ -139,8 +141,10 @@ export default function Dokumenty() {
     }
     try {
       setLogo(await listaLogo(projekt.id));
+      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
     } catch {
       setLogo([]);
+      ustawBrandingStopki([]);
     }
   }, [projekt.id]);
 
@@ -152,6 +156,7 @@ export default function Dokumenty() {
     try {
       await wgrajLogo(projekt.id, rola, file);
       setLogo(await listaLogo(projekt.id));
+      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
     } catch (e) {
       setBladDok(e instanceof Error ? e.message : "Nie udało się wgrać logo.");
     } finally {
@@ -171,6 +176,7 @@ export default function Dokumenty() {
     try {
       await usunLogo(l.sciezka);
       setLogo(await listaLogo(projekt.id));
+      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
     } catch (e) {
       setBladDok(e instanceof Error ? e.message : "Nie udało się usunąć logo.");
     }
@@ -1116,8 +1122,9 @@ export default function Dokumenty() {
         </h2>
         <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
           Zestaw obowiązkowych znaków wykryty z numeru naboru. Wgraj właściwe
-          pliki (oficjalne paski/znaki) — zostaną wykorzystane przy generowaniu
-          dokumentów (nadruk w nagłówku/stopce — kolejny etap).
+          pliki (oficjalne paski/znaki, PNG/JPG) — będą automatycznie
+          nadrukowywane w stopce dokumentów generowanych z katalogu (seria
+          znaków + logo partnera, równa wysokość).
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-soft px-4 py-3 text-[13px]">

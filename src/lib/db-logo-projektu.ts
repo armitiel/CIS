@@ -7,6 +7,10 @@
 import { createClient } from "@/utils/supabase/client";
 import { BUCKET_DOKUMENTY, bezpiecznaNazwa } from "./db-dokumenty-projektu";
 import type { RolaLogo } from "./logotypy";
+import type { ObrazStopki } from "./generator";
+
+/** Docelowa wysokość logo w stopce (px) — wszystkie znaki w równej linii. */
+const WYS_LOGO_STOPKA = 46;
 
 export interface LogoProjektu {
   rola: RolaLogo;
@@ -85,4 +89,50 @@ export async function usunLogo(sciezka: string): Promise<void> {
     .from(BUCKET_DOKUMENTY)
     .remove([sciezka]);
   if (error) throw error;
+}
+
+/** Naturalne wymiary obrazu z URL (do zachowania proporcji w stopce). */
+function wymiaryObrazu(url: string): Promise<{ w: number; h: number }> {
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => res({ w: 0, h: 0 });
+    img.src = url;
+  });
+}
+
+/**
+ * Pobiera logotypy projektu jako obrazy gotowe do nadruku w stopce (.docx):
+ * kolejność FE → barwy RP → UE → logo dodatkowe (partner), równa wysokość.
+ * Obsługiwane PNG/JPG (SVG pomijane — wymaga rastrowego fallbacku w .docx).
+ */
+export async function pobierzBrandingStopki(
+  projektId: string,
+): Promise<ObrazStopki[]> {
+  const lista = await listaLogo(projektId);
+  const kolejnosc: RolaLogo[] = ["fe", "rp", "ue", "dodatkowe"];
+  const posortowane = [...lista].sort(
+    (a, b) => kolejnosc.indexOf(a.rola) - kolejnosc.indexOf(b.rola),
+  );
+  const wynik: ObrazStopki[] = [];
+  for (const l of posortowane) {
+    const n = l.nazwa.toLowerCase();
+    const typ: "png" | "jpg" | null = n.endsWith(".png")
+      ? "png"
+      : n.endsWith(".jpg") || n.endsWith(".jpeg")
+        ? "jpg"
+        : null;
+    if (!typ || !l.url) continue; // pomijamy SVG / nieobsługiwane
+    try {
+      const resp = await fetch(l.url);
+      const data = new Uint8Array(await resp.arrayBuffer());
+      const { w, h } = await wymiaryObrazu(l.url);
+      if (!w || !h) continue;
+      const szer = Math.max(1, Math.round((WYS_LOGO_STOPKA * w) / h));
+      wynik.push({ data, szer, wys: WYS_LOGO_STOPKA, typ });
+    } catch {
+      // pomiń pojedynczy plik, którego nie udało się pobrać
+    }
+  }
+  return wynik;
 }

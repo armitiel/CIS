@@ -5,6 +5,8 @@
 import {
   AlignmentType,
   Document,
+  Footer,
+  ImageRun,
   Packer,
   Paragraph,
   TabStopType,
@@ -304,7 +306,42 @@ function trescDokumentu(
   }
 }
 
+// ---- Branding (logotypy w stopce) — stan modułu, ustawiany przed generowaniem.
+//      Dzięki temu nie trzeba przepinać sygnatur wszystkich funkcji generatora.
+export interface ObrazStopki {
+  data: Uint8Array;
+  szer: number; // px
+  wys: number; // px
+  typ: "png" | "jpg";
+}
+
+let brandingStopki: ObrazStopki[] = [];
+
+/** Ustawia logotypy nadrukowywane w stopce generowanych dokumentów. */
+export function ustawBrandingStopki(obrazy: ObrazStopki[]): void {
+  brandingStopki = obrazy;
+}
+
+function stopkaBrandingu(): Footer | undefined {
+  if (brandingStopki.length === 0) return undefined;
+  const dzieci: (ImageRun | TextRun)[] = [];
+  brandingStopki.forEach((o, i) => {
+    if (i > 0) dzieci.push(new TextRun("    "));
+    dzieci.push(
+      new ImageRun({
+        data: o.data,
+        transformation: { width: o.szer, height: o.wys },
+        type: o.typ,
+      }),
+    );
+  });
+  return new Footer({
+    children: [new Paragraph({ alignment: AlignmentType.CENTER, children: dzieci })],
+  });
+}
+
 function dokumentDocx(children: Blok[]): Document {
+  const stopka = stopkaBrandingu();
   return new Document({
     styles: { default: { document: { run: { font: "Calibri", size: 22 } } } },
     sections: [
@@ -315,6 +352,7 @@ function dokumentDocx(children: Blok[]): Document {
             margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
           },
         },
+        footers: stopka ? { default: stopka } : undefined,
         children,
       },
     ],
