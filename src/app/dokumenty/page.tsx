@@ -46,6 +46,7 @@ import {
 } from "@/lib/db-dokumenty-projektu";
 import {
   listaLogo,
+  pobierzBrandingDomyslny,
   pobierzBrandingStopki,
   usunLogo,
   wgrajLogo,
@@ -141,12 +142,28 @@ export default function Dokumenty() {
     }
     try {
       setLogo(await listaLogo(projekt.id));
-      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
     } catch {
       setLogo([]);
-      ustawBrandingStopki([]);
     }
   }, [projekt.id]);
+
+  // Branding stopki: domyślny zestaw programu (public/), nadpisany własnymi
+  // logotypami projektu, jeśli zostały wgrane. Działa też bez logowania.
+  const odswiezBranding = useCallback(async () => {
+    const zest = wykryjZestaw(projekt.nabor);
+    let branding = await pobierzBrandingDomyslny(zest.domyslnePliki);
+    try {
+      const wlasne = await pobierzBrandingStopki(projekt.id);
+      if (wlasne.length > 0) branding = wlasne;
+    } catch {
+      // brak logowania / własnych logo — zostaje zestaw domyślny
+    }
+    ustawBrandingStopki(branding);
+  }, [projekt.id, projekt.nabor]);
+
+  useEffect(() => {
+    void odswiezBranding();
+  }, [odswiezBranding]);
 
   async function wgrajLogoPlik(file: File | undefined) {
     const rola = aktywnaRola.current;
@@ -156,7 +173,7 @@ export default function Dokumenty() {
     try {
       await wgrajLogo(projekt.id, rola, file);
       setLogo(await listaLogo(projekt.id));
-      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
+      await odswiezBranding();
     } catch (e) {
       setBladDok(e instanceof Error ? e.message : "Nie udało się wgrać logo.");
     } finally {
@@ -176,7 +193,7 @@ export default function Dokumenty() {
     try {
       await usunLogo(l.sciezka);
       setLogo(await listaLogo(projekt.id));
-      ustawBrandingStopki(await pobierzBrandingStopki(projekt.id));
+      await odswiezBranding();
     } catch (e) {
       setBladDok(e instanceof Error ? e.message : "Nie udało się usunąć logo.");
     }
@@ -1121,10 +1138,11 @@ export default function Dokumenty() {
           5. Wizualizacja projektu (logotypy)
         </h2>
         <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
-          Zestaw obowiązkowych znaków wykryty z numeru naboru. Wgraj właściwe
-          pliki (oficjalne paski/znaki, PNG/JPG) — będą automatycznie
-          nadrukowywane w stopce dokumentów generowanych z katalogu (seria
-          znaków + logo partnera, równa wysokość).
+          Zestaw obowiązkowych znaków wykryty z numeru naboru. Domyślnie
+          używany jest wbudowany pasek programu (nadruk w stopce dokumentów z
+          katalogu). Aby nadpisać go dla tego projektu — wgraj własne pliki
+          (PNG/JPG) do slotów poniżej: seria znaków + logo partnera, równa
+          wysokość. Wgranie czegokolwiek zastępuje zestaw domyślny.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-soft px-4 py-3 text-[13px]">

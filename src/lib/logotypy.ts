@@ -19,6 +19,11 @@ export interface ZestawLogotypow {
   opis: string;
   zrodloUrl: string; // oficjalne źródło zestawu znaków
   sloty: SlotLogo[];
+  /**
+   * Wbudowany domyślny pasek znaków (pliki w public/) — używany automatycznie,
+   * gdy projekt nie ma własnych logotypów. Pusta lista = brak domyślnego.
+   */
+  domyslnePliki: string[];
 }
 
 /** Obowiązkowy zestaw znaków dla projektów EFS+ 2021–2027. */
@@ -51,6 +56,7 @@ export const ZESTAW_FELB: ZestawLogotypow = {
   zrodloUrl:
     "https://funduszeue.lubuskie.pl/dokumenty-list/zasady-oznakowania-projektow-fewl/",
   sloty: SLOTY_EFS,
+  domyslnePliki: ["/logo/felb/zestaw-felb-efs.png"],
 };
 
 export const ZESTAW_FERS: ZestawLogotypow = {
@@ -61,6 +67,7 @@ export const ZESTAW_FERS: ZestawLogotypow = {
     "Krajowy program EFS+. Obowiązkowy zestaw: znak FE, barwy RP, znak UE/EFS+.",
   zrodloUrl: "https://www.funduszeeuropejskie.gov.pl/",
   sloty: SLOTY_EFS,
+  domyslnePliki: ["/logo/fers/zestaw-fers-efs.png"],
 };
 
 export const ZESTAW_OGOLNY: ZestawLogotypow = {
@@ -72,6 +79,7 @@ export const ZESTAW_OGOLNY: ZestawLogotypow = {
     "programu (Księga Tożsamości Wizualnej) i wskaż zestaw ręcznie.",
   zrodloUrl: "https://www.funduszeeuropejskie.gov.pl/",
   sloty: SLOTY_EFS,
+  domyslnePliki: [],
 };
 
 export const ZESTAWY: ZestawLogotypow[] = [

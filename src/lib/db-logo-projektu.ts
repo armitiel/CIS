@@ -136,3 +136,35 @@ export async function pobierzBrandingStopki(
   }
   return wynik;
 }
+
+/**
+ * Domyślny (wbudowany) branding z plików w public/ — używany, gdy projekt
+ * nie ma własnych logotypów. Działa bez logowania (pliki serwowane publicznie).
+ * Pliki nieobecne (404) są pomijane, więc brak pliku = brak nadruku.
+ */
+export async function pobierzBrandingDomyslny(
+  sciezki: string[],
+): Promise<ObrazStopki[]> {
+  const wynik: ObrazStopki[] = [];
+  for (const src of sciezki) {
+    const n = src.toLowerCase();
+    const typ: "png" | "jpg" | null = n.endsWith(".png")
+      ? "png"
+      : n.endsWith(".jpg") || n.endsWith(".jpeg")
+        ? "jpg"
+        : null;
+    if (!typ) continue;
+    try {
+      const resp = await fetch(src);
+      if (!resp.ok) continue;
+      const data = new Uint8Array(await resp.arrayBuffer());
+      const { w, h } = await wymiaryObrazu(src);
+      if (!w || !h) continue;
+      const szer = Math.max(1, Math.round((WYS_LOGO_STOPKA * w) / h));
+      wynik.push({ data, szer, wys: WYS_LOGO_STOPKA, typ });
+    } catch {
+      // pomiń niedostępny plik
+    }
+  }
+  return wynik;
+}
