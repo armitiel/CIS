@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import PulpitTlo from "@/components/PulpitTlo";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOtwarte, setMenuOtwarte] = useState(false);
@@ -33,8 +34,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar otwarte={menuOtwarte} onZamknij={() => setMenuOtwarte(false)} />
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header onMenu={() => setMenuOtwarte(true)} />
-        <div className="flex-1 overflow-y-auto px-4 pb-16 pt-5 sm:px-6 lg:px-[34px] lg:pt-7">
-          {children}
+        <div className="relative flex-1 overflow-y-auto px-4 pb-16 pt-5 sm:px-6 lg:px-[34px] lg:pt-7">
+          {pathname === "/" && <PulpitTlo />}
+          <div className="relative z-10">{children}</div>
         </div>
       </main>
     </div>
