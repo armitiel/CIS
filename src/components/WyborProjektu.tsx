@@ -232,7 +232,7 @@ export default function WyborProjektu() {
                 <span className="material-symbols-rounded notranslate text-[16px]">
                   delete
                 </span>
-                Usuń projekt „{projekt.skrot}”
+                Usuń ten projekt
               </span>
             </button>
           )}
