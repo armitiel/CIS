@@ -76,6 +76,7 @@ export default function Dokumenty() {
     blob: Blob;
   } | null>(null);
   const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
+  const [skopiowany, setSkopiowany] = useState<string | null>(null);
   const [wyborSzablonu, setWyborSzablonu] = useState<SzablonZapisany | null>(
     null,
   );
@@ -189,6 +190,16 @@ export default function Dokumenty() {
       setAnalizujeWniosek(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  /** Kopiuje znacznik {{pole}} do schowka z krótkim potwierdzeniem. */
+  function kopiujZnacznik(tekst: string, klucz: string) {
+    navigator.clipboard?.writeText(tekst);
+    setSkopiowany(klucz);
+    setTimeout(
+      () => setSkopiowany((k) => (k === klucz ? null : k)),
+      1200,
+    );
   }
 
   function przelaczZaznaczenie(id: string) {
@@ -797,11 +808,26 @@ export default function Dokumenty() {
             {LISTA_POL.map(([klucz, opis]) => (
               <div
                 key={klucz}
-                className="flex items-baseline justify-between gap-3 py-1 text-sm"
+                className="flex items-center justify-between gap-3 py-1 text-sm"
               >
-                <code className="rounded bg-soft px-1.5 py-0.5 font-mono text-xs text-ink">
-                  {`{{${klucz}}}`}
-                </code>
+                <span className="flex items-center gap-1">
+                  <code className="rounded bg-soft px-1.5 py-0.5 font-mono text-xs text-ink">
+                    {`{{${klucz}}}`}
+                  </code>
+                  <button
+                    onClick={() => kopiujZnacznik(`{{${klucz}}}`, klucz)}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${
+                      skopiowany === klucz
+                        ? "text-primary-strong"
+                        : "text-faint hover:bg-soft hover:text-ink"
+                    }`}
+                    title="Kopiuj znacznik do schowka"
+                  >
+                    <span className="material-symbols-rounded notranslate text-[16px]">
+                      {skopiowany === klucz ? "check" : "content_copy"}
+                    </span>
+                  </button>
+                </span>
                 <span className="text-right text-xs text-muted">{opis}</span>
               </div>
             ))}
