@@ -358,7 +358,6 @@ export default function Obecnosci() {
               {ZNACZNIK[z].label}
             </span>
           ))}
-          <span className="text-faint">· kliknij znacznik, aby zmienić</span>
         </div>
       )}
 
