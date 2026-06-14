@@ -322,8 +322,8 @@ export default function Harmonogram() {
 
       {/* ===== Widok: TYDZIEŃ ===== */}
       {widok === "tydzien" && (
-        <div className="overflow-x-auto pb-2">
-          <div className="grid min-w-[980px] grid-cols-5 gap-3.5">
+        <div className="lg:overflow-x-auto lg:pb-2">
+          <div className="grid grid-cols-1 gap-3.5 lg:min-w-[980px] lg:grid-cols-5">
             {Array.from({ length: 5 }, (_, di) => {
               const data = dodajDni(pon, di);
               const lista = zajeciaDnia(data);
