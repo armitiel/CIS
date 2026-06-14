@@ -211,9 +211,6 @@ export default function WyborProjektu() {
               </span>
               Nowy projekt…
             </span>
-            <span className="mt-0.5 block pl-[26px] text-[11px] text-muted">
-              dane z wniosku (.docx/.txt) albo ręcznie
-            </span>
           </button>
 
           {/* usuwanie aktywnego projektu własnego */}
