@@ -151,15 +151,6 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
           {ciemny ? "light_mode" : "dark_mode"}
         </span>
       </button>
-      <button
-        className="relative hidden h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-line-strong bg-surface text-ink-mid transition-colors duration-200 hover:bg-soft sm:flex"
-        title="Powiadomienia"
-      >
-        <span className="material-symbols-rounded notranslate text-[22px]">
-          notifications
-        </span>
-        <span className="absolute right-[10px] top-[9px] h-2 w-2 rounded-full border-2 border-surface bg-[oklch(0.62_0.12_60)]" />
-      </button>
     </header>
   );
 }
