@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProjekt } from "@/components/ProjektProvider";
 import NowyProjekt from "@/components/NowyProjekt";
+import { wykryjZestaw } from "@/lib/logotypy";
 
 export default function Projekty() {
   const router = useRouter();
@@ -156,6 +157,12 @@ export default function Projekty() {
                       <dt className="text-faint">Okres</dt>
                       <dd className="m-0 text-right font-medium text-ink-mid">
                         {p.spec.okres}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-faint">Program</dt>
+                      <dd className="m-0 text-right font-medium text-ink-mid">
+                        {wykryjZestaw(p.nabor).skrot}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">

@@ -18,6 +18,7 @@ import {
   type WynikAnalizy,
 } from "@/lib/analiza-wniosku";
 import type { ProjektWlasnyZapis } from "@/lib/projekty";
+import { rozpoznanyProgram, wykryjZestaw } from "@/lib/logotypy";
 
 const STATUS_ANALIZY: Record<
   Rozpoznanie,
@@ -425,6 +426,45 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
                   placeholder="np. FELB.06.11-IZ.00-0001/26"
                   className={pole}
                 />
+                {nabor.trim() && (
+                  <div
+                    className={`mt-2 flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${
+                      rozpoznanyProgram(nabor)
+                        ? "bg-green-soft text-primary-strong"
+                        : "bg-amber-soft text-amber-ink"
+                    }`}
+                  >
+                    <span className="material-symbols-rounded notranslate shrink-0 text-[16px]">
+                      {rozpoznanyProgram(nabor) ? "verified" : "help"}
+                    </span>
+                    <span>
+                      {rozpoznanyProgram(nabor) ? (
+                        <>
+                          Wykryty program:{" "}
+                          <strong>{wykryjZestaw(nabor).program}</strong>. Zostanie
+                          przypisany zestaw logotypów{" "}
+                          <strong>{wykryjZestaw(nabor).skrot}</strong> — pliki logo
+                          dodasz w module Dokumenty → Wizualizacja (
+                          <a
+                            href={wykryjZestaw(nabor).zrodloUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                          >
+                            oficjalne znaki
+                          </a>
+                          ).
+                        </>
+                      ) : (
+                        <>
+                          Nie rozpoznano programu z numeru naboru — zestaw
+                          logotypów wskażesz ręcznie w module Dokumenty →
+                          Wizualizacja.
+                        </>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
               <div>
                 <label className={etykieta}>Wnioskodawca</label>
