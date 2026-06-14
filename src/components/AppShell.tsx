@@ -34,9 +34,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar otwarte={menuOtwarte} onZamknij={() => setMenuOtwarte(false)} />
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header onMenu={() => setMenuOtwarte(true)} />
-        <div className="relative flex-1 overflow-y-auto px-4 pb-16 pt-5 sm:px-6 lg:px-[34px] lg:pt-7">
+        <div className="relative flex-1 overflow-hidden">
           {pathname === "/" && <PulpitTlo />}
-          <div className="relative z-10">{children}</div>
+          <div className="relative z-10 h-full overflow-y-auto px-4 pb-16 pt-5 sm:px-6 lg:px-[34px] lg:pt-7">
+            {children}
+          </div>
         </div>
       </main>
     </div>
