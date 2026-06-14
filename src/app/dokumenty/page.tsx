@@ -43,6 +43,13 @@ import {
   wgrajDokument,
   type DokumentProjektu,
 } from "@/lib/db-dokumenty-projektu";
+import {
+  listaLogo,
+  usunLogo,
+  wgrajLogo,
+  type LogoProjektu,
+} from "@/lib/db-logo-projektu";
+import { wykryjZestaw, type RolaLogo } from "@/lib/logotypy";
 import WyborGeneratora from "@/components/WyborGeneratora";
 import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
@@ -99,6 +106,13 @@ export default function Dokumenty() {
   const [wgrywaDok, setWgrywaDok] = useState(false);
   const [bladDok, setBladDok] = useState<string | null>(null);
 
+  // Logotypy projektu (wizualizacja)
+  const zestaw = wykryjZestaw(projekt.nabor);
+  const [logo, setLogo] = useState<LogoProjektu[]>([]);
+  const [wgrywaLogo, setWgrywaLogo] = useState<RolaLogo | null>(null);
+  const aktywnaRola = useRef<RolaLogo | null>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setSzablony(wczytajSzablony(projekt.id));
   }, [projekt.id]);
@@ -123,7 +137,46 @@ export default function Dokumenty() {
     } finally {
       setLadujeDok(false);
     }
+    try {
+      setLogo(await listaLogo(projekt.id));
+    } catch {
+      setLogo([]);
+    }
   }, [projekt.id]);
+
+  async function wgrajLogoPlik(file: File | undefined) {
+    const rola = aktywnaRola.current;
+    if (!file || !rola) return;
+    setWgrywaLogo(rola);
+    setBladDok(null);
+    try {
+      await wgrajLogo(projekt.id, rola, file);
+      setLogo(await listaLogo(projekt.id));
+    } catch (e) {
+      setBladDok(e instanceof Error ? e.message : "Nie udało się wgrać logo.");
+    } finally {
+      setWgrywaLogo(null);
+      aktywnaRola.current = null;
+      if (logoRef.current) logoRef.current.value = "";
+    }
+  }
+
+  function wybierzLogo(rola: RolaLogo) {
+    aktywnaRola.current = rola;
+    logoRef.current?.click();
+  }
+
+  async function usunLogoSlot(l: LogoProjektu) {
+    if (!window.confirm(`Usunąć logo „${l.nazwa}”?`)) return;
+    try {
+      await usunLogo(l.sciezka);
+      setLogo(await listaLogo(projekt.id));
+    } catch (e) {
+      setBladDok(e instanceof Error ? e.message : "Nie udało się usunąć logo.");
+    }
+  }
+
+  const logoWgRoli = (rola: RolaLogo) => logo.find((l) => l.rola === rola);
 
   useEffect(() => {
     void odswiezDokumenty();
@@ -1042,6 +1095,119 @@ export default function Dokumenty() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+      </section>
+
+      {/* KROK 5: wizualizacja projektu — logotypy (biblioteka per projekt) */}
+      <section
+        className="card anim-card-in px-6 py-[22px]"
+        style={{ animationDelay: "0.4s" }}
+      >
+        <input
+          ref={logoRef}
+          type="file"
+          accept="image/png,image/jpeg,image/svg+xml"
+          className="hidden"
+          onChange={(e) => wgrajLogoPlik(e.target.files?.[0])}
+        />
+        <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
+          5. Wizualizacja projektu (logotypy)
+        </h2>
+        <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
+          Zestaw obowiązkowych znaków wykryty z numeru naboru. Wgraj właściwe
+          pliki (oficjalne paski/znaki) — zostaną wykorzystane przy generowaniu
+          dokumentów (nadruk w nagłówku/stopce — kolejny etap).
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-soft px-4 py-3 text-[13px]">
+          <span className="rounded-full bg-green-soft px-2.5 py-1 text-xs font-bold text-primary-strong">
+            {zestaw.skrot}
+          </span>
+          <span className="text-ink-mid">{zestaw.program}</span>
+          <a
+            href={zestaw.zrodloUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+          >
+            <span className="material-symbols-rounded notranslate text-[16px]">
+              open_in_new
+            </span>
+            oficjalne znaki
+          </a>
+        </div>
+
+        {storageOK === false ? (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-soft px-4 py-3 text-sm text-ink-mid">
+            <span className="material-symbols-rounded notranslate shrink-0 text-[20px] text-blue-ink">
+              info
+            </span>
+            <span>
+              Wgrywanie logotypów wymaga zalogowania (baza online). Zaloguj się,
+              aby zbudować bibliotekę znaków projektu.
+            </span>
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {zestaw.sloty.map((slot) => {
+              const l = logoWgRoli(slot.rola);
+              return (
+                <div
+                  key={slot.rola}
+                  className="flex items-center gap-3 rounded-xl border border-line p-3"
+                >
+                  <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line-soft bg-white">
+                    {l?.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={l.url}
+                        alt={slot.nazwa}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <span className="material-symbols-rounded notranslate text-[24px] text-faint">
+                        image
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+                      {slot.nazwa}
+                      {slot.obowiazkowy && (
+                        <span className="rounded bg-amber-soft px-1.5 py-px text-[10px] font-bold text-amber-ink">
+                          wymagany
+                        </span>
+                      )}
+                    </p>
+                    <p className="m-0 mt-0.5 truncate text-xs text-faint">
+                      {l ? l.nazwa : "brak pliku"}
+                    </p>
+                    <div className="mt-1.5 flex gap-2">
+                      <button
+                        onClick={() => wybierzLogo(slot.rola)}
+                        disabled={wgrywaLogo !== null}
+                        className="rounded-lg border border-line-strong px-2.5 py-1 text-xs font-semibold text-ink-mid hover:bg-soft disabled:opacity-50"
+                      >
+                        {wgrywaLogo === slot.rola
+                          ? "Wgrywam…"
+                          : l
+                            ? "Zmień"
+                            : "Wgraj"}
+                      </button>
+                      {l && (
+                        <button
+                          onClick={() => usunLogoSlot(l)}
+                          className="rounded-lg border border-line-strong px-2.5 py-1 text-xs font-semibold text-red-ink hover:bg-red-soft/40"
+                        >
+                          Usuń
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
