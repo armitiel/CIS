@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import { Avatar } from "@/components/ui";
 import { useObecnosci, type Znak } from "@/lib/use-obecnosci";
+import { generujListeObecnosci, type DzienListy } from "@/lib/generator";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
@@ -110,6 +111,40 @@ export default function Obecnosci() {
 
   const [widok, setWidok] = useState<Widok>("tydzien");
   const [kotwica, setKotwica] = useState<Date>(dzis);
+  const [generujeListe, setGenerujeListe] = useState(false);
+
+  // Druk listy obecności (.docx) dla miesiąca bieżącej kotwicy — dni robocze,
+  // z wpisanymi znakami P/U/A z rejestracji.
+  async function generujListe() {
+    setGenerujeListe(true);
+    try {
+      const rok = kotwica.getFullYear();
+      const mc = kotwica.getMonth();
+      const dni: DzienListy[] = [];
+      const d = new Date(rok, mc, 1);
+      while (d.getMonth() === mc) {
+        const dow = d.getDay();
+        if (dow >= 1 && dow <= 5)
+          dni.push({ iso: iso(d), etykieta: String(d.getDate()) });
+        d.setDate(d.getDate() + 1);
+      }
+      await generujListeObecnosci(
+        projekt.spec,
+        aktywni,
+        dni,
+        (uId, isoD) => {
+          const z = znak(uId, isoD);
+          return z === "p" ? "P" : z === "u" ? "U" : z === "a" ? "A" : "";
+        },
+        {
+          tytul: `Lista obecności — ${MIESIACE_M[mc]} ${rok}`,
+          podtytul: `${projekt.nazwa} (${projekt.nabor})`,
+        },
+      );
+    } finally {
+      setGenerujeListe(false);
+    }
+  }
 
   // stawka świadczenia (PLN/mies.) — zapis per projekt w przeglądarce
   const [stawka, setStawka] = useState<number>(0);
@@ -320,6 +355,17 @@ export default function Obecnosci() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={generujListe}
+            disabled={generujeListe || aktywni.length === 0}
+            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft disabled:opacity-50"
+            title="Generuj druk „Lista obecności” (sekcja C) dla bieżącego miesiąca — .docx, z wpisanymi znakami P/U/A"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              description
+            </span>
+            {generujeListe ? "Generuję…" : "Lista obecności (.docx)"}
+          </button>
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button

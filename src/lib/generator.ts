@@ -4,16 +4,22 @@
 
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   Footer,
   ImageRun,
   Packer,
+  PageOrientation,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TabStopType,
   TextRun,
+  VerticalAlign,
+  WidthType,
 } from "docx";
 import JSZip from "jszip";
-import type { Table } from "docx";
 import type { Uczestnik } from "./types";
 import {
   specyfikacjaCIS,
@@ -536,4 +542,141 @@ export async function generujPakiet(
     dokumentDocx(children),
     `Pakiet_dokumentow_${slug(u.nazwisko)}_${slug(u.imie)}.docx`,
   );
+}
+
+export interface DzienListy {
+  iso: string;
+  etykieta: string; // np. "1", "2" (numer dnia)
+}
+
+/**
+ * Druk „Lista obecności" (sekcja C) — tabela uczestnicy × dni, z wpisanymi
+ * znakami P/U/A z rejestracji obecności. Orientacja pozioma, ze stopką
+ * logotypów. Gotowy do druku i podpisu prowadzącego.
+ */
+export async function generujListeObecnosci(
+  spec: SpecyfikacjaProjektu,
+  uczestnicy: Uczestnik[],
+  dni: DzienListy[],
+  znakDla: (uczestnikId: string, iso: string) => "P" | "U" | "A" | "",
+  opcje: { tytul: string; podtytul?: string },
+) {
+  const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
+  const obramowanie = {
+    top: kraw,
+    bottom: kraw,
+    left: kraw,
+    right: kraw,
+    insideHorizontal: kraw,
+    insideVertical: kraw,
+  };
+
+  const komNagl = (tekst: string, szer?: number) =>
+    new TableCell({
+      width: szer ? { size: szer, type: WidthType.DXA } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      shading: { fill: "EFEFEF" },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: tekst, bold: true, size: 15 })],
+        }),
+      ],
+    });
+
+  const kom = (tekst: string, center = false) =>
+    new TableCell({
+      verticalAlign: VerticalAlign.CENTER,
+      children: [
+        new Paragraph({
+          alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT,
+          children: [new TextRun({ text: tekst, size: 16 })],
+        }),
+      ],
+    });
+
+  const wierszNagl = new TableRow({
+    tableHeader: true,
+    children: [
+      komNagl("Lp.", 360),
+      komNagl("Imię i nazwisko", 2800),
+      ...dni.map((d) => komNagl(d.etykieta)),
+    ],
+  });
+
+  const wiersze = uczestnicy.map(
+    (u, i) =>
+      new TableRow({
+        children: [
+          kom(String(i + 1), true),
+          kom(`${u.nazwisko} ${u.imie}`),
+          ...dni.map((d) => kom(znakDla(u.id, d.iso), true)),
+        ],
+      }),
+  );
+
+  const tabela = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: obramowanie,
+    rows: [wierszNagl, ...wiersze],
+  });
+
+  const dzieci: Blok[] = [
+    ...naglowekProjektu(spec),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 40 },
+      children: [new TextRun({ text: opcje.tytul, bold: true, size: 26 })],
+    }),
+    ...(opcje.podtytul
+      ? [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 120 },
+            children: [new TextRun({ text: opcje.podtytul, size: 18 })],
+          }),
+        ]
+      : []),
+    tabela,
+    new Paragraph({
+      spacing: { before: 160 },
+      children: [
+        new TextRun({
+          text: "Legenda: P — obecny · U — nieobecność usprawiedliwiona · A — nieobecność nieusprawiedliwiona. Puste pole = brak rejestracji (do uzupełnienia/podpisu).",
+          size: 15,
+        }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { before: 300 },
+      children: [
+        new TextRun({
+          text: `Sporządzono: ${dzis()}.   Data i podpis prowadzącego/koordynatora: ………………………………………………`,
+          size: 18,
+        }),
+      ],
+    }),
+  ];
+
+  const stopka = stopkaBrandingu();
+  const doc = new Document({
+    styles: { default: { document: { run: { font: "Calibri", size: 20 } } } },
+    sections: [
+      {
+        properties: {
+          page: {
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+              width: 16838,
+              height: 11906,
+            },
+            margin: { top: 1000, right: 1000, bottom: 1000, left: 1000 },
+          },
+        },
+        footers: stopka ? { default: stopka } : undefined,
+        children: dzieci,
+      },
+    ],
+  });
+  await pobierz(doc, `Lista_obecnosci_${slug(opcje.tytul)}.docx`);
 }
