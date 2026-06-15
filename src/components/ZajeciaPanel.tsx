@@ -122,7 +122,9 @@ export default function ZajeciaPanel({
   const [dniTyg, setDniTyg] = useState<number[]>([]);
   const [doDnia, setDoDnia] = useState("");
 
-  const cykliczne = !zajecie && powtarzanie !== "brak";
+  // cykliczność: dla nowych zajęć oraz przy edycji pojedynczych (nie z serii)
+  const mozeCykl = !zajecie?.seria;
+  const cykliczne = mozeCykl && powtarzanie !== "brak";
   const pokazDni = powtarzanie === "wybrane_dni";
   const brakDatyKoncowej = cykliczne && !doDnia;
 
@@ -150,10 +152,19 @@ export default function ZajeciaPanel({
       osob: Number(osob) || 0,
     };
 
-    // Nowa seria cykliczna → kilka terminów ze wspólnym ID serii.
+    // Seria cykliczna → kilka terminów ze wspólnym ID serii.
     if (cykliczne && terminy.length > 1) {
       const seria = nowaSeria();
-      onZapiszSerie(terminy.map((d) => ({ ...wspolne, data: d, seria })));
+      if (zajecie) {
+        // edycja pojedynczych zajęć: pierwszy termin aktualizuje istniejące,
+        // pozostałe dochodzą jako nowe wpisy tej samej serii
+        onZapisz({ id: zajecie.id, ...wspolne, data: terminy[0], seria });
+        onZapiszSerie(
+          terminy.slice(1).map((d) => ({ ...wspolne, data: d, seria })),
+        );
+      } else {
+        onZapiszSerie(terminy.map((d) => ({ ...wspolne, data: d, seria })));
+      }
       onClose();
       return;
     }
@@ -301,8 +312,8 @@ export default function ZajeciaPanel({
               </div>
             </div>
 
-            {/* Cykliczność — dostępna przy tworzeniu nowych zajęć */}
-            {!zajecie && (
+            {/* Cykliczność — nowe zajęcia oraz edycja pojedynczych (nie z serii) */}
+            {mozeCykl && (
               <div className="rounded-xl border border-line bg-soft/50 p-3.5">
                 <label className={etyk}>Powtarzanie</label>
                 <select
