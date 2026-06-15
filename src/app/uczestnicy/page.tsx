@@ -9,6 +9,7 @@ import { Avatar, BrakiPill, Pasek, SciezkaPill, StatusPill } from "@/components/
 import { walidujBaze, type WynikWalidacji } from "@/lib/sowa-walidacja";
 import { eksportujCSV, pobierzCSV } from "@/lib/sowa-eksport";
 import FormularzUczestnika from "@/components/FormularzUczestnika";
+import WyslijSMS from "@/components/WyslijSMS";
 import type { KategoriaUczestnika, Uczestnik } from "@/lib/types";
 
 type FiltrKategorii = "wszyscy" | KategoriaUczestnika;
@@ -30,6 +31,7 @@ export default function Uczestnicy() {
   const [walidacja, setWalidacja] = useState<WynikWalidacji | null>(null);
   const [pokazFormularz, setPokazFormularz] = useState(false);
   const [edytowany, setEdytowany] = useState<Uczestnik | null>(null);
+  const [pokazSMS, setPokazSMS] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function waliduj() {
@@ -172,6 +174,17 @@ export default function Uczestnicy() {
               download
             </span>
             Eksport CSV (SOWA)
+          </button>
+          <button
+            onClick={() => setPokazSMS(true)}
+            disabled={uczestnicy.length === 0}
+            className="btn-dark"
+            title="Wyślij SMS (przypomnienie) do uczestników — przez Zadarma"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              sms
+            </span>
+            Wyślij SMS
           </button>
           <button
             onClick={() => setPokazFormularz(true)}
@@ -435,6 +448,14 @@ export default function Uczestnicy() {
               `✓ Zaktualizowano dane: ${zm.nazwisko} ${zm.imie}.`,
             );
           }}
+        />
+      )}
+
+      {pokazSMS && (
+        <WyslijSMS
+          uczestnicy={uczestnicy}
+          projektSkrot={projekt.skrot}
+          onClose={() => setPokazSMS(false)}
         />
       )}
     </div>
