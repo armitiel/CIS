@@ -253,8 +253,8 @@ export default function FormularzUczestnika({
         </div>
 
         <div className="grid flex-1 grid-cols-1 gap-3.5 overflow-y-auto px-6 py-4 sm:grid-cols-2">
-          <Pole label="Imię *" klucz="imie" />
-          <Pole label="Nazwisko *" klucz="nazwisko" />
+          {Pole({ label: "Imię *", klucz: "imie" })}
+          {Pole({ label: "Nazwisko *", klucz: "nazwisko" })}
           <div className="sm:col-span-2">
             <label className="th-label mb-1 block">PESEL *</label>
             <input
@@ -279,46 +279,49 @@ export default function FormularzUczestnika({
               </p>
             )}
           </div>
-          <Slownik
-            label="Wykształcenie (słownik ISCED) *"
-            klucz="wyksztalcenie"
-            opcje={SLOWNIK_WYKSZTALCENIE}
-          />
-          <Slownik
-            label="Status na rynku pracy *"
-            klucz="statusRynkuPracy"
-            opcje={SLOWNIK_STATUS_RYNKU_PRACY}
-          />
-          <Pole label="Miejscowość (TERYT)" klucz="miejscowosc" />
-          <Pole label="Gmina (TERYT)" klucz="gmina" />
-          <Slownik
-            label="Województwo"
-            klucz="wojewodztwo"
-            opcje={SLOWNIK_WOJEWODZTWA}
-            szeroki={false}
-            przyZmianie={() => set("powiat")("")}
-          />
-          <Slownik
-            label="Powiat"
-            klucz="powiat"
-            opcje={powiatyOpcje}
-            szeroki={false}
-            wylaczony={!f.wojewodztwo}
-            placeholder={
-              f.wojewodztwo
-                ? "— wybierz powiat —"
-                : "— najpierw wybierz województwo —"
-            }
-          />
-          <Pole label="Kod pocztowy" klucz="kodPocztowy" hint="00-000" />
-          <Pole label="Telefon" klucz="telefon" />
-          <Pole label="E-mail" klucz="email" hint="bez polskich znaków" szeroki />
-          <Pole
-            label="Data przystąpienia (puste = lista rezerwowa)"
-            klucz="dataPrzystapienia"
-            typ="date"
-          />
-          <Pole label="Grupa" klucz="grupa" hint="np. A" />
+          {Slownik({
+            label: "Wykształcenie (słownik ISCED) *",
+            klucz: "wyksztalcenie",
+            opcje: SLOWNIK_WYKSZTALCENIE,
+          })}
+          {Slownik({
+            label: "Status na rynku pracy *",
+            klucz: "statusRynkuPracy",
+            opcje: SLOWNIK_STATUS_RYNKU_PRACY,
+          })}
+          {Pole({ label: "Miejscowość (TERYT)", klucz: "miejscowosc" })}
+          {Pole({ label: "Gmina (TERYT)", klucz: "gmina" })}
+          {Slownik({
+            label: "Województwo",
+            klucz: "wojewodztwo",
+            opcje: SLOWNIK_WOJEWODZTWA,
+            szeroki: false,
+            przyZmianie: () => set("powiat")(""),
+          })}
+          {Slownik({
+            label: "Powiat",
+            klucz: "powiat",
+            opcje: powiatyOpcje,
+            szeroki: false,
+            wylaczony: !f.wojewodztwo,
+            placeholder: f.wojewodztwo
+              ? "— wybierz powiat —"
+              : "— najpierw wybierz województwo —",
+          })}
+          {Pole({ label: "Kod pocztowy", klucz: "kodPocztowy", hint: "00-000" })}
+          {Pole({ label: "Telefon", klucz: "telefon" })}
+          {Pole({
+            label: "E-mail",
+            klucz: "email",
+            hint: "bez polskich znaków",
+            szeroki: true,
+          })}
+          {Pole({
+            label: "Data przystąpienia (puste = lista rezerwowa)",
+            klucz: "dataPrzystapienia",
+            typ: "date",
+          })}
+          {Pole({ label: "Grupa", klucz: "grupa", hint: "np. A" })}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-line bg-soft px-6 py-4">
