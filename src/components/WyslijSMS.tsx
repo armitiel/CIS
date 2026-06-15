@@ -44,6 +44,8 @@ function parseISO(s: string): Date {
   return new Date(y, (m || 1) - 1, d || 1);
 }
 const p2 = (n: number) => String(n).padStart(2, "0");
+const skroc = (s: string, n: number) =>
+  s.length > n ? `${s.slice(0, n).trimEnd()}…` : s;
 function fmtData(iso: string): string {
   const d = parseISO(iso);
   return `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${d.getFullYear()}`;
@@ -284,7 +286,7 @@ export default function WyslijSMS({
               <p className="mt-2 text-[12px] text-muted">
                 Podstawi się: data <strong>{kontekst.data}</strong>, godzina{" "}
                 <strong>{kontekst.godzina}</strong>, nazwa „
-                <strong>{kontekst.nazwa}</strong>".
+                <strong>{skroc(kontekst.nazwa ?? "", 60)}</strong>".
               </p>
             )}
             {terminy.length === 0 && (
@@ -346,7 +348,7 @@ export default function WyslijSMS({
           {/* Wypełniony podgląd z kolorowymi kapsułkami pól */}
           <div className="rounded-xl bg-soft px-4 py-2.5 text-sm text-ink">
             <div className="th-label mb-1">Podgląd (pierwszy odbiorca)</div>
-            <div className="flex flex-wrap items-center gap-x-0.5 gap-y-1 leading-relaxed">
+            <div className="flex max-h-40 flex-wrap items-center gap-x-0.5 gap-y-1 overflow-y-auto leading-relaxed">
               {tokenizuj(szablon).map((t, i) =>
                 t.typ === "txt" ? (
                   <span key={i} className="whitespace-pre-wrap">
@@ -355,14 +357,21 @@ export default function WyslijSMS({
                 ) : (
                   <span
                     key={i}
-                    title={POLA_META[t.val] ? `{{${t.val}}}` : "Nieznane pole"}
-                    className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${
+                    title={
+                      POLA_META[t.val]
+                        ? danePodgladu[t.val] || `{{${t.val}}}`
+                        : "Nieznane pole"
+                    }
+                    className={`max-w-full truncate rounded-full px-2 py-0.5 text-[12px] font-semibold ${
                       POLA_META[t.val]
                         ? KOLOR_GRUPY[POLA_META[t.val].grupa]
                         : "bg-red-soft text-red-ink"
                     }`}
                   >
-                    {danePodgladu[t.val] || (POLA_META[t.val] ? "—" : `${t.val}?`)}
+                    {skroc(
+                      danePodgladu[t.val] || (POLA_META[t.val] ? "—" : `${t.val}?`),
+                      80,
+                    )}
                   </span>
                 ),
               )}

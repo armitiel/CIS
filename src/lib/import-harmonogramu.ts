@@ -120,7 +120,7 @@ function parsujTabele(buf: ArrayBuffer): WynikImportuHarmonogramu {
       if (pole === "data") w.data = doISO(val);
       else if (pole === "godzina") w.godzina = doGodzine(val);
       else if (pole === "godzinaDo") w.godzinaDo = doGodzine(val);
-      else w[pole] = String(val ?? "").trim() as never;
+      else w[pole] = String(val ?? "").trim().slice(0, 120) as never;
     }
     if (w.data || w.nazwa) wpisy.push(w);
   });
@@ -155,8 +155,9 @@ function parsujTekst(tekst: string): WynikImportuHarmonogramu {
       const mG = linia.match(reGodz);
       if (mG) w.godzina = doGodzine(mG[1]);
     }
-    // nazwa = reszta linii bez daty i godzin
-    w.nazwa =
+    // nazwa = reszta linii bez daty i godzin (przycięta — chroni przed
+    // wklejeniem całego akapitu dokumentu jako nazwy zajęć)
+    const nazwaRaw =
       linia
         .replace(reData, " ")
         .replace(reZakres, " ")
@@ -164,6 +165,8 @@ function parsujTekst(tekst: string): WynikImportuHarmonogramu {
         .replace(/\s{2,}/g, " ")
         .replace(/^[\s:.\-–—|]+|[\s:.\-–—|]+$/g, "")
         .trim() || "Zajęcia";
+    w.nazwa =
+      nazwaRaw.length > 80 ? `${nazwaRaw.slice(0, 80).trimEnd()}…` : nazwaRaw;
     wpisy.push(w);
   }
   const uwagi =
