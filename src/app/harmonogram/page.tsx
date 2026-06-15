@@ -329,6 +329,32 @@ export default function Harmonogram() {
       {/* ===== Widok: DZIEŃ ===== */}
       {widok === "dzien" && (
         <div className="flex max-w-[760px] flex-col gap-3">
+          <div
+            className={`flex items-center justify-between rounded-[13px] px-3.5 py-[11px] ${
+              tenSamDzien(kotwica, dzis) ? "bg-green-soft" : "bg-soft"
+            }`}
+          >
+            <span
+              className={`text-sm font-bold ${
+                tenSamDzien(kotwica, dzis)
+                  ? "text-primary-strong"
+                  : "text-ink-mid"
+              }`}
+            >
+              {DNI_PELNE[dzienTyg(kotwica)]}, {kotwica.getDate()}{" "}
+              {MIESIACE[kotwica.getMonth()]}
+              {tenSamDzien(kotwica, dzis) && " · dziś"}
+            </span>
+            <button
+              onClick={() => setPanel({ tryb: "nowy", data: iso(kotwica) })}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-primary-strong"
+              title="Dodaj zajęcia w tym dniu"
+            >
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                add
+              </span>
+            </button>
+          </div>
           {zajeciaDnia(kotwica).map((z, i) => (
             <KartaZajec
               key={z.id}
@@ -340,7 +366,8 @@ export default function Harmonogram() {
           ))}
           {zajeciaDnia(kotwica).length === 0 && (
             <div className="card p-6 text-sm text-faint">
-              Brak zajęć w tym dniu. Kliknij „Dodaj zajęcia", aby zaplanować.
+              Brak zajęć w tym dniu. Kliknij ikonę „+" powyżej albo „Dodaj
+              zajęcia", aby zaplanować.
             </div>
           )}
         </div>
