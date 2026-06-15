@@ -35,12 +35,6 @@ const KOLOR_GRUPY: Record<GrupaPola, string> = {
   projekt: "bg-amber-soft text-amber-ink",
 };
 
-const GRUPY_POL: { naglowek: string; ikona: string; pola: string[] }[] = [
-  { naglowek: "Z harmonogramu", ikona: "event", pola: ["data", "godzina", "nazwa"] },
-  { naglowek: "Dane uczestnika", ikona: "person", pola: ["imie", "nazwisko", "grupa"] },
-  { naglowek: "Projekt", ikona: "workspaces", pola: ["projekt"] },
-];
-
 const POLA_HARMONOGRAM = ["data", "godzina", "nazwa"];
 
 const DOW_PL = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
@@ -68,6 +62,21 @@ function etykietaTerminu(z: {
   const cykl = z.seria ? "🔁 cykl." : "1× jedn.";
   const grupa = z.grupa && z.grupa !== "—" ? ` · gr. ${z.grupa}` : "";
   return `${dzien} ${z.godzina || "—"} · ${krotka} · ${cykl}${grupa}`;
+}
+
+// Rozbija treść na segmenty tekstu i pola {{...}} (do podglądu z kapsułkami).
+function tokenizuj(s: string): { typ: "txt" | "pole"; val: string }[] {
+  const parts: { typ: "txt" | "pole"; val: string }[] = [];
+  const re = /\{\{(\w+)\}\}/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s))) {
+    if (m.index > last) parts.push({ typ: "txt", val: s.slice(last, m.index) });
+    parts.push({ typ: "pole", val: m[1] });
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) parts.push({ typ: "txt", val: s.slice(last) });
+  return parts;
 }
 
 export default function WyslijSMS({
@@ -153,10 +162,22 @@ export default function WyslijSMS({
   const nieznanePola = polaWSzablonie.filter((k) => !POLA_META[k]);
   const wymagaTerminu = uzyteHarmonogram.length > 0 && !termin;
 
+  const odbiorcaPodgladu = wybrani[0]?.u ?? uczestnicy[0];
   const podglad =
     wybrani.length > 0
       ? wypelnijSzablon(szablon, wybrani[0].u, kontekst)
       : wypelnijSzablon(szablon, uczestnicy[0] ?? ({} as Uczestnik), kontekst);
+
+  // wartości pól do podglądu z kolorowymi kapsułkami (pierwszy odbiorca)
+  const danePodgladu: Record<string, string> = { ...kontekst };
+  if (odbiorcaPodgladu) {
+    danePodgladu.imie = odbiorcaPodgladu.imie;
+    danePodgladu.nazwisko = odbiorcaPodgladu.nazwisko;
+    danePodgladu.grupa =
+      odbiorcaPodgladu.grupa && odbiorcaPodgladu.grupa !== "—"
+        ? odbiorcaPodgladu.grupa
+        : "";
+  }
 
   function wstawPole(k: string) {
     const token = `{{${k}}}`;
@@ -295,33 +316,19 @@ export default function WyslijSMS({
             </span>
           </div>
 
-          {/* Pola dynamiczne jako kapsułki */}
-          <div>
-            <label className="th-label mb-1.5 block">
-              Pola dynamiczne — kliknij, aby wstawić
-            </label>
-            <div className="flex flex-col gap-2">
-              {GRUPY_POL.map((g) => (
-                <div key={g.naglowek} className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] text-faint">
-                    <span className="material-symbols-rounded notranslate text-[15px]">
-                      {g.ikona}
-                    </span>
-                    {g.naglowek}:
-                  </span>
-                  {g.pola.map((k) => (
-                    <button
-                      key={k}
-                      onClick={() => wstawPole(k)}
-                      title={`Wstaw {{${k}}}`}
-                      className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-opacity hover:opacity-80 ${KOLOR_GRUPY[POLA_META[k].grupa]}`}
-                    >
-                      {POLA_META[k].label}
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
+          {/* Pola dynamiczne — jeden rząd kapsułek (kliknij, aby wstawić) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="th-label">Wstaw pole:</span>
+            {Object.keys(POLA_META).map((k) => (
+              <button
+                key={k}
+                onClick={() => wstawPole(k)}
+                title={`Wstaw {{${k}}}`}
+                className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-opacity hover:opacity-80 ${KOLOR_GRUPY[POLA_META[k].grupa]}`}
+              >
+                {POLA_META[k].label}
+              </button>
+            ))}
           </div>
 
           {/* Treść SMS */}
@@ -336,10 +343,30 @@ export default function WyslijSMS({
             />
           </div>
 
-          {/* Wypełniony podgląd */}
+          {/* Wypełniony podgląd z kolorowymi kapsułkami pól */}
           <div className="rounded-xl bg-soft px-4 py-2.5 text-sm text-ink">
             <div className="th-label mb-1">Podgląd (pierwszy odbiorca)</div>
-            {podglad}
+            <div className="flex flex-wrap items-center gap-x-0.5 gap-y-1 leading-relaxed">
+              {tokenizuj(szablon).map((t, i) =>
+                t.typ === "txt" ? (
+                  <span key={i} className="whitespace-pre-wrap">
+                    {t.val}
+                  </span>
+                ) : (
+                  <span
+                    key={i}
+                    title={POLA_META[t.val] ? `{{${t.val}}}` : "Nieznane pole"}
+                    className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${
+                      POLA_META[t.val]
+                        ? KOLOR_GRUPY[POLA_META[t.val].grupa]
+                        : "bg-red-soft text-red-ink"
+                    }`}
+                  >
+                    {danePodgladu[t.val] || (POLA_META[t.val] ? "—" : `${t.val}?`)}
+                  </span>
+                ),
+              )}
+            </div>
             <div className="mt-1 text-[11px] text-faint">
               {dlugosc} znaków{" "}
               {dlugosc > 70 &&
@@ -363,7 +390,7 @@ export default function WyslijSMS({
 
           {/* Lista odbiorców */}
           <div className="overflow-hidden rounded-xl border border-line">
-            <div className="max-h-56 divide-y divide-line-soft overflow-y-auto">
+            <div className="max-h-[44vh] min-h-[120px] divide-y divide-line-soft overflow-y-auto">
               {odbiorcy.map((o) => (
                 <div
                   key={o.u.id}
