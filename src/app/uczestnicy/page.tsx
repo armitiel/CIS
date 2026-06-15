@@ -26,6 +26,7 @@ export default function Uczestnicy() {
   } = useProjekt();
   const [szukaj, setSzukaj] = useState("");
   const [kategoria, setKategoria] = useState<FiltrKategorii>("wszyscy");
+  const [grupaFiltr, setGrupaFiltr] = useState<string>("wszyscy");
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [trwaImport, setTrwaImport] = useState(false);
   const [walidacja, setWalidacja] = useState<WynikWalidacji | null>(null);
@@ -56,15 +57,28 @@ export default function Uczestnicy() {
     if (q) setSzukaj(q);
   }, []);
 
+  const grupy = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          uczestnicy
+            .map((u) => u.grupa)
+            .filter((g): g is string => !!g && g !== "—"),
+        ),
+      ).sort(),
+    [uczestnicy],
+  );
+
   const widoczni = useMemo(() => {
     const q = szukaj.trim().toLowerCase();
     return uczestnicy.filter((u) => {
       if (kategoria !== "wszyscy" && u.kategoria !== kategoria) return false;
+      if (grupaFiltr !== "wszyscy" && u.grupa !== grupaFiltr) return false;
       if (q && !`${u.imie} ${u.nazwisko}`.toLowerCase().includes(q))
         return false;
       return true;
     });
-  }, [uczestnicy, szukaj, kategoria]);
+  }, [uczestnicy, szukaj, kategoria, grupaFiltr]);
 
   const nIPZS = uczestnicy.filter((u) => u.kategoria === "bezrobotny").length;
   const nIPR = uczestnicy.filter((u) => u.kategoria === "bierny").length;
@@ -118,6 +132,21 @@ export default function Uczestnicy() {
               {label} · {n}
             </button>
           ))}
+          {grupy.length > 0 && (
+            <select
+              value={grupaFiltr}
+              onChange={(e) => setGrupaFiltr(e.target.value)}
+              title="Filtruj według grupy"
+              className="cursor-pointer rounded-[10px] border border-line-strong bg-surface px-3 py-2 text-[13.5px] font-semibold text-ink-mid outline-none hover:bg-soft focus:border-[oklch(0.62_0.09_152)]"
+            >
+              <option value="wszyscy">Wszystkie grupy</option>
+              {grupy.map((g) => (
+                <option key={g} value={g}>
+                  Grupa {g}
+                </option>
+              ))}
+            </select>
+          )}
           {zaimportowano && (
             <span className="ml-1 rounded-full bg-green-soft px-3 py-1 text-xs font-semibold text-primary-strong">
               baza z importu
