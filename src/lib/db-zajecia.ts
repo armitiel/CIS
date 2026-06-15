@@ -15,6 +15,7 @@ export interface Zajecie {
   grupa: string;
   kolor: KolorZajec;
   osob: number;
+  seria?: string | null; // wspólne ID serii cyklicznej (null = termin pojedynczy)
 }
 
 interface WierszZajec {
@@ -28,6 +29,7 @@ interface WierszZajec {
   grupa: string;
   kolor: string;
   osob: number;
+  seria: string | null;
 }
 
 function klient() {
@@ -50,6 +52,7 @@ function zWiersza(w: WierszZajec): Zajecie {
       ? w.kolor
       : "green") as KolorZajec,
     osob: w.osob ?? 0,
+    seria: w.seria ?? null,
   };
 }
 
@@ -66,6 +69,7 @@ function doWiersza(z: Zajecie, projektId: string) {
     grupa: z.grupa,
     kolor: z.kolor,
     osob: z.osob,
+    seria: z.seria ?? null,
   };
 }
 
@@ -98,5 +102,19 @@ export async function zapiszZajecieDB(
 export async function usunZajecieDB(id: string): Promise<void> {
   const supabase = klient();
   const { error } = await supabase.from("zajecia").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Usuwa całą serię cykliczną (wszystkie terminy o danym ID serii). */
+export async function usunSerieDB(
+  seria: string,
+  projektId: string,
+): Promise<void> {
+  const supabase = klient();
+  const { error } = await supabase
+    .from("zajecia")
+    .delete()
+    .eq("projekt_id", projektId)
+    .eq("seria", seria);
   if (error) throw error;
 }

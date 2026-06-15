@@ -138,7 +138,7 @@ function KartaZajec({
 
 export default function Harmonogram() {
   const { projekt } = useProjekt();
-  const { zajecia, zapisz, usun } = useZajecia(projekt.id);
+  const { zajecia, zapisz, zapiszWiele, usun } = useZajecia(projekt.id);
 
   const dzis = useMemo(() => {
     const d = new Date();
@@ -593,6 +593,7 @@ export default function Harmonogram() {
           zajecie={panel.tryb === "edytuj" ? panel.zajecie : null}
           domyslnaData={panel.tryb === "nowy" ? panel.data : iso(kotwica)}
           onZapisz={zapisz}
+          onZapiszSerie={zapiszWiele}
           onUsun={usun}
           onClose={() => setPanel(null)}
         />

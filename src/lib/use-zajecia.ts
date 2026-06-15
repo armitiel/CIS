@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { bazaDostepna } from "@/lib/db-uczestnicy";
 import {
   pobierzZajecia,
+  usunSerieDB,
   usunZajecieDB,
   zapiszZajecieDB,
   type Zajecie,
@@ -24,9 +25,37 @@ function nowyId(): string {
   }
 }
 
+/** Nakłada pola wspólne serii na termin (każdy zachowuje swoją datę i id). */
+function zPolamiWspolnymi(
+  cel: Zajecie,
+  zrodlo: Omit<Zajecie, "id"> & { id?: string },
+): Zajecie {
+  return {
+    ...cel,
+    nazwa: zrodlo.nazwa,
+    typ: zrodlo.typ,
+    prowadzacy: zrodlo.prowadzacy,
+    grupa: zrodlo.grupa,
+    godzina: zrodlo.godzina,
+    godzinaDo: zrodlo.godzinaDo,
+    kolor: zrodlo.kolor,
+    osob: zrodlo.osob,
+  };
+}
+
+function sortuj(lista: Zajecie[]): Zajecie[] {
+  return [...lista].sort((a, b) =>
+    a.data === b.data
+      ? a.godzina.localeCompare(b.godzina)
+      : a.data.localeCompare(b.data),
+  );
+}
+
 export interface StanZajec {
   zajecia: Zajecie[];
   zapisz: (dane: Omit<Zajecie, "id"> & { id?: string }) => void;
+  /** Zapisuje wiele terminów naraz (np. wygenerowaną serię cykliczną). */
+  zapiszWiele: (lista: (Omit<Zajecie, "id"> & { id?: string })[]) => void;
   usun: (id: string) => void;
   gotowa: boolean;
 }
@@ -84,16 +113,37 @@ export function useZajecia(projektId: string): StanZajec {
 
   const zapisz = useCallback(
     (dane: Omit<Zajecie, "id"> & { id?: string }) => {
+      const istniejacy = dane.id
+        ? zajecia.find((x) => x.id === dane.id)
+        : undefined;
+
+      // Edycja terminu należącego do serii → aktualizuj pola wspólne
+      // we wszystkich terminach serii (każdy zachowuje swoją datę).
+      if (istniejacy?.seria) {
+        const seria = istniejacy.seria;
+        const zaktualizowane = zajecia
+          .filter((x) => x.seria === seria)
+          .map((x) => zPolamiWspolnymi(x, dane));
+        const mapa = new Map(zaktualizowane.map((x) => [x.id, x]));
+        setZajecia((stan) => {
+          const nowe = sortuj(stan.map((x) => mapa.get(x.id) ?? x));
+          zapiszLokalnie(nowe);
+          return nowe;
+        });
+        if (bazaDostepna()) {
+          zaktualizowane.forEach((x) =>
+            zapiszZajecieDB(x, projektId).catch(() => {}),
+          );
+        }
+        return;
+      }
+
+      // Pojedynczy termin (nowy lub edycja bez serii).
       const z: Zajecie = { ...dane, id: dane.id ?? nowyId() };
       setZajecia((stan) => {
         const istnieje = stan.some((x) => x.id === z.id);
-        const nowe = istnieje
-          ? stan.map((x) => (x.id === z.id ? z : x))
-          : [...stan, z];
-        nowe.sort((a, b) =>
-          a.data === b.data
-            ? a.godzina.localeCompare(b.godzina)
-            : a.data.localeCompare(b.data),
+        const nowe = sortuj(
+          istnieje ? stan.map((x) => (x.id === z.id ? z : x)) : [...stan, z],
         );
         zapiszLokalnie(nowe);
         return nowe;
@@ -104,24 +154,48 @@ export function useZajecia(projektId: string): StanZajec {
         });
       }
     },
+    [projektId, zapiszLokalnie, zajecia],
+  );
+
+  const zapiszWiele = useCallback(
+    (lista: (Omit<Zajecie, "id"> & { id?: string })[]) => {
+      if (lista.length === 0) return;
+      const nowe: Zajecie[] = lista.map((d) => ({ ...d, id: d.id ?? nowyId() }));
+      setZajecia((stan) => {
+        const polaczone = sortuj([...stan, ...nowe]);
+        zapiszLokalnie(polaczone);
+        return polaczone;
+      });
+      if (bazaDostepna()) {
+        nowe.forEach((z) => zapiszZajecieDB(z, projektId).catch(() => {}));
+      }
+    },
     [projektId, zapiszLokalnie],
   );
 
   const usun = useCallback(
     (id: string) => {
+      const cel = zajecia.find((x) => x.id === id);
+      const seria = cel?.seria ?? null;
       setZajecia((stan) => {
-        const nowe = stan.filter((x) => x.id !== id);
+        const nowe = seria
+          ? stan.filter((x) => x.seria !== seria)
+          : stan.filter((x) => x.id !== id);
         zapiszLokalnie(nowe);
         return nowe;
       });
       if (bazaDostepna()) {
-        usunZajecieDB(id).catch(() => {
-          /* brak sesji/tabeli — pozostaje zapis lokalny */
-        });
+        if (seria) {
+          usunSerieDB(seria, projektId).catch(() => {});
+        } else {
+          usunZajecieDB(id).catch(() => {
+            /* brak sesji/tabeli — pozostaje zapis lokalny */
+          });
+        }
       }
     },
-    [zapiszLokalnie],
+    [projektId, zapiszLokalnie, zajecia],
   );
 
-  return { zajecia, zapisz, usun, gotowa };
+  return { zajecia, zapisz, zapiszWiele, usun, gotowa };
 }

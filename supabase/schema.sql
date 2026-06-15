@@ -240,11 +240,15 @@ create table if not exists public.zajecia (
   grupa text not null default '',
   kolor text not null default 'green',
   osob int not null default 0,
+  seria text,
   created_at timestamptz not null default now()
 );
 
 create index if not exists zajecia_projekt_data_idx
   on public.zajecia (user_id, projekt_id, data);
+
+create index if not exists zajecia_seria_idx
+  on public.zajecia (user_id, projekt_id, seria);
 
 alter table public.zajecia enable row level security;
 
