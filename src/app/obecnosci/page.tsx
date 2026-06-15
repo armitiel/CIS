@@ -10,11 +10,6 @@ import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import { Avatar } from "@/components/ui";
 import { useObecnosci, type Znak } from "@/lib/use-obecnosci";
-import {
-  generujListeDzienna,
-  generujListeObecnosci,
-  type DzienListy,
-} from "@/lib/generator";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
@@ -115,64 +110,6 @@ export default function Obecnosci() {
 
   const [widok, setWidok] = useState<Widok>("tydzien");
   const [kotwica, setKotwica] = useState<Date>(dzis);
-  const [generujeListe, setGenerujeListe] = useState(false);
-  const [generujeDzien, setGenerujeDzien] = useState(false);
-
-  // wzory list obecności z katalogu projektu (sekcja C) — dopasowanie druku
-  const dokC = projekt.spec.dokumenty.filter((d) => d.sekcja === "C");
-  const dokDzienny = dokC.find((d) => /dzien/i.test(d.nazwa));
-  const zeSwiadczeniami =
-    !!dokDzienny &&
-    /świadcz|wy[żz]yw|transport|posi[łl]|dojazd/i.test(
-      `${dokDzienny.nazwa} ${dokDzienny.opis}`,
-    );
-  const kolumnyDzienne = zeSwiadczeniami ? ["Wyżywienie", "Transport"] : [];
-
-  const znakLitera = (uId: string, isoD: string): "P" | "U" | "A" | "" => {
-    const z = znak(uId, isoD);
-    return z === "p" ? "P" : z === "u" ? "U" : z === "a" ? "A" : "";
-  };
-
-  // Druk dziennej listy obecności (dzień z kotwicy) — wg wzoru z katalogu.
-  async function generujListeDzien() {
-    setGenerujeDzien(true);
-    try {
-      const dataLabel = iso(kotwica).split("-").reverse().join(".");
-      await generujListeDzienna(projekt.spec, aktywni, {
-        tytul: dokDzienny?.nazwa ?? "Lista obecności (dzienna)",
-        podtytul: `${projekt.nazwa} (${projekt.nabor})`,
-        dataLabel,
-        kolumny: kolumnyDzienne,
-        znakDla: (uId) => znakLitera(uId, iso(kotwica)),
-      });
-    } finally {
-      setGenerujeDzien(false);
-    }
-  }
-
-  // Druk listy obecności (.docx) dla miesiąca bieżącej kotwicy — dni robocze,
-  // z wpisanymi znakami P/U/A z rejestracji.
-  async function generujListe() {
-    setGenerujeListe(true);
-    try {
-      const rok = kotwica.getFullYear();
-      const mc = kotwica.getMonth();
-      const dni: DzienListy[] = [];
-      const d = new Date(rok, mc, 1);
-      while (d.getMonth() === mc) {
-        const dow = d.getDay();
-        if (dow >= 1 && dow <= 5)
-          dni.push({ iso: iso(d), etykieta: String(d.getDate()) });
-        d.setDate(d.getDate() + 1);
-      }
-      await generujListeObecnosci(projekt.spec, aktywni, dni, znakLitera, {
-        tytul: `Lista obecności (miesięczna) — ${MIESIACE_M[mc]} ${rok}`,
-        podtytul: `${projekt.nazwa} (${projekt.nabor})`,
-      });
-    } finally {
-      setGenerujeListe(false);
-    }
-  }
 
   // stawka świadczenia (PLN/mies.) — zapis per projekt w przeglądarce
   const [stawka, setStawka] = useState<number>(0);
@@ -383,28 +320,6 @@ export default function Obecnosci() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={generujListeDzien}
-            disabled={generujeDzien || aktywni.length === 0}
-            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3 py-2 text-[13px] font-semibold text-ink-mid transition-colors hover:bg-soft disabled:opacity-50"
-            title={`Druk dziennej listy obecności${zeSwiadczeniami ? " (ze świadczeniami)" : ""} dla dnia z kalendarza — .docx`}
-          >
-            <span className="material-symbols-rounded notranslate text-[18px]">
-              today
-            </span>
-            {generujeDzien ? "Generuję…" : "Lista dnia"}
-          </button>
-          <button
-            onClick={generujListe}
-            disabled={generujeListe || aktywni.length === 0}
-            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3 py-2 text-[13px] font-semibold text-ink-mid transition-colors hover:bg-soft disabled:opacity-50"
-            title="Druk miesięcznej listy obecności (siatka uczestnicy × dni) dla miesiąca z kalendarza — .docx"
-          >
-            <span className="material-symbols-rounded notranslate text-[18px]">
-              calendar_view_month
-            </span>
-            {generujeListe ? "Generuję…" : "Lista miesiąca"}
-          </button>
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button

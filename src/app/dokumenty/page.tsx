@@ -109,6 +109,36 @@ export default function Dokumenty() {
     return z === "p" ? "P" : z === "u" ? "U" : z === "a" ? "A" : "";
   };
 
+  // Agregaty obecności per uczestnik za miesiąc z pola daty — do podstawienia
+  // w szablonach ({{frekwencja}}, {{dni_obecny}}, {{dni_wsparcia}}…).
+  function agregatyObecnosci(u: Uczestnik): Record<string, string> {
+    const [rok, mc] = dataListy.split("-").map(Number);
+    let p = 0;
+    let us = 0;
+    let a = 0;
+    const d = new Date(rok, mc - 1, 1);
+    while (d.getMonth() === mc - 1) {
+      const dow = d.getDay();
+      if (dow >= 1 && dow <= 5) {
+        const z = znak(u.id, d.toISOString().slice(0, 10));
+        if (z === "p") p++;
+        else if (z === "u") us++;
+        else if (z === "a") a++;
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    const podstawa = p + us + a;
+    const frek = podstawa > 0 ? `${Math.round((p / podstawa) * 100)}%` : "—";
+    return {
+      frekwencja: frek,
+      dni_obecny: String(p),
+      dni_nieobecny: String(a),
+      dni_usprawiedliwione: String(us),
+      dni_wsparcia: String(p),
+      okres_obecnosci: `${MIES_M[mc - 1]} ${rok}`,
+    };
+  }
+
   async function listaDzien() {
     setGenListaDzien(true);
     try {
@@ -544,9 +574,10 @@ export default function Dokumenty() {
         s.nazwa,
         aktywni,
         spec,
+        agregatyObecnosci,
       );
       setKomunikat(
-        `✓ Wygenerowano „${s.nazwa}” dla ${aktywni.length} aktywnych uczestników (ZIP).`,
+        `✓ Wygenerowano „${s.nazwa}” dla ${aktywni.length} aktywnych uczestników (ZIP). Pola obecności liczone za ${MIES_M[Number(dataListy.split("-")[1]) - 1]}.`,
       );
     } catch (e) {
       setKomunikat(
@@ -572,6 +603,7 @@ export default function Dokumenty() {
           s.nazwa,
           wybrani[0],
           spec,
+          agregatyObecnosci,
         );
         setKomunikat(
           `✓ Wygenerowano „${s.nazwa}” dla: ${wybrani[0].nazwisko} ${wybrani[0].imie}.`,
@@ -582,6 +614,7 @@ export default function Dokumenty() {
           s.nazwa,
           wybrani,
           spec,
+          agregatyObecnosci,
         );
         setKomunikat(
           `✓ Wygenerowano „${s.nazwa}” dla ${wybrani.length} wybranych uczestników (ZIP).`,
@@ -1041,7 +1074,11 @@ export default function Dokumenty() {
               <code className="rounded bg-soft px-1.5 py-0.5 font-mono text-xs">
                 {"{{imie_nazwisko}}"}
               </code>{" "}
-              — aplikacja wypełni go danymi każdego uczestnika.
+              — aplikacja wypełni go danymi każdego uczestnika. W pakiecie
+              zbiorczym (ZIP) każdy dostaje swoje wartości, także{" "}
+              <strong>agregaty z obecności</strong> ({"{{frekwencja}}"},{" "}
+              {"{{dni_obecny}}"}, {"{{dni_wsparcia}}"}…) liczone za miesiąc
+              wybrany w sekcji „Listy obecności" powyżej.
             </p>
           </div>
           <div>

@@ -41,6 +41,13 @@ export const LISTA_POL: [string, string][] = [
   ["projekt_okres", "Okres realizacji projektu"],
   ["wnioskodawca", "Nazwa wnioskodawcy"],
   ["data_dzis", "Dzisiejsza data"],
+  // pola agregowane z obecności (liczone per uczestnik za wybrany okres)
+  ["frekwencja", "Frekwencja % (z obecności)"],
+  ["dni_obecny", "Liczba dni obecności"],
+  ["dni_nieobecny", "Liczba nieobecności"],
+  ["dni_usprawiedliwione", "Liczba usprawiedliwień"],
+  ["dni_wsparcia", "Liczba dni wsparcia (obecności)"],
+  ["okres_obecnosci", "Okres, za który liczono obecność"],
 ];
 
 const PUSTE = "……………………";
@@ -68,6 +75,7 @@ function dataUrodzeniaZPesel(pesel?: string): string {
 export function polaUczestnika(
   u: Uczestnik,
   spec: SpecyfikacjaProjektu,
+  extra?: Record<string, string>,
 ): Record<string, string> {
   const s = u.sowa ?? {};
   const v = (x?: string | number) =>
@@ -115,6 +123,14 @@ export function polaUczestnika(
       month: "2-digit",
       year: "numeric",
     }),
+    // pola agregowane (obecność/świadczenia) — domyślnie puste, nadpisywane przez extra
+    frekwencja: PUSTE,
+    dni_obecny: PUSTE,
+    dni_nieobecny: PUSTE,
+    dni_usprawiedliwione: PUSTE,
+    dni_wsparcia: PUSTE,
+    okres_obecnosci: PUSTE,
+    ...(extra ?? {}),
   };
 }
 
@@ -162,8 +178,12 @@ export function generujZSzablonu(
   nazwaSzablonu: string,
   u: Uczestnik,
   spec: SpecyfikacjaProjektu,
+  dodatkowePola?: (u: Uczestnik) => Record<string, string>,
 ) {
-  const blob = wypelnijSzablon(szablon, polaUczestnika(u, spec));
+  const blob = wypelnijSzablon(
+    szablon,
+    polaUczestnika(u, spec, dodatkowePola?.(u)),
+  );
   pobierzBlob(
     blob,
     `${slug(nazwaSzablonu.replace(/\.docx$/i, ""))}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`,
@@ -176,11 +196,15 @@ export async function generujZSzablonuZbiorczo(
   nazwaSzablonu: string,
   uczestnicy: Uczestnik[],
   spec: SpecyfikacjaProjektu,
+  dodatkowePola?: (u: Uczestnik) => Record<string, string>,
 ) {
   const zip = new JSZip();
   const baza = slug(nazwaSzablonu.replace(/\.docx$/i, ""));
   for (const u of uczestnicy) {
-    const blob = wypelnijSzablon(szablon, polaUczestnika(u, spec));
+    const blob = wypelnijSzablon(
+      szablon,
+      polaUczestnika(u, spec, dodatkowePola?.(u)),
+    );
     zip.file(`${baza}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`, blob);
   }
   const wynik = await zip.generateAsync({ type: "blob" });
