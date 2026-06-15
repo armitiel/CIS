@@ -76,6 +76,21 @@ function etykietaTerminu(z: {
   return `${dzien} · ${z.godzina || "—"} · ${z.nazwa || "zajęcia"}${grupa}`;
 }
 
+// Licznik SMS wg pojemności: polskie znaki/typografia → UCS-2 (70/67),
+// czysty ASCII (GSM-7) → 160/153 na segment.
+function pojemnoscSMS(tekst: string): {
+  znaki: number;
+  sms: number;
+  ucs2: boolean;
+} {
+  const znaki = tekst.length;
+  const ucs2 = [...tekst].some((ch) => ch.charCodeAt(0) > 127);
+  const poj = ucs2 ? 70 : 160;
+  const seg = ucs2 ? 67 : 153;
+  const sms = znaki === 0 ? 0 : znaki <= poj ? 1 : Math.ceil(znaki / seg);
+  return { znaki, sms, ucs2 };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -280,6 +295,21 @@ export default function WyslijSMS({
 
   const [odznaczeni, setOdznaczeni] = useState<Set<string>>(new Set());
   const wybrani = odbiorcy.filter((o) => o.numer && !odznaczeni.has(o.u.id));
+  const odbiorcyZNumerem = odbiorcy.filter((o) => o.numer).length;
+  const wszyscyZaznaczeni =
+    odbiorcyZNumerem > 0 && wybrani.length === odbiorcyZNumerem;
+
+  function zaznaczWszystkich(zazn: boolean) {
+    setOdznaczeni((s) => {
+      const n = new Set(s);
+      for (const o of odbiorcy) {
+        if (!o.numer) continue;
+        if (zazn) n.delete(o.u.id);
+        else n.add(o.u.id);
+      }
+      return n;
+    });
+  }
 
   const polaWSzablonie = useMemo(
     () => Array.from(new Set([...szablon.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]))),
@@ -324,7 +354,7 @@ export default function WyslijSMS({
     }
   }
 
-  const dlugosc = podglad.length;
+  const licznikSMS = pojemnoscSMS(podglad);
   const bezNumeru = odbiorcy.filter((o) => !o.numer).length;
   const grupaTerminu = termin?.grupa && termin.grupa !== "—" ? termin.grupa : "";
 
@@ -446,21 +476,23 @@ export default function WyslijSMS({
               onChange={setSzablon}
               className="min-h-[84px] w-full rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-[oklch(0.62_0.09_152)]"
             />
-            <p className="mt-1 text-[11px] text-faint">
-              Kolorowe kapsułki to pola dynamiczne — podstawią się indywidualnie
-              dla każdego odbiorcy.
-            </p>
           </div>
 
-          {/* Wypełniony podgląd — jaśniejsze pole */}
-          <div className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink">
-            <div className="th-label mb-1">Podgląd (pierwszy odbiorca)</div>
-            {podglad}
-            <div className="mt-1 text-[11px] text-faint">
-              {dlugosc} znaków{" "}
-              {dlugosc > 70 &&
-                "· uwaga: polskie znaki = do 70 znaków na 1 SMS (dłuższe = kilka SMS)"}
+          {/* Podgląd — tytuł w stylu „Treść SMS" (label nad polem) */}
+          <div>
+            <label className="th-label mb-1 block">
+              Podgląd (pierwszy odbiorca)
+            </label>
+            <div className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink">
+              {podglad}
             </div>
+            <p className="mt-1 text-[11px] text-faint">
+              {licznikSMS.znaki} znaków · {licznikSMS.sms}{" "}
+              {licznikSMS.sms === 1 ? "SMS" : "SMS-y"} ·{" "}
+              {licznikSMS.ucs2
+                ? "polskie znaki → 70 znaków/SMS"
+                : "160 znaków/SMS"}
+            </p>
           </div>
 
           {/* Ostrzeżenia walidacyjne */}
@@ -479,6 +511,20 @@ export default function WyslijSMS({
 
           {/* Lista odbiorców */}
           <div className="overflow-hidden rounded-xl border border-line">
+            <div className="flex items-center justify-between gap-2 border-b border-line bg-soft px-3 py-2">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-ink-mid">
+                <input
+                  type="checkbox"
+                  checked={wszyscyZaznaczeni}
+                  onChange={(e) => zaznaczWszystkich(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer accent-[oklch(0.52_0.09_152)]"
+                />
+                Zaznacz wszystkich
+              </label>
+              <span className="text-xs text-faint">
+                {wybrani.length} / {odbiorcyZNumerem} z numerem
+              </span>
+            </div>
             <div className="max-h-56 divide-y divide-line-soft overflow-y-auto">
               {odbiorcy.map((o) => (
                 <div
