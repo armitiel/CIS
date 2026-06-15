@@ -59,26 +59,15 @@ function etykietaTerminu(z: {
   godzina: string;
   nazwa: string;
   grupa: string;
+  seria?: string | null;
 }): string {
   const d = parseISO(z.data);
   const dzien = `${DOW_PL[d.getDay()]} ${p2(d.getDate())}.${p2(d.getMonth() + 1)}`;
+  const nazwa = z.nazwa?.trim() || "zajęcia";
+  const krotka = nazwa.length > 22 ? `${nazwa.slice(0, 21).trimEnd()}…` : nazwa;
+  const cykl = z.seria ? "🔁 cykl." : "1× jedn.";
   const grupa = z.grupa && z.grupa !== "—" ? ` · gr. ${z.grupa}` : "";
-  return `${dzien} · ${z.godzina || "—"} · ${z.nazwa || "zajęcia"}${grupa}`;
-}
-
-// Rozbija szablon na segmenty tekstu i pola {{...}} (do podglądu z kapsułkami).
-function tokenizuj(s: string): { typ: "txt" | "pole"; val: string }[] {
-  const parts: { typ: "txt" | "pole"; val: string }[] = [];
-  const re = /\{\{(\w+)\}\}/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(s))) {
-    if (m.index > last) parts.push({ typ: "txt", val: s.slice(last, m.index) });
-    parts.push({ typ: "pole", val: m[1] });
-    last = m.index + m[0].length;
-  }
-  if (last < s.length) parts.push({ typ: "txt", val: s.slice(last) });
-  return parts;
+  return `${dzien} ${z.godzina || "—"} · ${krotka} · ${cykl}${grupa}`;
 }
 
 export default function WyslijSMS({
@@ -248,11 +237,11 @@ export default function WyslijSMS({
               </span>{" "}
               Termin z harmonogramu
             </label>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <select
                 value={terminId}
                 onChange={(e) => setTerminId(e.target.value)}
-                className={`min-w-[260px] flex-1 cursor-pointer ${pole}`}
+                className={`w-full min-w-0 cursor-pointer sm:flex-1 ${pole}`}
               >
                 <option value="">— nie podpinaj (pola harmonogramu puste) —</option>
                 {terminy.map((z) => (
@@ -264,7 +253,7 @@ export default function WyslijSMS({
               {grupaTerminu && grupa !== grupaTerminu && (
                 <button
                   onClick={() => setGrupa(grupaTerminu)}
-                  className="rounded-lg border border-blue-ink/30 bg-blue-soft px-2.5 py-1.5 text-xs font-semibold text-blue-ink hover:opacity-90"
+                  className="shrink-0 rounded-lg border border-blue-ink/30 bg-blue-soft px-2.5 py-1.5 text-xs font-semibold text-blue-ink hover:opacity-90"
                 >
                   Wyślij do grupy {grupaTerminu}
                 </button>
@@ -345,32 +334,6 @@ export default function WyslijSMS({
               rows={3}
               className="w-full rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[oklch(0.62_0.09_152)]"
             />
-          </div>
-
-          {/* Podgląd szablonu z kapsułkami */}
-          <div className="rounded-xl border border-line px-4 py-2.5">
-            <div className="th-label mb-1.5">Szablon</div>
-            <div className="flex flex-wrap items-center gap-x-0.5 gap-y-1 text-sm leading-relaxed text-ink">
-              {tokenizuj(szablon).map((t, i) =>
-                t.typ === "txt" ? (
-                  <span key={i} className="whitespace-pre-wrap">
-                    {t.val}
-                  </span>
-                ) : (
-                  <span
-                    key={i}
-                    className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${
-                      POLA_META[t.val]
-                        ? KOLOR_GRUPY[POLA_META[t.val].grupa]
-                        : "bg-red-soft text-red-ink"
-                    }`}
-                    title={POLA_META[t.val] ? undefined : "Nieznane pole"}
-                  >
-                    {POLA_META[t.val]?.label ?? `${t.val}?`}
-                  </span>
-                ),
-              )}
-            </div>
           </div>
 
           {/* Wypełniony podgląd */}
