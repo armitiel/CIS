@@ -94,6 +94,7 @@ export default function Dokumenty() {
     blob: Blob;
   } | null>(null);
   const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
+  const [pobieraWzor, setPobieraWzor] = useState<string | null>(null);
   const [skopiowany, setSkopiowany] = useState<string | null>(null);
   const [wyborSzablonu, setWyborSzablonu] = useState<SzablonZapisany | null>(
     null,
@@ -542,6 +543,26 @@ export default function Dokumenty() {
     }
   }
 
+  /** Pobiera wzór formularza (.docx, pola puste) dla pojedynczego dokumentu. */
+  async function pobierzWzor(d: WymaganyDokument) {
+    setPobieraWzor(d.id);
+    try {
+      const blob = await dokumentBlob(d, uczestnikWzor(d.dotyczy), spec);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${d.symbol}_wzor.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setKomunikat(
+        `Błąd pobierania: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    } finally {
+      setPobieraWzor(null);
+    }
+  }
+
   /** Podgląd szablonu własnego — znaczniki {{pole}} pozostają widoczne. */
   function pokazPodgladSzablonu(s: SzablonZapisany) {
     setPodglad({
@@ -659,17 +680,27 @@ export default function Dokumenty() {
                           </span>
                         )}
                       </div>
-                      <div className="sm:shrink-0">
+                      <div className="flex items-center gap-1.5 sm:shrink-0">
                         <button
                           onClick={() => pokazPodgladWzoru(d)}
                           disabled={podgladLaduje !== null}
-                          className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-line-strong px-2.5 py-1.5 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50 sm:w-auto sm:py-1"
+                          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line-strong px-2.5 py-1.5 text-xs font-medium text-ink-mid hover:bg-soft disabled:opacity-50 sm:flex-none sm:py-1"
                           title="Podgląd wzoru formularza (pola puste)"
                         >
                           <span className="material-symbols-rounded notranslate text-[16px]">
                             visibility
                           </span>
                           {podgladLaduje === `wzor:${d.id}` ? "…" : "Podgląd"}
+                        </button>
+                        <button
+                          onClick={() => pobierzWzor(d)}
+                          disabled={pobieraWzor !== null}
+                          className="inline-flex shrink-0 items-center justify-center rounded-lg border border-line-strong px-2 py-1.5 text-xs font-medium text-primary-strong hover:bg-green-soft disabled:opacity-50 sm:py-1"
+                          title="Pobierz wzór (.docx)"
+                        >
+                          <span className="material-symbols-rounded notranslate text-[17px]">
+                            {pobieraWzor === d.id ? "hourglass_empty" : "download"}
+                          </span>
                         </button>
                       </div>
                     </div>
