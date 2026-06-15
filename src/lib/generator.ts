@@ -680,3 +680,127 @@ export async function generujListeObecnosci(
   });
   await pobierz(doc, `Lista_obecnosci_${slug(opcje.tytul)}.docx`);
 }
+
+/**
+ * Druk dziennej listy obecności (sekcja C, np. „ze świadczeniami") — jeden
+ * dzień, wszyscy uczestnicy, kolumny: Obecność + opcjonalne (Wyżywienie,
+ * Transport…) + podpis. Pionowa A4, ze stopką logotypów (przez dokumentDocx).
+ */
+export async function generujListeDzienna(
+  spec: SpecyfikacjaProjektu,
+  uczestnicy: Uczestnik[],
+  opcje: {
+    tytul: string;
+    podtytul?: string;
+    dataLabel: string;
+    kolumny: string[];
+    znakDla: (uczestnikId: string) => "P" | "U" | "A" | "";
+  },
+) {
+  const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
+  const obram = {
+    top: kraw,
+    bottom: kraw,
+    left: kraw,
+    right: kraw,
+    insideHorizontal: kraw,
+    insideVertical: kraw,
+  };
+  const tcN = (t: string, w?: number) =>
+    new TableCell({
+      width: w ? { size: w, type: WidthType.DXA } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      shading: { fill: "EFEFEF" },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: t, bold: true, size: 18 })],
+        }),
+      ],
+    });
+  const tc = (t: string, center = false) =>
+    new TableCell({
+      verticalAlign: VerticalAlign.CENTER,
+      children: [
+        new Paragraph({
+          alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT,
+          children: [new TextRun({ text: t, size: 19 })],
+        }),
+      ],
+    });
+
+  const naglowek = new TableRow({
+    tableHeader: true,
+    children: [
+      tcN("Lp.", 500),
+      tcN("Imię i nazwisko", 4200),
+      tcN("Obecność", 1200),
+      ...opcje.kolumny.map((k) => tcN(k)),
+      tcN("Podpis uczestnika", 2600),
+    ],
+  });
+  const wiersze = uczestnicy.map(
+    (u, i) =>
+      new TableRow({
+        children: [
+          tc(String(i + 1), true),
+          tc(`${u.nazwisko} ${u.imie}`),
+          tc(opcje.znakDla(u.id), true),
+          ...opcje.kolumny.map(() => tc("")),
+          tc(""),
+        ],
+      }),
+  );
+  const tabela = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: obram,
+    rows: [naglowek, ...wiersze],
+  });
+
+  const children: Blok[] = [
+    ...naglowekProjektu(spec),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 20 },
+      children: [new TextRun({ text: opcje.tytul, bold: true, size: 26 })],
+    }),
+    ...(opcje.podtytul
+      ? [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: opcje.podtytul, size: 18 })],
+          }),
+        ]
+      : []),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 120 },
+      children: [
+        new TextRun({ text: `Data: ${opcje.dataLabel}`, bold: true, size: 20 }),
+      ],
+    }),
+    tabela,
+    new Paragraph({
+      spacing: { before: 160 },
+      children: [
+        new TextRun({
+          text: "Legenda: P — obecny · U — usprawiedliwiony · A — nieobecny. Kolumny świadczeń wypełnia/potwierdza prowadzący.",
+          size: 15,
+        }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { before: 280 },
+      children: [
+        new TextRun({
+          text: "Data i podpis prowadzącego/koordynatora: ………………………………………………",
+          size: 18,
+        }),
+      ],
+    }),
+  ];
+  await pobierz(
+    dokumentDocx(children),
+    `Lista_obecnosci_dzienna_${slug(opcje.dataLabel)}.docx`,
+  );
+}
