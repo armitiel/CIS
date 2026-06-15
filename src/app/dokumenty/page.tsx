@@ -17,11 +17,15 @@ import {
 import {
   dokumentBlob,
   dokumentPodgladowy,
+  generujListeDzienna,
+  generujListeObecnosci,
   generujPakiet,
   generujPakietyZbiorczo,
   uczestnikWzor,
   ustawBrandingStopki,
+  type DzienListy,
 } from "@/lib/generator";
+import { useObecnosci } from "@/lib/use-obecnosci";
 import PodgladDocxModal from "@/components/PodgladDocxModal";
 import {
   LISTA_POL,
@@ -77,6 +81,73 @@ export default function Dokumenty() {
   const { projekt, uczestnicy, projektWlasny, aktualizujProjekt } =
     useProjekt();
   const spec = projekt.spec;
+  const { znak } = useObecnosci(projekt.id);
+
+  // ---- Listy obecności (dane z apki → druk wg wzoru z katalogu sekcji C) ----
+  const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
+  const dokDzienny = spec.dokumenty.find(
+    (d) => d.sekcja === "C" && /dzien/i.test(d.nazwa),
+  );
+  const zeSwiadczeniami =
+    !!dokDzienny &&
+    /świadcz|wy[żz]yw|transport|posi[łl]|dojazd/i.test(
+      `${dokDzienny.nazwa} ${dokDzienny.opis}`,
+    );
+  const kolumnyDzienne = zeSwiadczeniami ? ["Wyżywienie", "Transport"] : [];
+  const [dataListy, setDataListy] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [genListaDzien, setGenListaDzien] = useState(false);
+  const [genListaMies, setGenListaMies] = useState(false);
+
+  const MIES_M = [
+    "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+    "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
+  ];
+  const znakLitera = (uId: string, isoD: string): "P" | "U" | "A" | "" => {
+    const z = znak(uId, isoD);
+    return z === "p" ? "P" : z === "u" ? "U" : z === "a" ? "A" : "";
+  };
+
+  async function listaDzien() {
+    setGenListaDzien(true);
+    try {
+      await generujListeDzienna(spec, aktywni, {
+        tytul: dokDzienny?.nazwa ?? "Lista obecności (dzienna)",
+        podtytul: `${projekt.nazwa} (${projekt.nabor})`,
+        dataLabel: dataListy.split("-").reverse().join("."),
+        kolumny: kolumnyDzienne,
+        znakDla: (uId) => znakLitera(uId, dataListy),
+      });
+    } finally {
+      setGenListaDzien(false);
+    }
+  }
+
+  async function listaMiesiac() {
+    setGenListaMies(true);
+    try {
+      const [rok, mc] = dataListy.split("-").map(Number);
+      const dni: DzienListy[] = [];
+      const d = new Date(rok, mc - 1, 1);
+      while (d.getMonth() === mc - 1) {
+        const dow = d.getDay();
+        if (dow >= 1 && dow <= 5) {
+          dni.push({
+            iso: d.toISOString().slice(0, 10),
+            etykieta: String(d.getDate()),
+          });
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      await generujListeObecnosci(spec, aktywni, dni, znakLitera, {
+        tytul: `Lista obecności (miesięczna) — ${MIES_M[mc - 1]} ${rok}`,
+        podtytul: `${projekt.nazwa} (${projekt.nabor})`,
+      });
+    } finally {
+      setGenListaMies(false);
+    }
+  }
 
   const [wniosekStatus, setWniosekStatus] = useState<{
     typ: "zgodny" | "obcy" | "nierozpoznany" | "blad";
@@ -895,6 +966,63 @@ export default function Dokumenty() {
           kartotece. Dokumenty grupowe i kadrowe (listy obecności, dzienniki,
           protokoły) będą generowane z modułów Obecności i Harmonogram (etapy
           E2–E4).
+        </p>
+      </section>
+
+      {/* Listy zbiorcze z danymi projektu (obecność) */}
+      <section
+        className="card anim-card-in px-6 py-[22px]"
+        style={{ animationDelay: "0.16s" }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 font-serif text-xl font-semibold text-ink-strong">
+              Listy obecności (z danymi z projektu)
+            </h2>
+            <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
+              Druk wypełniony danymi z apki: uczestnicy ({aktywni.length}{" "}
+              aktywnych) i znaki obecności P/U/A z modułu Obecności.
+              {zeSwiadczeniami &&
+                " Wzór tego projektu obejmuje świadczenia — dochodzą kolumny „Wyżywienie” i „Transport”."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={dataListy}
+              onChange={(e) => setDataListy(e.target.value)}
+              title="Dzień (i miesiąc) listy obecności"
+              className="rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-sm text-ink outline-none"
+            />
+            <button
+              onClick={listaDzien}
+              disabled={genListaDzien || aktywni.length === 0}
+              className="btn-dark disabled:opacity-50"
+            >
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                today
+              </span>
+              {genListaDzien ? "Generuję…" : "Lista dnia (.docx)"}
+            </button>
+            <button
+              onClick={listaMiesiac}
+              disabled={genListaMies || aktywni.length === 0}
+              className="btn-dark disabled:opacity-50"
+            >
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                calendar_view_month
+              </span>
+              {genListaMies ? "Generuję…" : "Lista miesiąca (.docx)"}
+            </button>
+          </div>
+        </div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-faint">
+          <span className="material-symbols-rounded notranslate text-base text-blue-ink">
+            info
+          </span>
+          Tytuł i kolumny dopasowane do wzoru z katalogu (sekcja C
+          {dokDzienny ? `: „${dokDzienny.nazwa}”` : ""}); logotypy projektu w
+          stopce. Dane bierą się z modułów Uczestnicy i Obecności.
         </p>
       </section>
 
