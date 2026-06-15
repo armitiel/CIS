@@ -3,11 +3,12 @@
 // Panel ścieżki reintegracji uczestnika (etap E3): zmiana etapu i postępu
 // oraz dziennik wpisów kadry (diagnoza, cele, notatki, spotkania, dokumenty).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Portal from "@/components/Portal";
 import { Avatar, Stepper } from "@/components/ui";
 import { useProjekt } from "@/components/ProjektProvider";
+import { useKoordynator } from "@/lib/use-koordynator";
 import { etapyNazwy } from "@/lib/mock-data";
 import type { Uczestnik } from "@/lib/types";
 import type { TypWpisu, WpisSciezki } from "@/lib/use-wpisy-sciezki";
@@ -48,6 +49,13 @@ export default function SciezkaPanel({
   const [data, setData] = useState<string>(dzisIso());
   const [autor, setAutor] = useState<string>("");
   const [tresc, setTresc] = useState<string>("");
+  const { nazwa: koordynator } = useKoordynator();
+
+  // auto-uzupełnij autora zalogowanym koordynatorem (dopóki pole nietknięte)
+  const [autorRuszony, setAutorRuszony] = useState(false);
+  useEffect(() => {
+    if (!autorRuszony && koordynator && !autor) setAutor(koordynator);
+  }, [koordynator, autor, autorRuszony]);
 
   function zapisz() {
     const t = tresc.trim();
@@ -188,8 +196,11 @@ export default function SciezkaPanel({
                 />
                 <input
                   value={autor}
-                  onChange={(e) => setAutor(e.target.value)}
-                  placeholder="Prowadzący/a (opcjonalnie)"
+                  onChange={(e) => {
+                    setAutorRuszony(true);
+                    setAutor(e.target.value);
+                  }}
+                  placeholder="Prowadzący/a (auto: koordynator)"
                   className={`${pole} flex-1`}
                 />
                 <button

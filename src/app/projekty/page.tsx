@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useProjekt } from "@/components/ProjektProvider";
 import NowyProjekt from "@/components/NowyProjekt";
 import { wykryjZestaw } from "@/lib/logotypy";
+import { useKoordynator } from "@/lib/use-koordynator";
 
 export default function Projekty() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function Projekty() {
     usunProjekt,
     czyWlasny,
   } = useProjekt();
+  const { nazwa: koordynator } = useKoordynator();
 
   const [pokazNowy, setPokazNowy] = useState(false);
   const [edytowanyId, setEdytowanyId] = useState<string | null>(null);
@@ -165,6 +167,14 @@ export default function Projekty() {
                         {wykryjZestaw(p.nabor).skrot}
                       </dd>
                     </div>
+                    {koordynator && (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-faint">Koordynator</dt>
+                        <dd className="m-0 truncate text-right font-medium text-ink-mid">
+                          {koordynator}
+                        </dd>
+                      </div>
+                    )}
                     <div className="flex justify-between gap-3">
                       <dt className="text-faint">Uczestnicy</dt>
                       <dd className="m-0 text-right font-medium text-ink-mid">

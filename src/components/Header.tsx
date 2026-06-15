@@ -20,6 +20,7 @@ const TYTULY: [string, string, string][] = [
   ["/harmonogram", "Harmonogram", "Plan zajęć i warsztatów"],
   ["/dokumenty", "Dokumenty", "Generator dokumentacji projektowej"],
   ["/projekty", "Projekty", "Przełączanie i zarządzanie projektami"],
+  ["/profil", "Profil", "Profil koordynatora i ustawienia"],
   ["/", "Pulpit", "Przegląd projektu i dzisiejsze działania"],
 ];
 
