@@ -113,6 +113,34 @@ export function polaUczestnika(
   ];
   const seed = (s.pesel ?? "").split("").reduce((a, c) => a + (Number(c) || 0), 0);
   const opisRozmowy = warianty[seed % warianty.length];
+  // B-02 — data/miejsce diagnozy
+  const dzienDiagnozy = String((seed % 10) + 1).padStart(2, "0");
+  const dataDiagnozy = `${dzienDiagnozy}.06.2026`;
+  // B-02 cz. III — opisy (różne brzmienie per osoba)
+  const wBariery = [
+    "brak środków na edukację",
+    "ograniczone środki finansowe na edukację i rozwój",
+    "brak środków na edukację, niskie dochody",
+    "trudna sytuacja materialna, brak środków na edukację",
+  ];
+  const wMocne = [
+    "motywacja do zmiany sytuacji",
+    "wysoka motywacja do zmiany swojej sytuacji życiowej",
+    "chęć i motywacja do zmiany sytuacji",
+    "determinacja i motywacja do zmiany sytuacji",
+  ];
+  const wRekom = [
+    "reintegracja społeczna, spotkania integracyjne, kursy zawodowe",
+    "reintegracja społeczna i zawodowa, spotkania integracyjne, kursy zawodowe",
+    "udział w reintegracji społecznej, spotkaniach integracyjnych i kursach zawodowych",
+    "reintegracja społeczna, zajęcia integracyjne oraz kursy zawodowe",
+  ];
+  // B-02 cz. II — poziomy 1-3 z przewagą niskich (1,2), deterministycznie per osoba/wiersz
+  const seqPoz = [1, 1, 2, 2, 3];
+  const poziomy: Record<string, string> = {};
+  for (let i = 1; i <= 18; i++) {
+    poziomy["poz" + i] = String(seqPoz[(seed * 3 + i * 7) % seqPoz.length]);
+  }
   return {
     imie: v(u.imie),
     nazwisko: v(u.nazwisko),
@@ -146,6 +174,13 @@ export function polaUczestnika(
     pkt_wielokrotne: String(pktWielokrotne),
     pkt_suma: String(pktPlec + pktWielokrotne),
     rozmowa_opis: opisRozmowy,
+    // B-02
+    data_diagnozy: dataDiagnozy,
+    miejsce_diagnozy: "Świebodzin",
+    bariery: wBariery[seed % wBariery.length],
+    mocne: wMocne[(seed + 1) % wMocne.length],
+    rekomendacje: wRekom[(seed + 2) % wRekom.length],
+    ...poziomy,
     telefon: v(s.telefon),
     email: v(s.email),
     status_rynku_pracy: v(s.statusRynkuPracy),
