@@ -57,6 +57,15 @@ import {
   type LogoProjektu,
 } from "@/lib/db-logo-projektu";
 import { wykryjZestaw, type RolaLogo } from "@/lib/logotypy";
+import {
+  maWzorEdytowalny,
+  surowySzablonDokumentu,
+} from "@/lib/wzory"; // edytowalne szablony + „Otwórz w Wordzie"
+import {
+  maNadpisanie,
+  usunNadpisanie,
+  zapiszNadpisanie,
+} from "@/lib/szablony-dokumentow";
 import WyborGeneratora from "@/components/WyborGeneratora";
 import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
@@ -196,6 +205,11 @@ export default function Dokumenty() {
   } | null>(null);
   const [podgladLaduje, setPodgladLaduje] = useState<string | null>(null);
   const [pobieraWzor, setPobieraWzor] = useState<string | null>(null);
+  const [otwieraSzablon, setOtwieraSzablon] = useState<string | null>(null);
+  // licznik wymuszający odświeżenie po wgraniu/przywróceniu szablonu (czyta localStorage)
+  const [wersjaSzablonow, setWersjaSzablonow] = useState(0);
+  const szablonDokRef = useRef<HTMLInputElement>(null);
+  const wgrywamSzablonDla = useRef<WymaganyDokument | null>(null);
   const [skopiowany, setSkopiowany] = useState<string | null>(null);
   const [wyborSzablonu, setWyborSzablonu] = useState<SzablonZapisany | null>(
     null,
@@ -667,6 +681,78 @@ export default function Dokumenty() {
     }
   }
 
+  /**
+   * „Otwórz w Wordzie": pobiera SUROWY szablon dokumentu ze znacznikami
+   * {{pole}} (nadpisanie kadry lub wzór wbudowany) — do edycji treści bez
+   * utraty pól dynamicznych. Po edycji wgrywa się go z powrotem.
+   */
+  async function otworzSzablonWWordzie(d: WymaganyDokument) {
+    setOtwieraSzablon(d.id);
+    try {
+      const ab = await surowySzablonDokumentu(spec, d);
+      if (!ab) {
+        setKomunikat(
+          `Dokument ${d.symbol} nie ma jeszcze edytowalnego szablonu .docx.`,
+        );
+        return;
+      }
+      const blob = new Blob([ab], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${d.symbol}_szablon.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setKomunikat(
+        `Pobrano szablon ${d.symbol}. Zmień treść w Wordzie, zostaw znaczniki {{…}}, zapisz i wgraj z powrotem („Wgraj zmieniony”).`,
+      );
+    } catch (e) {
+      setKomunikat(
+        `Błąd otwierania szablonu: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    } finally {
+      setOtwieraSzablon(null);
+    }
+  }
+
+  /** Otwiera systemowy wybór pliku dla wgrania zmienionego szablonu dokumentu. */
+  function wybierzZmienionySzablon(d: WymaganyDokument) {
+    wgrywamSzablonDla.current = d;
+    szablonDokRef.current?.click();
+  }
+
+  /** Zapisuje wgrany przez kadrę szablon jako nadpisanie danego dokumentu. */
+  async function wgrajZmienionySzablon(file: File | undefined) {
+    const d = wgrywamSzablonDla.current;
+    if (szablonDokRef.current) szablonDokRef.current.value = "";
+    if (!file || !d) return;
+    if (!/\.docx$/i.test(file.name)) {
+      setKomunikat("Szablon musi być plikiem .docx ze znacznikami {{pole}}.");
+      return;
+    }
+    try {
+      const ab = await file.arrayBuffer();
+      zapiszNadpisanie(spec.id, d.id, file.name, ab);
+      setWersjaSzablonow((v) => v + 1);
+      setKomunikat(
+        `✓ Zapisano własny szablon dla ${d.symbol}. Od teraz dokument generuje się z tej wersji.`,
+      );
+    } catch (e) {
+      setKomunikat(
+        `Błąd wgrywania: ${e instanceof Error ? e.message : "nieznany"}`,
+      );
+    }
+  }
+
+  /** Przywraca dokument do wzoru wbudowanego / treści z kodu (usuwa nadpisanie). */
+  function przywrocWzor(d: WymaganyDokument) {
+    usunNadpisanie(spec.id, d.id);
+    setWersjaSzablonow((v) => v + 1);
+    setKomunikat(`Przywrócono domyślny wzór dla ${d.symbol}.`);
+  }
+
   /** Podgląd szablonu własnego — znaczniki {{pole}} pozostają widoczne. */
   function pokazPodgladSzablonu(s: SzablonZapisany) {
     setPodglad({
@@ -706,6 +792,14 @@ export default function Dokumenty() {
               accept=".pdf,.docx,.txt"
               className="hidden"
               onChange={(e) => wczytajWniosek(e.target.files?.[0])}
+            />
+            {/* ukryty input: wgranie zmienionego szablonu dla konkretnego dokumentu */}
+            <input
+              ref={szablonDokRef}
+              type="file"
+              accept=".docx"
+              className="hidden"
+              onChange={(e) => wgrajZmienionySzablon(e.target.files?.[0])}
             />
             <button
               onClick={() => fileRef.current?.click()}
@@ -784,7 +878,10 @@ export default function Dokumenty() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 sm:shrink-0">
+                      <div
+                        key={`akcje-${d.id}-${wersjaSzablonow}`}
+                        className="flex flex-wrap items-center gap-1.5 sm:w-[150px] sm:shrink-0 sm:justify-end"
+                      >
                         <button
                           onClick={() => pokazPodgladWzoru(d)}
                           disabled={podgladLaduje !== null}
@@ -800,12 +897,58 @@ export default function Dokumenty() {
                           onClick={() => pobierzWzor(d)}
                           disabled={pobieraWzor !== null}
                           className="inline-flex shrink-0 items-center justify-center rounded-lg border border-line-strong px-2 py-1.5 text-xs font-medium text-primary-strong hover:bg-green-soft disabled:opacity-50 sm:py-1"
-                          title="Pobierz wzór (.docx)"
+                          title="Pobierz wzór wypełniony (pola puste, ze stopką)"
                         >
                           <span className="material-symbols-rounded notranslate text-[17px]">
                             {pobieraWzor === d.id ? "hourglass_empty" : "download"}
                           </span>
                         </button>
+                        {maWzorEdytowalny(spec, d) && (
+                          <>
+                            <button
+                              onClick={() => otworzSzablonWWordzie(d)}
+                              disabled={otwieraSzablon !== null}
+                              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-lg border border-line-strong px-2 py-1.5 text-xs font-medium text-blue-ink hover:bg-blue-soft disabled:opacity-50 sm:py-1"
+                              title="Otwórz szablon w Wordzie — zmień treść, zostaw znaczniki {{…}}"
+                            >
+                              <span className="material-symbols-rounded notranslate text-[16px]">
+                                {otwieraSzablon === d.id
+                                  ? "hourglass_empty"
+                                  : "edit_document"}
+                              </span>
+                              <span className="hidden sm:inline">Word</span>
+                            </button>
+                            <button
+                              onClick={() => wybierzZmienionySzablon(d)}
+                              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-line-strong px-2 py-1.5 text-xs font-medium text-ink-mid hover:bg-soft sm:py-1"
+                              title="Wgraj zmieniony szablon (.docx) — zastąpi domyślny wzór"
+                            >
+                              <span className="material-symbols-rounded notranslate text-[16px]">
+                                upload
+                              </span>
+                            </button>
+                          </>
+                        )}
+                        {maNadpisanie(spec.id, d.id) && (
+                          <div className="flex w-full items-center justify-end gap-1.5">
+                            <span
+                              className="inline-flex items-center gap-0.5 rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber-ink"
+                              title="Dokument używa Twojego wgranego szablonu zamiast domyślnego"
+                            >
+                              <span className="material-symbols-rounded notranslate text-[13px]">
+                                star
+                              </span>
+                              własny szablon
+                            </span>
+                            <button
+                              onClick={() => przywrocWzor(d)}
+                              className="text-[11px] font-medium text-faint underline hover:text-ink-mid"
+                              title="Przywróć domyślny wzór / treść z aplikacji"
+                            >
+                              przywróć
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
