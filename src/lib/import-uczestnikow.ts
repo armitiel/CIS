@@ -80,6 +80,9 @@ export async function importujUczestnikow(
       powiat: znajdz(w, "powiat") || undefined,
       gmina: znajdz(w, "gmina") || undefined,
       miejscowosc: znajdz(w, "miejscowosc") || undefined,
+      ulica: znajdz(w, "ulica") || undefined,
+      nrDomu: znajdz(w, "nr domu") || undefined,
+      nrLokalu: znajdz(w, "nr lokalu") || undefined,
       kodPocztowy: znajdz(w, "kod pocztowy") || undefined,
       degurba: (znajdz(w, "degurba").match(/[123]/)?.[0] ?? undefined) as
         | DaneSOWA["degurba"],

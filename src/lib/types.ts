@@ -23,6 +23,9 @@ export interface DaneSOWA {
   powiat?: string;
   gmina?: string;
   miejscowosc?: string;
+  ulica?: string;
+  nrDomu?: string;
+  nrLokalu?: string;
   kodPocztowy?: string;
   degurba?: "1" | "2" | "3";
   telefon?: string;

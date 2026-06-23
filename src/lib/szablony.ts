@@ -20,7 +20,9 @@ export const LISTA_POL: [string, string][] = [
   ["wiek", "Wiek w chwili przystąpienia"],
   ["wyksztalcenie", "Wykształcenie (ISCED)"],
   ["obywatelstwo", "Obywatelstwo"],
-  ["adres", "Adres (miejscowość, gmina, kod)"],
+  ["adres", "Adres (ulica, nr, kod, miejscowość)"],
+  ["ulica_nr", "Ulica, nr domu / lokalu"],
+  ["kraj", "Kraj"],
   ["miejscowosc", "Miejscowość"],
   ["gmina", "Gmina"],
   ["powiat", "Powiat"],
@@ -82,6 +84,18 @@ export function polaUczestnika(
     x !== undefined && x !== null && String(x).trim() !== ""
       ? String(x)
       : PUSTE;
+  // znacznik checkboxa do szablonów: ☒ gdy spełnione, inaczej ☐
+  const cb = (warunek: boolean) => (warunek ? "☒" : "☐");
+  const wyk = (s.wyksztalcenie ?? "").toLowerCase();
+  const iscedWyzsze = /isced\s*[5678]|wy[żz]sze/.test(wyk);
+  const iscedSrednie = /isced\s*[34]|ponadgimn|policeal|średnie ii/.test(wyk);
+  const ulicaNr = s.ulica
+    ? `${s.ulica} ${s.nrDomu ?? ""}${s.nrLokalu ? "/" + s.nrLokalu : ""}`.trim()
+    : PUSTE;
+  const krajVal =
+    s.kraj && s.kraj.toLowerCase().includes("pol")
+      ? "Polska"
+      : s.kraj || "Polska";
   return {
     imie: v(u.imie),
     nazwisko: v(u.nazwisko),
@@ -92,8 +106,10 @@ export function polaUczestnika(
     wiek: v(s.wiek),
     wyksztalcenie: v(s.wyksztalcenie),
     obywatelstwo: v(s.obywatelstwo),
+    kraj: krajVal,
+    ulica_nr: ulicaNr,
     adres: s.miejscowosc
-      ? `${s.miejscowosc}, gm. ${s.gmina ?? PUSTE}, ${s.kodPocztowy ?? PUSTE}`
+      ? `${ulicaNr !== PUSTE ? "ul. " + ulicaNr + ", " : ""}${s.kodPocztowy ?? PUSTE} ${s.miejscowosc}`.trim()
       : PUSTE,
     miejscowosc: v(s.miejscowosc),
     gmina: v(s.gmina),
@@ -101,6 +117,13 @@ export function polaUczestnika(
     wojewodztwo: v(s.wojewodztwo),
     kod_pocztowy: v(s.kodPocztowy),
     degurba: v(s.degurba),
+    cb_kobieta: cb(s.plec === "kobieta"),
+    cb_mezczyzna: cb(s.plec === "mężczyzna"),
+    cb_miasto: cb(s.degurba === "1" || s.degurba === "2"),
+    cb_wies: cb(s.degurba === "3"),
+    cb_isced58: cb(iscedWyzsze),
+    cb_isced34: cb(!iscedWyzsze && iscedSrednie),
+    cb_isced02: cb(!iscedWyzsze && !iscedSrednie),
     telefon: v(s.telefon),
     email: v(s.email),
     status_rynku_pracy: v(s.statusRynkuPracy),
