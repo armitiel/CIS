@@ -122,6 +122,12 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "Wymóg wniosku (s. 29): podstawa wypłaty świadczenia integracyjnego"),
     D("CIS_C-03", "Dziennik zajęć z programem", "C", "kadrowy", "wszyscy", "cyklicznie",
       "kadra (program = karta tytułowa — K5)", true, "Jeden zeszyt na grupę/formę wsparcia"),
+    D("CIS_C-03-1", "Dziennik zajęć — wsparcie psychologa", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (prowadzący zajęcia)", true, "Dziennik zajęć z psychologiem"),
+    D("CIS_C-03-2", "Dziennik zajęć — terapia uzależnień", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (prowadzący zajęcia)", true, "Dziennik zajęć z terapeutą uzależnień"),
+    D("CIS_C-03-3", "Dziennik zajęć — doradztwo zawodowe", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (prowadzący zajęcia)", true, "Dziennik zajęć z doradcą zawodowym"),
     D("CIS_C-04", "Karta wsparcia indywidualnego (uniwersalna)", "C", "uczestnik", "wszyscy", "udział",
       "1 podpis na spotkanie — dowód wykonania usługi (K6)", true,
       "Jeden wzór: psycholog / terapeuta / doradca (IPD) / pośrednik pracy"),
@@ -129,6 +135,12 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "kadra", true, "Harmonogram grup i form wsparcia"),
     D("CIS_C-06", "Broszura informacyjna dla uczestników", "C", "organizacyjny", "wszyscy", "przystąpienie",
       "bez podpisów", true, "4 strony A4 — prawa i obowiązki, świadczenia, kontakty"),
+    D("CIS_C-07", "Dziennik praktyk — pomoc opiekuna dziennego", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (instruktor pracowni)", true, "Dziennik praktyk w pracowni: pomoc opiekuna dziennego"),
+    D("CIS_C-08", "Dziennik praktyk — utrzymanie zieleni i dróg", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (instruktor pracowni)", true, "Dziennik praktyk w pracowni: utrzymanie zieleni i dróg"),
+    D("CIS_C-09", "Dziennik praktyk — prace sanitarno-porządkowe", "C", "kadrowy", "wszyscy", "cyklicznie",
+      "kadra (instruktor pracowni)", true, "Dziennik praktyk w pracowni: prace sanitarno-porządkowe"),
 
     // ===== D. Kursy zawodowe =====
     D("CIS_D-01", "Karta kursu zawodowego uczestnika", "D", "uczestnik", "wszyscy", "udział",
@@ -173,9 +185,6 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
     // ===== H. Zarządzanie =====
     D("CIS_H-01", "Regulamin zarządzania projektem", "H", "organizacyjny", "wszyscy", "cyklicznie",
       "kadra zarządzająca", true, "Struktura, obiegi, odpowiedzialności"),
-    D("CIS_H-07", "Porozumienie JST — świadczenia integracyjne", "H", "organizacyjny", "bezrobotny", "cyklicznie",
-      "strony porozumienia", true,
-      "Finansowanie świadczeń integracyjnych z dotacji JST = wkład własny 368 609,57 zł"),
   ],
 };
 

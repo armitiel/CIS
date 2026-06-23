@@ -32,9 +32,15 @@ const WZORY: Record<string, string> = {
   "cis-2026:c-01": "CIS_C-01_Dzienna_lista_obecnosci_ze_swiadczeniami.docx",
   "cis-2026:c-02": "CIS_C-02_Miesieczna_indywidualna_karta_obecnosci.docx",
   "cis-2026:c-03": "CIS_C-03_Dziennik_zajec_z_programem.docx",
+  "cis-2026:c-03-1": "CIS_C-03-1_Dziennik_zajec_Wsparcie_psychologa.docx",
+  "cis-2026:c-03-2": "CIS_C-03-2_Dziennik_zajec_Terapia_uzaleznien.docx",
+  "cis-2026:c-03-3": "CIS_C-03-3_Dziennik_zajec_Doradztwo_zawodowe.docx",
   "cis-2026:c-04": "CIS_C-04_Karta_wsparcia_indywidualnego.docx",
   "cis-2026:c-05": "CIS_C-05_Harmonogram_realizacji_wsparcia.docx",
   "cis-2026:c-06": "CIS_C-06_Broszura_informacyjna_dla_uczestnikow.docx",
+  "cis-2026:c-07": "CIS_C-07_Dziennik_praktyk_pomoc_opiekuna_dziennego.docx",
+  "cis-2026:c-08": "CIS_C-08_Dziennik_praktyk_utrzymanie_zieleni_i_drog.docx",
+  "cis-2026:c-09": "CIS_C-09_Dziennik_praktyk_sanitarno_porzadkowa.docx",
   "cis-2026:d-01": "CIS_D-01_Karta_kursu_zawodowego_uczestnika.docx",
   "cis-2026:e-01": "CIS_E-01_Regulamin_swiadczen_i_premii_z_lista_wyplat.docx",
   "cis-2026:e-02": "CIS_E-02_Zbiorcza_lista_wydan_rzeczowych.docx",
@@ -47,7 +53,6 @@ const WZORY: Record<string, string> = {
   "cis-2026:g-02": "CIS_G-02_Ewidencja_czasu_pracy.docx",
   "cis-2026:g-03": "CIS_G-03_Protokol_odbioru_uslug_zewnetrznych.docx",
   "cis-2026:h-01": "CIS_H-01_Regulamin_zarzadzania_projektem.docx",
-  "cis-2026:h-07": "CIS_H-07_Porozumienie_JST_swiadczenia_integracyjne.docx",
 };
 
 const cache = new Map<string, ArrayBuffer>();
