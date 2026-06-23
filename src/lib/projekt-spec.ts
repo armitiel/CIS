@@ -112,8 +112,6 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
     D("CIS_B-05", "Karta monitoringu IŚR z opinią końcową", "B", "kadrowy", "wszyscy", "udział",
       "bez podpisu uczestnika — podpisuje pracownik socjalny/koordynator IŚR", true,
       "Opinia o poprawie sytuacji społecznej = źródło wskaźnika rezultatu (K3)"),
-    D("CIS_B-06", "Wniosek i protokół racjonalnych usprawnień", "B", "uczestnik", "wszyscy", "ad hoc",
-      "dotyczy wyłącznie OzN — ad hoc", true, "Źródło pomiaru wskaźnika (wniosek s. 9)"),
 
     // ===== C. Obecności i wsparcie =====
     D("CIS_C-01", "Dzienna lista obecności ze świadczeniami", "C", "grupowy", "wszyscy", "cyklicznie",
