@@ -533,7 +533,7 @@ export default function Dokumenty() {
         }
         await generujPakiet(dokumenty, u, spec);
         setKomunikat(
-          `✓ Wygenerowano ${tylkoBraki ? "pakiet braków" : "komplet"} (.docx) dla: ${u.nazwisko} ${u.imie}.`,
+          `✓ Wygenerowano ${tylkoBraki ? "pakiet braków" : "komplet"} (.zip) dla: ${u.nazwisko} ${u.imie}.`,
         );
       } else {
         const pakiety = wybrani.map((u) => ({

@@ -483,19 +483,29 @@ export function uczestnikWzor(
   };
 }
 
-/** Buduje pakiet uczestnika jako Blob (bez pobierania) — do generowania wsadowego. */
-async function pakietBlob(
+/**
+ * Dodaje wypełnione dokumenty jednej osoby do ZIP — KAŻDY dokument jako osobny
+ * plik .docx zbudowany przez `dokumentBlob` (czyli z wzoru .docx z public/wzory,
+ * z wypełnionymi polami {{...}}, a gdy wzoru brak — z treści generowanej z kodu).
+ * Dzięki temu pakiety używają tych samych, aktualnych wzorów co pojedynczy dokument.
+ */
+async function dodajDokumentyOsobyDoZip(
+  zip: JSZip,
+  folder: string,
   dokumenty: WymaganyDokument[],
   u: Uczestnik,
   spec: SpecyfikacjaProjektu,
-): Promise<Blob> {
-  const children: Blok[] = [];
-  dokumenty.forEach((d, i) => {
-    const tresc = trescDokumentu(d, u, spec);
-    if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
-    children.push(...tresc);
-  });
-  return Packer.toBlob(dokumentDocx(children));
+): Promise<number> {
+  let n = 0;
+  for (const d of dokumenty) {
+    const blob = await dokumentBlob(d, u, spec);
+    zip.file(
+      `${folder}/${d.symbol}_${slug(u.nazwisko)}_${slug(u.imie)}.docx`,
+      blob,
+    );
+    n += 1;
+  }
+  return n;
 }
 
 export interface PakietWsadowy {
@@ -504,8 +514,9 @@ export interface PakietWsadowy {
 }
 
 /**
- * Generowanie wsadowe: pakiety .docx dla wielu uczestników w jednym pliku ZIP.
- * Każdy uczestnik = jeden plik .docx (jego dokumenty rozdzielone stronami).
+ * Generowanie wsadowe: pakiety dla wielu uczestników w jednym pliku ZIP.
+ * Każdy uczestnik = osobny folder w ZIP, w nim po jednym pliku .docx na dokument
+ * (z aktualnego wzoru, z wypełnionymi danymi uczestnika).
  */
 export async function generujPakietyZbiorczo(
   pakiety: PakietWsadowy[],
@@ -516,11 +527,8 @@ export async function generujPakietyZbiorczo(
   let wygenerowano = 0;
   for (const p of pakiety) {
     if (p.dokumenty.length === 0) continue;
-    const blob = await pakietBlob(p.dokumenty, p.uczestnik, spec);
-    zip.file(
-      `Pakiet_${slug(p.uczestnik.nazwisko)}_${slug(p.uczestnik.imie)}.docx`,
-      blob,
-    );
+    const folder = `${slug(p.uczestnik.nazwisko)}_${slug(p.uczestnik.imie)}`;
+    await dodajDokumentyOsobyDoZip(zip, folder, p.dokumenty, p.uczestnik, spec);
     wygenerowano += 1;
   }
   if (wygenerowano === 0) return 0;
@@ -534,22 +542,25 @@ export async function generujPakietyZbiorczo(
   return wygenerowano;
 }
 
-/** Generuje pakiet (jeden plik .docx, dokumenty rozdzielone nową stroną). */
+/**
+ * Generuje pakiet jednej osoby jako ZIP — po jednym pliku .docx na dokument,
+ * z aktualnego wzoru z wypełnionymi danymi (jak pojedynczy dokument).
+ */
 export async function generujPakiet(
   dokumenty: WymaganyDokument[],
   u: Uczestnik,
   spec: SpecyfikacjaProjektu = specyfikacjaCIS,
 ) {
-  const children: Blok[] = [];
-  dokumenty.forEach((d, i) => {
-    const tresc = trescDokumentu(d, u, spec);
-    if (i > 0) children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
-    children.push(...tresc);
-  });
-  await pobierz(
-    dokumentDocx(children),
-    `Pakiet_dokumentow_${slug(u.nazwisko)}_${slug(u.imie)}.docx`,
-  );
+  const zip = new JSZip();
+  const folder = `${slug(u.nazwisko)}_${slug(u.imie)}`;
+  await dodajDokumentyOsobyDoZip(zip, folder, dokumenty, u, spec);
+  const wynik = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(wynik);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Pakiet_dokumentow_${slug(u.nazwisko)}_${slug(u.imie)}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export interface DzienListy {
