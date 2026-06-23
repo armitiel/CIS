@@ -96,6 +96,23 @@ export function polaUczestnika(
     s.kraj && s.kraj.toLowerCase().includes("pol")
       ? "Polska"
       : s.kraj || "Polska";
+  // A-03 część III — punktacja premiująca
+  const kobieta = s.plec === "kobieta";
+  const pktPlec = kobieta ? 10 : 0;
+  const pktWielokrotne = 10; // wielokrotne wykluczenie u wszystkich
+  // A-03 część IV — opis rozmowy kwalifikacyjnej (różne brzmienie per osoba)
+  const K = kobieta ? "Kandydatka" : "Kandydat";
+  const zmot = kobieta ? "zmotywowana" : "zmotywowany";
+  const warianty = [
+    `${K} wykazuje wysoką motywację do zmiany swojej sytuacji. Posiada predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
+    `Motywacja do zmiany sytuacji wysoka; widoczne predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
+    `${K} prezentuje silną motywację do zmiany sytuacji oraz predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia reintegracyjnego.`,
+    `Wysoka motywacja do zmiany sytuacji. Predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
+    `${K} ${zmot} do zmiany swojej sytuacji, z predyspozycjami do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
+    `Rozmowa potwierdziła wysoką motywację do zmiany sytuacji i predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
+  ];
+  const seed = (s.pesel ?? "").split("").reduce((a, c) => a + (Number(c) || 0), 0);
+  const opisRozmowy = warianty[seed % warianty.length];
   return {
     imie: v(u.imie),
     nazwisko: v(u.nazwisko),
@@ -124,6 +141,11 @@ export function polaUczestnika(
     cb_isced58: cb(iscedWyzsze),
     cb_isced34: cb(!iscedWyzsze && iscedSrednie),
     cb_isced02: cb(!iscedWyzsze && !iscedSrednie),
+    // A-03: punkty cz. III + opis rozmowy cz. IV
+    pkt_plec: String(pktPlec),
+    pkt_wielokrotne: String(pktWielokrotne),
+    pkt_suma: String(pktPlec + pktWielokrotne),
+    rozmowa_opis: opisRozmowy,
     telefon: v(s.telefon),
     email: v(s.email),
     status_rynku_pracy: v(s.statusRynkuPracy),
