@@ -23,7 +23,7 @@ const WZORY: Record<string, string> = {
   "cis-2026:a-01": "CIS_A-01_Pakiet_zgloszeniowy_uczestnika.docx",
   "cis-2026:a-02": "CIS_A-02_Regulamin_rekrutacji_i_uczestnictwa.docx",
   "cis-2026:a-03": "CIS_A-03_Karta_oceny_kandydata.docx",
-  "cis-2026:a-06": "CIS_A-04_Protokol_posiedzenia_komisji_lista_rankingowa.docx",
+  "cis-2026:a-04": "CIS_A-04_Protokol_posiedzenia_komisji_lista_rankingowa.docx",
   "cis-2026:b-01": "CIS_B-01_Umowa_uczestnictwa_w_projekcie.docx",
   "cis-2026:b-02": "CIS_B-02_Arkusz_diagnozy_kompleksowej.docx",
   "cis-2026:b-03": "CIS_B-03-1_Indywidualny_Program_Zatrudnienia_Socjalnego_cz_I.docx",

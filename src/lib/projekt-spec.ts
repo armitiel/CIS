@@ -94,13 +94,9 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "bez podpisu", true, "Dokument projektowy — publikowany, nie podpisywany przez uczestników"),
     D("CIS_A-03", "Karta oceny kandydata", "A", "kadrowy", "wszyscy", "rekrutacja",
       "bez podpisu kandydata", true, "Ocena formalna 0/1 + ocena punktowa (wagi 30/50/20) + wynik rozmowy w protokole"),
-    D("CIS_A-04", "Lista podstawowa i rezerwowa", "A", "kadrowy", "wszyscy", "rekrutacja",
-      "bez podpisu", true, "Sporządza komisja rekrutacyjna"),
-    D("CIS_A-05", "Skierowanie / wniosek o przyjęcie do CIS", "A", "uczestnik", "bezrobotny", "rekrutacja",
-      "wystawia OPS/PUP — odrębny wymóg ustawowy", false,
-      "Ustawa o zatrudnieniu socjalnym — nie podlega łączeniu z pakietem zgłoszeniowym"),
-    D("CIS_A-06", "Protokół posiedzenia komisji + lista rankingowa", "A", "kadrowy", "wszyscy", "rekrutacja",
-      "bez podpisu", true, "Protokół komisji rekrutacyjnej"),
+    D("CIS_A-04", "Protokół posiedzenia komisji + lista rankingowa", "A", "kadrowy", "wszyscy", "rekrutacja",
+      "bez podpisu", true,
+      "Protokół komisji rekrutacyjnej wraz z listą podstawową i rezerwową (konsolidacja — sekcja A liczy 4 formularze)"),
 
     // ===== B. Ścieżka reintegracji =====
     D("CIS_B-01", "Umowa uczestnictwa w projekcie", "B", "uczestnik", "wszyscy", "przystąpienie",
