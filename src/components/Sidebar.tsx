@@ -12,6 +12,7 @@ const moduly = [
   { href: "/sciezki", label: "Ścieżki IŚR", icon: "route" },
   { href: "/obecnosci", label: "Obecności", icon: "fact_check" },
   { href: "/harmonogram", label: "Harmonogram", icon: "calendar_month" },
+  { href: "/grafik-kadry", label: "Grafik kadry", icon: "badge" },
   { href: "/dokumenty", label: "Dokumenty", icon: "folder_open" },
   { href: "/projekty", label: "Projekty", icon: "workspaces" },
 ];
