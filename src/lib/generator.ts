@@ -263,19 +263,33 @@ function trescDokumentu(
         akapit("Jeden dokument zastępuje skierowanie, kartę oceny i protokół przekazania (K7); wymóg wniosku s. 19: ocena w 4 etapach, certyfikat.", true),
         ...podpisy("podpisy uczestnika (sekcje 1 i 2)", "podpis przedstawiciela realizatora"),
       ];
-    case "f-01":
+    case "f-01a":
       return [
         ...base,
-        tytul("ANKIETA KOMPETENCJI PRE/POST"),
+        tytul("ANKIETA KOMPETENCJI PRE (pomiar wejściowy)"),
         pole("Kod uczestnika (identyfikowalność pomiaru)", u.id.toUpperCase()),
-        pole("Pomiar", "PRE / POST (właściwe zakreślić)"),
-        pole("Data pomiaru", undefined),
-        akapit("Część pomiarowa: samoocena kompetencji społecznych i zawodowych (skala 1–5) — pozycje zgodnie z wzorem F-01."),
+        pole("Pomiar", "PRE (pomiar wejściowy przy diagnozie)"),
+        pole("Data pomiaru PRE", undefined),
+        akapit("Część pomiarowa: samoocena kompetencji społecznych i zawodowych (skala 1–5) — pozycje zgodnie z wzorem F-01a."),
         akapit(
           "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia potwierdza dzienna lista obecności C-01.",
           true,
         ),
-        ...podpisy("(bez podpisu uczestnika)", "data i podpis osoby prowadzącej pomiar"),
+        ...podpisy("(bez podpisu uczestnika)", "data i podpis osoby prowadzącej pomiar PRE"),
+      ];
+    case "f-01b":
+      return [
+        ...base,
+        tytul("ANKIETA KOMPETENCJI POST (pomiar końcowy)"),
+        pole("Kod uczestnika (identyfikowalność pomiaru)", u.id.toUpperCase()),
+        pole("Pomiar", "POST (pomiar końcowy przy zakończeniu udziału)"),
+        pole("Data pomiaru POST", undefined),
+        akapit("Część pomiarowa: samoocena kompetencji społecznych i zawodowych (skala 1–5) — pozycje zgodnie z wzorem F-01b. Wynik POST porównywany z pomiarem PRE (wzrost = POST − PRE)."),
+        akapit(
+          "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia potwierdza dzienna lista obecności C-01.",
+          true,
+        ),
+        ...podpisy("(bez podpisu uczestnika)", "data i podpis osoby prowadzącej pomiar POST"),
       ];
     case "f-02":
       return [

@@ -164,9 +164,12 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "kadra/księgowość", true, "Dokument majątkowy"),
 
     // ===== F. Ankiety i wskaźniki =====
-    D("CIS_F-01", "Ankieta kompetencji PRE/POST", "F", "uczestnik", "wszyscy", "udział",
+    D("CIS_F-01a", "Ankieta kompetencji PRE (pomiar wejściowy)", "F", "uczestnik", "wszyscy", "udział",
       "bez podpisu uczestnika — kod uczestnika + podpis prowadzącego pomiar (K10)", true,
-      "Jeden wzór, dwa pomiary; nie jest źródłem wskaźnika"),
+      "Pomiar wejściowy przy diagnozie (Zadanie 1); osobny dokument od POST; nie jest źródłem wskaźnika"),
+    D("CIS_F-01b", "Ankieta kompetencji POST (pomiar końcowy)", "F", "uczestnik", "wszyscy", "zakończenie",
+      "bez podpisu uczestnika — kod uczestnika + podpis prowadzącego pomiar (K10)", true,
+      "Pomiar końcowy przy zakończeniu udziału; liczy wzrost względem PRE; nie jest źródłem wskaźnika"),
     D("CIS_F-02", "Ankieta końcowa z oświadczeniem o sytuacji", "F", "uczestnik", "wszyscy", "zakończenie",
       "1 podpis — oświadczenie jest źródłem wskaźnika EECR01/04 (K9)", true,
       "Wypełniana do 4 tygodni od zakończenia udziału"),

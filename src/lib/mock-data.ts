@@ -31,19 +31,19 @@ export const najblizszeZadania = [
 
 export const uczestnicy: Uczestnik[] = [
   { id: "u-001", imie: "Anna", nazwisko: "Testowa", kategoria: "bezrobotny", sciezka: "IPZS", cykl: 1, grupa: "A", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 92, etapSciezki: 2, postepSciezki: 75,
-    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","d-01","f-01"],
+    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","d-01","f-01a","f-01b"],
     sowa: { ...wspolne, plec: "kobieta", wiek: 43, wyksztalcenie: "ponadgimnazjalne (ISCED 3)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bezrobotna niezarejestrowana w ewidencji urzędów pracy" } },
   { id: "u-002", imie: "Jan", nazwisko: "Przykładowy", kategoria: "bezrobotny", sciezka: "IPZS", cykl: 1, grupa: "A", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 64, etapSciezki: 1, postepSciezki: 40,
     posiadaneDokumenty: ["a-01","a-05","b-01","b-03","c-04"],
     sowa: { ...wspolne, plec: "mężczyzna", wiek: 51, wyksztalcenie: "podstawowe (ISCED 1)", kodPocztowy: "66-200", statusRynkuPracy: "osoba długotrwale bezrobotna" } },
   { id: "u-003", imie: "Maria", nazwisko: "Wzorcowa", kategoria: "bierny", sciezka: "IPR", cykl: 1, grupa: "B", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 88, etapSciezki: 2, postepSciezki: 60,
-    posiadaneDokumenty: ["a-01","b-01","b-02","b-04","c-04","d-01","f-01"],
+    posiadaneDokumenty: ["a-01","b-01","b-02","b-04","c-04","d-01","f-01a","f-01b"],
     sowa: { ...wspolne, plec: "kobieta", wiek: 38, wyksztalcenie: "gimnazjalne (ISCED 2)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bierna zawodowo" } },
   { id: "u-004", imie: "Piotr", nazwisko: "Demo", kategoria: "bierny", sciezka: "IPR", cykl: 1, grupa: "B", status: "aktywny", dataPrzystapienia: "2026-07-06", frekwencja: 79, etapSciezki: 1, postepSciezki: 25,
     posiadaneDokumenty: ["a-01","b-01","b-02","b-04"],
     sowa: { ...wspolne, plec: "mężczyzna", wiek: 29, wyksztalcenie: "ponadgimnazjalne (ISCED 3)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bierna zawodowo" } },
   { id: "u-005", imie: "Katarzyna", nazwisko: "Próbna", kategoria: "bezrobotny", sciezka: "IPZS", cykl: 1, grupa: "A", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 95, etapSciezki: 2, postepSciezki: 90,
-    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","d-01","f-01"],
+    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","d-01","f-01a","f-01b"],
     sowa: { ...wspolne, plec: "kobieta", wiek: 47, wyksztalcenie: "policealne (ISCED 4)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bezrobotna zarejestrowana w ewidencji urzędów pracy" } },
   { id: "u-006", imie: "Tomasz", nazwisko: "Fikcyjny", kategoria: "bezrobotny", sciezka: "IPZS", cykl: 1, grupa: "C", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 41, etapSciezki: 1, postepSciezki: 50,
     posiadaneDokumenty: ["a-01","a-05"],
@@ -52,7 +52,7 @@ export const uczestnicy: Uczestnik[] = [
     posiadaneDokumenty: [],
     sowa: { ...wspolne, plec: "kobieta", wiek: 33, wyksztalcenie: "gimnazjalne (ISCED 2)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bierna zawodowo" } },
   { id: "u-008", imie: "Marek", nazwisko: "Testowy", kategoria: "bezrobotny", sciezka: "IPZS", cykl: 1, grupa: "C", status: "aktywny", dataPrzystapienia: "2026-07-01", frekwencja: 85, etapSciezki: 2, postepSciezki: 70,
-    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","f-01"],
+    posiadaneDokumenty: ["a-01","a-05","b-01","b-02","b-03","c-04","f-01a","f-01b"],
     sowa: { ...wspolne, plec: "mężczyzna", wiek: 40, wyksztalcenie: "ponadgimnazjalne (ISCED 3)", kodPocztowy: "66-200", statusRynkuPracy: "osoba bezrobotna zarejestrowana w ewidencji urzędów pracy" } },
 ];
 

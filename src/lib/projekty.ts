@@ -128,7 +128,8 @@ const DOKUMENTY_SEKCJI: Record<
     { sufiks: "e-01", symbol: "E-01", nazwa: "Regulamin świadczeń + lista wypłat", rodzaj: "organizacyjny", moment: "cyklicznie", opis: "Stypendia / świadczenia uczestników" },
   ],
   F: [
-    { sufiks: "f-01", symbol: "F-01", nazwa: "Ankieta / pomiar wskaźników", rodzaj: "uczestnik", moment: "udział", opis: "PRE/POST, wskaźniki rezultatu" },
+    { sufiks: "f-01a", symbol: "F-01a", nazwa: "Ankieta kompetencji PRE", rodzaj: "uczestnik", moment: "udział", opis: "Pomiar wejściowy (osobny dokument od POST)" },
+    { sufiks: "f-01b", symbol: "F-01b", nazwa: "Ankieta kompetencji POST", rodzaj: "uczestnik", moment: "zakończenie", opis: "Pomiar końcowy; wzrost względem PRE" },
     { sufiks: "f-02", symbol: "F-02", nazwa: "Zaświadczenie o udziale w projekcie", rodzaj: "uczestnik", moment: "zakończenie", opis: "Wydawane po zakończeniu udziału" },
   ],
   G: [

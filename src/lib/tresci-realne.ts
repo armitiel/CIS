@@ -741,17 +741,57 @@ export function trescRealna(
         ),
       ];
 
-    case "f-01":
+    case "f-01a":
       return [
-        tytul("ANKIETA KOMPETENCJI PRE / POST"),
-        ...podtytul("CIS/F-01", spec),
+        tytul("ANKIETA KOMPETENCJI PRE (pomiar wejściowy)"),
+        ...podtytul("CIS/F-01a", spec),
         akapit(
-          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar PRE przy diagnozie (Zadanie 1), pomiar POST przy zakończeniu udziału. Fakt wypełnienia na zajęciach potwierdza dzienna lista obecności (CIS/C-01).",
+          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar PRE wykonywany przy diagnozie (Zadanie 1) — odrębny dokument od pomiaru POST. Fakt wypełnienia na zajęciach potwierdza dzienna lista obecności (CIS/C-01).",
           true,
         ),
         tabela2([
           ["Numer uczestnika w projekcie", u.id === "wzor" ? "" : u.id.toUpperCase()],
           ["Data pomiaru PRE", ""],
+        ]),
+        pusty(),
+        akapit(
+          "Instrukcja: proszę ocenić każdą umiejętność w skali 1–5 (1 bardzo nisko, 5 bardzo wysoko).",
+        ),
+        tabelaN(
+          [6026, 3000],
+          ["Obszar kompetencji", "Ocena PRE (1–5)"],
+          [
+            ["Komunikacja z innymi ludźmi", ""],
+            ["Asertywność (umiejętność mówienia NIE)", ""],
+            ["Radzenie sobie ze stresem", ""],
+            ["Współpraca w grupie", ""],
+            ["Autoprezentacja (np. rozmowa o pracę)", ""],
+            ["Poczucie własnej wartości", ""],
+            ["Motywacja do zmiany swojej sytuacji", ""],
+            ["Gospodarowanie budżetem domowym", ""],
+            ["Korzystanie z komputera i internetu", ""],
+            ["Znajomość praw konsumenta i praw pracowniczych", ""],
+            ["Gotowość do podjęcia pracy", ""],
+          ],
+        ),
+        pusty(),
+        akapit("Suma punktów PRE: ………………"),
+        ...podpisy2(
+          "pomiar PRE: data i podpis osoby przeprowadzającej",
+          "",
+        ),
+      ];
+
+    case "f-01b":
+      return [
+        tytul("ANKIETA KOMPETENCJI POST (pomiar końcowy)"),
+        ...podtytul("CIS/F-01b", spec),
+        akapit(
+          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar POST wykonywany przy zakończeniu udziału — odrębny dokument od pomiaru PRE. Fakt wypełnienia na zajęciach potwierdza dzienna lista obecności (CIS/C-01).",
+          true,
+        ),
+        tabela2([
+          ["Numer uczestnika w projekcie", u.id === "wzor" ? "" : u.id.toUpperCase()],
           ["Data pomiaru POST", ""],
         ]),
         pusty(),
@@ -759,29 +799,29 @@ export function trescRealna(
           "Instrukcja: proszę ocenić każdą umiejętność w skali 1–5 (1 bardzo nisko, 5 bardzo wysoko).",
         ),
         tabelaN(
-          [5226, 1900, 1900],
-          ["Obszar kompetencji", "Ocena PRE (1–5)", "Ocena POST (1–5)"],
+          [6026, 3000],
+          ["Obszar kompetencji", "Ocena POST (1–5)"],
           [
-            ["Komunikacja z innymi ludźmi", "", ""],
-            ["Asertywność (umiejętność mówienia NIE)", "", ""],
-            ["Radzenie sobie ze stresem", "", ""],
-            ["Współpraca w grupie", "", ""],
-            ["Autoprezentacja (np. rozmowa o pracę)", "", ""],
-            ["Poczucie własnej wartości", "", ""],
-            ["Motywacja do zmiany swojej sytuacji", "", ""],
-            ["Gospodarowanie budżetem domowym", "", ""],
-            ["Korzystanie z komputera i internetu", "", ""],
-            ["Znajomość praw konsumenta i praw pracowniczych", "", ""],
-            ["Gotowość do podjęcia pracy", "", ""],
+            ["Komunikacja z innymi ludźmi", ""],
+            ["Asertywność (umiejętność mówienia NIE)", ""],
+            ["Radzenie sobie ze stresem", ""],
+            ["Współpraca w grupie", ""],
+            ["Autoprezentacja (np. rozmowa o pracę)", ""],
+            ["Poczucie własnej wartości", ""],
+            ["Motywacja do zmiany swojej sytuacji", ""],
+            ["Gospodarowanie budżetem domowym", ""],
+            ["Korzystanie z komputera i internetu", ""],
+            ["Znajomość praw konsumenta i praw pracowniczych", ""],
+            ["Gotowość do podjęcia pracy", ""],
           ],
         ),
         pusty(),
         akapit(
-          "Suma punktów PRE: ………………   Suma punktów POST: ………………   Zmiana: ………………",
+          "Suma punktów POST: ………………   Suma punktów PRE (przenieść z ankiety PRE): ………………   Wzrost (POST − PRE): ………………",
         ),
         ...podpisy2(
-          "pomiar PRE: data i podpis osoby przeprowadzającej",
           "pomiar POST: data i podpis osoby przeprowadzającej",
+          "",
         ),
       ];
 
