@@ -86,6 +86,13 @@ export default function GrafikDzienPanel({
     setBloki((stan) => stan.filter((_, j) => j !== i));
   }
 
+  // Usuwa wszystkie wpisy tej osoby w tym dniu (np. gdy w danym dniu nie pracuje
+  // albo godziny wpisano przez pomyłkę).
+  function wyczyscDzien() {
+    for (const w of wpisy) onUsun(w.id);
+    onClose();
+  }
+
   function zapisz() {
     // wpisy usunięte w panelu → skasuj z bazy
     const pozostaleId = new Set(bloki.map((b) => b.id).filter(Boolean));
@@ -249,21 +256,37 @@ export default function GrafikDzienPanel({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">
-            <button
-              onClick={onClose}
-              className="rounded-lg border border-line-strong px-4 py-2 text-[13px] font-semibold text-ink-mid hover:bg-soft"
-            >
-              Anuluj
-            </button>
-            <button
-              onClick={zapisz}
-              disabled={blednyBlok}
-              title={blednyBlok ? "Sprawdź godziny — „do” musi być po „od”." : undefined}
-              className="rounded-lg bg-primary px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-            >
-              Zapisz
-            </button>
+          <div className="flex items-center justify-between gap-2 border-t border-line px-6 py-4">
+            {wpisy.length > 0 ? (
+              <button
+                onClick={wyczyscDzien}
+                className="flex items-center gap-1.5 rounded-lg border border-line-strong px-3.5 py-2 text-[13px] font-semibold text-red-ink hover:bg-red-soft/40"
+                title="Usuń wszystkie wpisy z tego dnia (osoba nie pracuje / błędne godziny)"
+              >
+                <span className="material-symbols-rounded notranslate text-[18px]">
+                  delete
+                </span>
+                Wyczyść dzień
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="rounded-lg border border-line-strong px-4 py-2 text-[13px] font-semibold text-ink-mid hover:bg-soft"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={zapisz}
+                disabled={blednyBlok}
+                title={blednyBlok ? "Sprawdź godziny — „do” musi być po „od”." : undefined}
+                className="rounded-lg bg-primary px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                Zapisz
+              </button>
+            </div>
           </div>
         </div>
       </div>
