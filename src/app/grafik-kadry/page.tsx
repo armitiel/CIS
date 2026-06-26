@@ -11,9 +11,11 @@ import { useKadra } from "@/lib/use-kadra";
 import { useGrafikKadry } from "@/lib/use-grafik-kadry";
 import { liczbaGodzin, formatGodziny } from "@/lib/db-grafik-kadry";
 import { generujKarteCzasu } from "@/lib/karta-czasu";
+import { czySwieto, liczbaDniRoboczych } from "@/lib/swieta";
 import KadraPanel from "@/components/KadraPanel";
 import GrafikDzienPanel from "@/components/GrafikDzienPanel";
 import WypelnijGrafikPanel from "@/components/WypelnijGrafikPanel";
+import ImportGrafikuPanel from "@/components/ImportGrafikuPanel";
 
 type Widok = "grafik" | "miesiac" | "karty";
 
@@ -92,6 +94,7 @@ export default function GrafikKadry() {
   const [pokazKadre, setPokazKadre] = useState(false);
   const [kadraEdytujId, setKadraEdytujId] = useState<string | null>(null);
   const [pokazWypelnij, setPokazWypelnij] = useState(false);
+  const [pokazImport, setPokazImport] = useState(false);
   const [osobaMiesiacaId, setOsobaMiesiacaId] = useState<string>("");
   const [edycjaKomorki, setEdycjaKomorki] = useState<{
     kadraId: string;
@@ -153,6 +156,10 @@ export default function GrafikKadry() {
 
   const pon = poczatekTygodnia(kotwica);
   const pt = dodajDni(pon, 4);
+  const dniRobMies = liczbaDniRoboczych(
+    kotwica.getFullYear(),
+    kotwica.getMonth(),
+  );
   const etykieta =
     widok === "grafik"
       ? pon.getMonth() === pt.getMonth()
@@ -235,7 +242,12 @@ export default function GrafikKadry() {
     const d = new Date(rok, mc, 1);
     while (d.getMonth() === mc) {
       const dow = d.getDay();
-      if (dow >= 1 && dow <= 5 && wpisyDla(osobaMies.id, iso(d)).length === 0) {
+      if (
+        dow >= 1 &&
+        dow <= 5 &&
+        !czySwieto(d) &&
+        wpisyDla(osobaMies.id, iso(d)).length === 0
+      ) {
         szybkiWpis(osobaMies, iso(d));
       }
       d.setDate(d.getDate() + 1);
@@ -325,6 +337,16 @@ export default function GrafikKadry() {
               Wypełnij grafik
             </button>
           )}
+          <button
+            onClick={() => setPokazImport(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
+            title="Wczytaj plan z pliku Excel (Plan_pracy_kadry_CIS.xlsx)"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              upload_file
+            </span>
+            Import z Excela
+          </button>
           <button
             onClick={() => setPokazKadre(true)}
             className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
@@ -628,6 +650,21 @@ export default function GrafikKadry() {
           </div>
 
           <div className="rounded-xl border border-line-soft bg-surface px-3.5 py-2.5 text-[12.5px] text-muted">
+            Norma czasu pracy w {MIESIACE[kotwica.getMonth()]}: pełny etat 1/1 ={" "}
+            <b className="text-ink">{formatGodziny(dniRobMies * 8)} h</b>{" "}
+            ({dniRobMies} dni roboczych, bez świąt). Pełny wymiar dla{" "}
+            {osobaMies.imie} {osobaMies.nazwisko}:{" "}
+            <b className="text-ink">
+              {formatGodziny(
+                dniRobMies *
+                  liczbaGodzin(osobaMies.godzinaOd, osobaMies.godzinaDo),
+              )}{" "}
+              h
+            </b>
+            .
+          </div>
+
+          <div className="rounded-xl border border-line-soft bg-surface px-3.5 py-2.5 text-[12.5px] text-muted">
             Kliknij dzień, aby dodać pracę wg domyślnych godzin osoby; kliknij
             dzień z wpisem, aby go edytować. „Wypełnij dni robocze” obejmie cały
             miesiąc jednym kliknięciem.
@@ -752,6 +789,16 @@ export default function GrafikKadry() {
           istnieje={(kadraId, dataISO) => wpisyDla(kadraId, dataISO).length > 0}
           onZapisz={zapiszWpis}
           onClose={() => setPokazWypelnij(false)}
+        />
+      )}
+
+      {pokazImport && (
+        <ImportGrafikuPanel
+          kadra={kadra}
+          grafik={grafik}
+          onZapiszOsoba={zapiszOsobe}
+          onZapiszWpis={zapiszWpis}
+          onClose={() => setPokazImport(false)}
         />
       )}
     </div>

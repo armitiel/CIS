@@ -12,6 +12,7 @@ import {
   type WpisGrafiku,
   type TypZajec,
 } from "@/lib/db-grafik-kadry";
+import { czySwieto } from "@/lib/swieta";
 
 const pole =
   "w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-[13.5px] text-ink outline-none focus:border-[oklch(0.62_0.09_152)]";
@@ -84,6 +85,7 @@ export default function WypelnijGrafikPanel({
   const [odDnia, setOdDnia] = useState(domyslnaOd);
   const [doDnia, setDoDnia] = useState(domyslnaDo);
   const [pomijajZajete, setPomijajZajete] = useState(true);
+  const [pomijajSwieta, setPomijajSwieta] = useState(true);
 
   function przelaczDzien(dow: number) {
     setDniTyg((stan) =>
@@ -103,10 +105,10 @@ export default function WypelnijGrafikPanel({
   }
 
   const osoby = ktoId === "*" ? kadra : kadra.filter((o) => o.id === ktoId);
-  const daty = useMemo(
-    () => generujDaty(odDnia, doDnia, dniTyg),
-    [odDnia, doDnia, dniTyg],
-  );
+  const daty = useMemo(() => {
+    const lista = generujDaty(odDnia, doDnia, dniTyg);
+    return pomijajSwieta ? lista.filter((d) => !czySwieto(parseISO(d))) : lista;
+  }, [odDnia, doDnia, dniTyg, pomijajSwieta]);
 
   // ile wpisów realnie powstanie (po pominięciu zajętych)
   const doWstawienia = useMemo(() => {
@@ -293,6 +295,16 @@ export default function WypelnijGrafikPanel({
                 className="h-4 w-4 accent-[oklch(0.52_0.09_152)]"
               />
               Pomiń dni, które już mają wpis (nie nadpisuj)
+            </label>
+
+            <label className="flex items-center gap-2.5 text-[13px] text-ink-mid">
+              <input
+                type="checkbox"
+                checked={pomijajSwieta}
+                onChange={(e) => setPomijajSwieta(e.target.checked)}
+                className="h-4 w-4 accent-[oklch(0.52_0.09_152)]"
+              />
+              Pomiń dni ustawowo wolne od pracy (święta)
             </label>
 
             <div className="rounded-lg bg-green-soft px-3.5 py-2.5 text-[12.5px] text-primary-strong">
