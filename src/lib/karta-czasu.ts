@@ -6,6 +6,8 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  Footer,
+  Header,
   ImageRun,
   Packer,
   Paragraph,
@@ -180,41 +182,7 @@ export function dokumentKarty(
     rows: [wierszNagl, ...wiersze],
   });
 
-  // Logotypy (pasek UE u góry + nagłówek Pomost) — jeśli wczytane.
-  const naglowekLogo: Paragraph[] = [];
-  if (logoUE) {
-    naglowekLogo.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 60 },
-        children: [
-          new ImageRun({
-            type: "jpg",
-            data: logoUE,
-            transformation: { width: 600, height: 48 },
-          }),
-        ],
-      }),
-    );
-  }
-  if (logoPomost) {
-    naglowekLogo.push(
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        spacing: { after: 160 },
-        children: [
-          new ImageRun({
-            type: "png",
-            data: logoPomost,
-            transformation: { width: 300, height: 49 },
-          }),
-        ],
-      }),
-    );
-  }
-
   const children = [
-    ...naglowekLogo,
     new Paragraph({
       spacing: { after: 40 },
       children: [
@@ -289,6 +257,40 @@ export function dokumentKarty(
     }),
   ];
 
+  // Nagłówek = logo Pomost; stopka = pasek logotypów UE.
+  const naglowek = logoPomost
+    ? new Header({
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [
+              new ImageRun({
+                type: "png",
+                data: logoPomost,
+                transformation: { width: 300, height: 49 },
+              }),
+            ],
+          }),
+        ],
+      })
+    : undefined;
+  const stopka = logoUE
+    ? new Footer({
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new ImageRun({
+                type: "jpg",
+                data: logoUE,
+                transformation: { width: 600, height: 48 },
+              }),
+            ],
+          }),
+        ],
+      })
+    : undefined;
+
   return new Document({
     styles: { default: { document: { run: { font: "Calibri", size: 20 } } } },
     sections: [
@@ -299,6 +301,8 @@ export function dokumentKarty(
             margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
           },
         },
+        headers: naglowek ? { default: naglowek } : undefined,
+        footers: stopka ? { default: stopka } : undefined,
         children,
       },
     ],
