@@ -6,6 +6,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  ImageRun,
   Packer,
   Paragraph,
   Table,
@@ -98,6 +99,8 @@ export function dokumentKarty(
   wpisyMiesiaca: WpisGrafiku[],
   rok: number,
   miesiac: number, // 0–11
+  logoUE?: Uint8Array,
+  logoPomost?: Uint8Array,
 ): Document {
   const wpisy = [...wpisyMiesiaca].sort((a, b) =>
     a.data === b.data
@@ -127,10 +130,20 @@ export function dokumentKarty(
   const typOpis = (t: WpisGrafiku["typ"]): string =>
     t === "indywidualne" ? "indywidualne" : "grupowe";
 
+  // Domyślna forma wsparcia / zadanie wg stanowiska: kadra merytoryczna
+  // (psycholog/doradca/terapeuta) prowadzi zajęcia; etat ma swoją funkcję.
+  const formaWsparcia = (t: WpisGrafiku["typ"]): string => {
+    const s = (osoba.stanowisko || "").toLowerCase();
+    if (s.includes("kierow")) return "Kierowanie CIS";
+    if (s.includes("socjaln")) return "Praca socjalna";
+    if (s.includes("instruktor")) return "Instruktor zawodu";
+    return `Zajęcia ${typOpis(t)}`;
+  };
+
   const wiersze = wpisy.map((w, i) => {
     const zadanie = w.zadanie
       ? `${w.zadanie} (${typLabel(w.typ)})`
-      : `Zajęcia ${typOpis(w.typ)}`;
+      : formaWsparcia(w.typ);
     return new TableRow({
       children: [
         kom(String(i + 1), true),
@@ -167,7 +180,41 @@ export function dokumentKarty(
     rows: [wierszNagl, ...wiersze],
   });
 
+  // Logotypy (pasek UE u góry + nagłówek Pomost) — jeśli wczytane.
+  const naglowekLogo: Paragraph[] = [];
+  if (logoUE) {
+    naglowekLogo.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        children: [
+          new ImageRun({
+            type: "jpg",
+            data: logoUE,
+            transformation: { width: 600, height: 48 },
+          }),
+        ],
+      }),
+    );
+  }
+  if (logoPomost) {
+    naglowekLogo.push(
+      new Paragraph({
+        alignment: AlignmentType.LEFT,
+        spacing: { after: 160 },
+        children: [
+          new ImageRun({
+            type: "png",
+            data: logoPomost,
+            transformation: { width: 300, height: 49 },
+          }),
+        ],
+      }),
+    );
+  }
+
   const children = [
+    ...naglowekLogo,
     new Paragraph({
       spacing: { after: 40 },
       children: [
@@ -258,6 +305,17 @@ export function dokumentKarty(
   });
 }
 
+/** Pobiera plik graficzny z /public jako bajty (logotyp). Zwraca undefined gdy brak. */
+async function pobierzObraz(url: string): Promise<Uint8Array | undefined> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return undefined;
+    return new Uint8Array(await r.arrayBuffer());
+  } catch {
+    return undefined;
+  }
+}
+
 /** Generuje i pobiera kartę czasu pracy osoby za dany miesiąc. */
 export async function generujKarteCzasu(
   spec: SpecyfikacjaProjektu,
@@ -266,7 +324,19 @@ export async function generujKarteCzasu(
   rok: number,
   miesiac: number,
 ): Promise<void> {
-  const doc = dokumentKarty(spec, osoba, wpisyMiesiaca, rok, miesiac);
+  const [logoUE, logoPomost] = await Promise.all([
+    pobierzObraz("/logo-ue.jpg"),
+    pobierzObraz("/logo-pomost.png"),
+  ]);
+  const doc = dokumentKarty(
+    spec,
+    osoba,
+    wpisyMiesiaca,
+    rok,
+    miesiac,
+    logoUE,
+    logoPomost,
+  );
   const blob = await Packer.toBlob(doc);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
