@@ -3,7 +3,9 @@
 
 import { createClient } from "@/utils/supabase/client";
 
-export type Znak = "p" | "u" | "a";
+// p=obecny(O) · u=nieob. usprawiedliwiony(NU) · a=nieob. nieusprawiedliwiony(NN)
+// l=zwolnienie lekarskie(L4) · w=dzień wolny(DW)
+export type Znak = "p" | "u" | "a" | "l" | "w";
 
 export interface WpisObecnosci {
   uczestnikId: string;

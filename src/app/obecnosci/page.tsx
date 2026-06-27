@@ -15,25 +15,37 @@ type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
 const ZNACZNIK: Record<
   Znak,
-  { ikona: string; tlo: string; kolor: string; label: string }
+  { kod: string; tlo: string; kolor: string; label: string }
 > = {
   p: {
-    ikona: "check",
+    kod: "O",
     tlo: "oklch(0.94 0.035 150)",
     kolor: "oklch(0.46 0.1 150)",
     label: "obecny",
   },
   u: {
-    ikona: "remove",
+    kod: "NU",
     tlo: "oklch(0.96 0.045 75)",
     kolor: "oklch(0.55 0.11 62)",
-    label: "usprawiedliwiony",
+    label: "nieobecny usprawiedliwiony",
   },
   a: {
-    ikona: "close",
+    kod: "NN",
     tlo: "oklch(0.95 0.04 25)",
     kolor: "oklch(0.56 0.14 25)",
-    label: "nieobecny",
+    label: "nieobecny nieusprawiedliwiony",
+  },
+  l: {
+    kod: "L4",
+    tlo: "oklch(0.95 0.04 295)",
+    kolor: "oklch(0.5 0.13 295)",
+    label: "zwolnienie lekarskie (L4)",
+  },
+  w: {
+    kod: "DW",
+    tlo: "oklch(0.95 0.012 250)",
+    kolor: "oklch(0.5 0.02 250)",
+    label: "dzień wolny",
   },
 };
 
@@ -54,7 +66,9 @@ const NASTEPNY: Record<"" | Znak, Znak | null> = {
   "": "p",
   p: "u",
   u: "a",
-  a: null,
+  a: "l",
+  l: "w",
+  w: null,
 };
 
 function dzienTyg(d: Date): number {
@@ -179,7 +193,7 @@ export default function Obecnosci() {
 
   // ===== widok dzienny =====
   const dzienRoboczy = dzienTyg(kotwica) < 5;
-  const podsumowanieDnia = (["p", "u", "a"] as Znak[]).map((z) => ({
+  const podsumowanieDnia = (["p", "u", "a", "l", "w"] as Znak[]).map((z) => ({
     z,
     n: aktywni.filter((u) => znak(u.id, iso(kotwica)) === z).length,
   }));
@@ -279,7 +293,7 @@ export default function Obecnosci() {
         ? "bg-amber-soft text-amber-ink"
         : "bg-red-soft text-red-ink";
 
-  const pustaIkona = "radio_button_unchecked";
+  const pustyZnak = "+";
 
   return (
     <div className="flex max-w-[1100px] flex-col gap-[18px]">
@@ -348,10 +362,10 @@ export default function Obecnosci() {
                 style={{ background: ZNACZNIK[z].tlo }}
               >
                 <span
-                  className="material-symbols-rounded notranslate text-sm"
+                  className="text-[9px] font-bold leading-none"
                   style={{ color: ZNACZNIK[z].kolor }}
                 >
-                  {ZNACZNIK[z].ikona}
+                  {ZNACZNIK[z].kod}
                 </span>
               </span>
               {ZNACZNIK[z].label}
@@ -380,8 +394,8 @@ export default function Obecnosci() {
                       color: ZNACZNIK[z].kolor,
                     }}
                   >
-                    <span className="material-symbols-rounded notranslate text-[15px]">
-                      {ZNACZNIK[z].ikona}
+                    <span className="text-[12px] font-bold">
+                      {ZNACZNIK[z].kod}
                     </span>
                     {n}
                   </span>
@@ -407,8 +421,8 @@ export default function Obecnosci() {
                     </Link>
                     <span className="text-xs text-faint">grupa {u.grupa}</span>
                   </div>
-                  <div className="flex gap-1.5">
-                    {(["p", "u", "a"] as Znak[]).map((z) => {
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    {(["p", "u", "a", "l", "w"] as Znak[]).map((z) => {
                       const akt = biezacy === z;
                       return (
                         <button
@@ -426,8 +440,8 @@ export default function Obecnosci() {
                               : "var(--color-line-strong)",
                           }}
                         >
-                          <span className="material-symbols-rounded notranslate text-[17px]">
-                            {ZNACZNIK[z].ikona}
+                          <span className="text-[13px] font-bold">
+                            {ZNACZNIK[z].kod}
                           </span>
                           <span className="hidden sm:inline">
                             {ZNACZNIK[z].label}
@@ -501,12 +515,12 @@ export default function Obecnosci() {
                         }}
                       >
                         <span
-                          className="material-symbols-rounded notranslate text-lg"
+                          className="text-[11px] font-bold leading-none"
                           style={{
                             color: z ? ZNACZNIK[z].kolor : "var(--color-faint)",
                           }}
                         >
-                          {z ? ZNACZNIK[z].ikona : pustaIkona}
+                          {z ? ZNACZNIK[z].kod : pustyZnak}
                         </span>
                       </button>
                     </div>

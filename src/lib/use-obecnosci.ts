@@ -57,12 +57,18 @@ export function useObecnosci(projektId: string): StanObecnosci {
           if (wpisy.length > 0) {
             const z: Record<string, Znak> = {};
             for (const w of wpisy) z[klucz(w.uczestnikId, w.data)] = w.znak;
-            setMapa(z);
-            try {
-              localStorage.setItem(kluczLS(projektId), JSON.stringify(z));
-            } catch {
-              /* limit localStorage */
-            }
+            // Scal: baza jako podstawa, lokalne edycje na wierzchu. Dzięki temu
+            // znaki jeszcze niezsynchronizowane (np. L4/DW przed migracją bazy)
+            // nie znikają po odświeżeniu.
+            setMapa((prev) => {
+              const scalone = { ...z, ...prev };
+              try {
+                localStorage.setItem(kluczLS(projektId), JSON.stringify(scalone));
+              } catch {
+                /* limit localStorage */
+              }
+              return scalone;
+            });
           }
         } catch {
           /* brak sesji/tabeli — zostajemy na danych lokalnych */
