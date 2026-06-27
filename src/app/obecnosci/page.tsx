@@ -233,7 +233,10 @@ export default function Obecnosci() {
     );
     const wMiesiacu = (d: string) => d >= pierwszyIso && d <= ostatniIso;
 
-    const wiersze = aktywni.map((u) => {
+    // Świadczenie integracyjne przysługuje tylko uczestnikom CIS realizującym
+    // IPZS. Osoby na ścieżce IPR (bierne/bezrobotne spoza CIS) go nie otrzymują.
+    const doSwiadczen = aktywni.filter((u) => u.sciezka === "IPZS");
+    const wiersze = doSwiadczen.map((u) => {
       // Jedno źródło prawdy: wszystkie wpisy uczestnika. Liczymy z nich zarówno
       // miesięczne, jak i kumulatywne sumy — bez rozjazdu między alarmem a kwotą.
       const wsz = wpisy(u.id);
@@ -857,7 +860,8 @@ export default function Obecnosci() {
 
             {swiadczenia.wiersze.length === 0 && (
               <div className="px-[22px] py-8 text-center text-sm text-faint">
-                Brak aktywnych uczestników w projekcie „{projekt.skrot}”.
+                Brak uczestników realizujących IPZS w projekcie „{projekt.skrot}”.
+                Świadczenie integracyjne dotyczy wyłącznie ścieżki IPZS.
               </div>
             )}
 
@@ -875,7 +879,9 @@ export default function Obecnosci() {
           </div>
 
           <p className="text-xs text-faint">
-            Naliczanie wg art. 15 ustawy o zatrudnieniu socjalnym: stawka =
+            Wyświetlani są wyłącznie uczestnicy realizujący IPZS — świadczenie
+            integracyjne nie przysługuje osobom na ścieżce IPR. Naliczanie wg
+            art. 15 ustawy o zatrudnieniu socjalnym: stawka =
             pełne świadczenie (120% zasiłku dla bezrobotnych). Potrącenia: NN −1/20
             za dzień (powyżej 3 dni w miesiącu świadczenie nie przysługuje), L4 −1/40
             za dzień (do 21 dni). O i DW — bez potrącenia. Dni nieoznaczone nie
