@@ -102,7 +102,7 @@ const fmtPLN = (n: number) =>
 
 export default function Obecnosci() {
   const { projekt, uczestnicy } = useProjekt();
-  const { znak, ustaw } = useObecnosci(projekt.id);
+  const { znak, ustaw, wpisy } = useObecnosci(projekt.id);
 
   const aktywni = useMemo(
     () => uczestnicy.filter((u) => u.status === "aktywny"),
@@ -222,6 +222,7 @@ export default function Obecnosci() {
   const swiadczenia = useMemo(() => {
     const dni = dniRoboczeMiesiaca(kotwica.getFullYear(), kotwica.getMonth());
     const dniRobocze = dni.length;
+    const pierwszyIso = iso(new Date(kotwica.getFullYear(), kotwica.getMonth(), 1));
     const wiersze = aktywni.map((u) => {
       let p = 0,
         nieu = 0,
@@ -235,22 +236,65 @@ export default function Obecnosci() {
         else if (z === "w") dw++;
       }
       const nieoznaczone = dniRobocze - p - nieu - l4 - dw;
+
+      // Kumulatywne sumy z całego okresu uczestnictwa (do limitów ustawowych)
+      const wsz = wpisy(u.id);
+      const l4Przed = wsz.filter(
+        (w) => w.znak === "l" && w.data < pierwszyIso,
+      ).length;
+      const l4Lacznie = wsz.filter((w) => w.znak === "l").length;
+      const dwLacznie = wsz.filter((w) => w.znak === "w").length;
+
+      // L4: limit 21 dni łącznie w okresie uczestnictwa (art. 15 ust. 7a).
+      // Dni do 21 → potrącenie 1/40; każdy dzień ponad 21 → świadczenie za ten
+      // dzień nie przysługuje (przyjęto 1/30 pełnej kwoty miesięcznej).
+      const l4DostepneWMies = Math.max(0, 21 - l4Przed);
+      const l4Platne = Math.min(l4, l4DostepneWMies);
+      const l4Ponad = l4 - l4Platne;
+
       let kwota: number;
       if (nieu > 3) {
-        kwota = 0; // > 3 dni NN — świadczenie za miesiąc nie przysługuje
+        kwota = 0; // > 3 dni NN w miesiącu — świadczenie za miesiąc nie przysługuje
       } else {
         const potrNN = (stawka / 20) * nieu;
-        const l4Platne = Math.min(l4, 21);
-        const l4Ponad = Math.max(l4 - 21, 0);
         const potrL4 = (stawka / 40) * l4Platne + (stawka / 30) * l4Ponad;
         kwota = Math.max(stawka - potrNN - potrL4, 0);
       }
       const frekwencja = dniRobocze > 0 ? Math.round((p / dniRobocze) * 100) : 0;
-      return { u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja };
+
+      // Czerwone alarmy — przekroczenia limitów ustawowych
+      const alarmy: string[] = [];
+      if (nieu > 3)
+        alarmy.push(
+          `NN: ${nieu} dni (>3) — świadczenie za miesiąc nie przysługuje`,
+        );
+      if (l4Lacznie > 21)
+        alarmy.push(
+          `L4: ${l4Lacznie} dni łącznie (>21) — nadwyżka bez świadczenia`,
+        );
+      if (dwLacznie > 6)
+        alarmy.push(
+          `DW: ${dwLacznie} dni łącznie (>6) — przekroczony limit dni wolnych`,
+        );
+
+      return {
+        u,
+        p,
+        nieu,
+        l4,
+        dw,
+        nieoznaczone,
+        kwota,
+        frekwencja,
+        l4Lacznie,
+        dwLacznie,
+        alarmy,
+      };
     });
     const suma = wiersze.reduce((s, w) => s + w.kwota, 0);
-    return { dniRobocze, wiersze, suma };
-  }, [aktywni, kotwica, znak, stawka]);
+    const zAlarmami = wiersze.filter((w) => w.alarmy.length > 0);
+    return { dniRobocze, wiersze, suma, zAlarmami };
+  }, [aktywni, kotwica, znak, wpisy, stawka]);
 
   function eksportCSV() {
     const sep = ";";
@@ -692,6 +736,29 @@ export default function Obecnosci() {
             </button>
           </div>
 
+          {swiadczenia.zAlarmami.length > 0 && (
+            <div className="rounded-xl border-2 border-red-ink bg-red-soft px-[18px] py-3.5">
+              <div className="flex items-center gap-2 text-[13.5px] font-bold text-red-ink">
+                <span className="material-symbols-rounded notranslate text-[20px]">
+                  warning
+                </span>
+                Przekroczone limity ustawowe (art. 15 ustawy o zatrudnieniu
+                socjalnym) — {swiadczenia.zAlarmami.length}{" "}
+                {swiadczenia.zAlarmami.length === 1 ? "osoba" : "osób"}
+              </div>
+              <ul className="mt-2 flex flex-col gap-1.5 pl-1">
+                {swiadczenia.zAlarmami.map((w) => (
+                  <li key={w.u.id} className="text-[12.5px] text-red-ink">
+                    <span className="font-semibold">
+                      {w.u.imie} {w.u.nazwisko}
+                    </span>
+                    : {w.alarmy.join(" · ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="card anim-card-in overflow-x-auto">
             <div className="grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
               <div className="th-label">Uczestnik</div>
@@ -705,44 +772,69 @@ export default function Obecnosci() {
             </div>
 
             {swiadczenia.wiersze.map(
-              ({ u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja }, i) => {
+              (
+                { u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja, alarmy },
+                i,
+              ) => {
                 const nazwa = `${u.imie} ${u.nazwisko}`;
+                const alarm = alarmy.length > 0;
                 return (
-                  <div
-                    key={u.id}
-                    className="anim-card-in grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
-                    style={{ animationDelay: `${i * 0.04}s` }}
-                  >
-                    <div className="flex min-w-0 items-center gap-[11px]">
-                      <Avatar nazwa={nazwa} size={32} />
-                      <Link
-                        href={`/uczestnicy/${u.id}`}
-                        className="truncate text-sm font-semibold text-ink hover:text-primary-strong"
+                  <div key={u.id}>
+                    <div
+                      className="anim-card-in grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
+                      style={{
+                        animationDelay: `${i * 0.04}s`,
+                        background: alarm ? "var(--color-red-soft)" : undefined,
+                      }}
+                    >
+                      <div className="flex min-w-0 items-center gap-[11px]">
+                        {alarm && (
+                          <span
+                            className="material-symbols-rounded notranslate text-[18px] text-red-ink"
+                            title={alarmy.join(" · ")}
+                          >
+                            warning
+                          </span>
+                        )}
+                        <Avatar nazwa={nazwa} size={32} />
+                        <Link
+                          href={`/uczestnicy/${u.id}`}
+                          className="truncate text-sm font-semibold text-ink hover:text-primary-strong"
+                        >
+                          {nazwa}
+                        </Link>
+                      </div>
+                      <div className="text-center text-[13.5px] font-bold text-primary-strong">
+                        {p}
+                      </div>
+                      <div
+                        className={`text-center text-[13.5px] font-semibold ${
+                          nieu > 3 ? "text-red-ink" : "text-ink-mid"
+                        }`}
                       >
-                        {nazwa}
-                      </Link>
+                        {nieu}
+                      </div>
+                      <div className="text-center text-[13.5px] font-semibold text-ink-mid">
+                        {l4}
+                      </div>
+                      <div className="text-center text-[13.5px] text-ink-mid">
+                        {dw}
+                      </div>
+                      <div className="text-center text-[13.5px] text-faint">
+                        {nieoznaczone}
+                      </div>
+                      <div className="text-center text-[13px] font-semibold text-ink-mid">
+                        {frekwencja}%
+                      </div>
+                      <div className="text-right font-serif text-[15px] font-bold text-ink-strong">
+                        {fmtPLN(kwota)} zł
+                      </div>
                     </div>
-                    <div className="text-center text-[13.5px] font-bold text-primary-strong">
-                      {p}
-                    </div>
-                    <div className="text-center text-[13.5px] font-semibold text-red-ink">
-                      {nieu}
-                    </div>
-                    <div className="text-center text-[13.5px] font-semibold text-ink-mid">
-                      {l4}
-                    </div>
-                    <div className="text-center text-[13.5px] text-ink-mid">
-                      {dw}
-                    </div>
-                    <div className="text-center text-[13.5px] text-faint">
-                      {nieoznaczone}
-                    </div>
-                    <div className="text-center text-[13px] font-semibold text-ink-mid">
-                      {frekwencja}%
-                    </div>
-                    <div className="text-right font-serif text-[15px] font-bold text-ink-strong">
-                      {fmtPLN(kwota)} zł
-                    </div>
+                    {alarm && (
+                      <div className="min-w-[820px] border-t border-red-ink bg-red-soft px-[22px] py-2 text-[12px] font-semibold text-red-ink">
+                        ⚠ {alarmy.join(" · ")}
+                      </div>
+                    )}
                   </div>
                 );
               },

@@ -1,7 +1,7 @@
 "use client";
 
 // Hook stanu obecności dla aktywnego projektu (etap E2).
-// Utrzymuje mapę znaków `${uczestnikId}|${dataISO}` → 'p'|'u'|'a'.
+// Utrzymuje mapę znaków `${uczestnikId}|${dataISO}` → 'p'|'a'|'l'|'w'.
 // Źródła prawdy: localStorage (natychmiast) + Supabase (po zalogowaniu,
 // best-effort). Zapisy idą do obu, aby działało też bez logowania.
 
@@ -25,6 +25,8 @@ export interface StanObecnosci {
   znak: (uczestnikId: string, dataIso: string) => Znak | null;
   /** ustawia znak (null = usuń wpis); zapis do localStorage i bazy */
   ustaw: (uczestnikId: string, dataIso: string, znak: Znak | null) => void;
+  /** wszystkie wpisy danego uczestnika (data ISO + znak), nieposortowane */
+  wpisy: (uczestnikId: string) => { data: string; znak: Znak }[];
   /** true, gdy odczytano stan początkowy */
   gotowa: boolean;
 }
@@ -116,5 +118,17 @@ export function useObecnosci(projektId: string): StanObecnosci {
     [projektId],
   );
 
-  return { znak, ustaw, gotowa };
+  const wpisy = useCallback(
+    (uczestnikId: string): { data: string; znak: Znak }[] => {
+      const prefix = `${uczestnikId}|`;
+      const out: { data: string; znak: Znak }[] = [];
+      for (const [k, v] of Object.entries(mapa)) {
+        if (k.startsWith(prefix)) out.push({ data: k.slice(prefix.length), znak: v });
+      }
+      return out;
+    },
+    [mapa],
+  );
+
+  return { znak, ustaw, wpisy, gotowa };
 }
