@@ -584,14 +584,17 @@ export interface DzienListy {
 
 /**
  * Druk „Lista obecności" (sekcja C) — tabela uczestnicy × dni, z wpisanymi
- * znakami P/U/A z rejestracji obecności. Orientacja pozioma, ze stopką
+ * znakami O/NN/L4/DW z rejestracji obecności. Orientacja pozioma, ze stopką
  * logotypów. Gotowy do druku i podpisu prowadzącego.
  */
 export async function generujListeObecnosci(
   spec: SpecyfikacjaProjektu,
   uczestnicy: Uczestnik[],
   dni: DzienListy[],
-  znakDla: (uczestnikId: string, iso: string) => "P" | "U" | "A" | "",
+  znakDla: (
+    uczestnikId: string,
+    iso: string,
+  ) => "O" | "NN" | "L4" | "DW" | "",
   opcje: { tytul: string; podtytul?: string },
 ) {
   const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
@@ -675,7 +678,7 @@ export async function generujListeObecnosci(
       spacing: { before: 160 },
       children: [
         new TextRun({
-          text: "Legenda: P — obecny · U — nieobecność usprawiedliwiona · A — nieobecność nieusprawiedliwiona. Puste pole = brak rejestracji (do uzupełnienia/podpisu).",
+          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4 — zwolnienie lekarskie · DW — dzień wolny. Puste pole = brak rejestracji (do uzupełnienia/podpisu).",
           size: 15,
         }),
       ],
@@ -727,7 +730,7 @@ export async function generujListeDzienna(
     podtytul?: string;
     dataLabel: string;
     kolumny: string[];
-    znakDla: (uczestnikId: string) => "P" | "U" | "A" | "";
+    znakDla: (uczestnikId: string) => "O" | "NN" | "L4" | "DW" | "";
   },
 ) {
   const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
@@ -817,7 +820,7 @@ export async function generujListeDzienna(
       spacing: { before: 160 },
       children: [
         new TextRun({
-          text: "Legenda: P — obecny · U — usprawiedliwiony · A — nieobecny. Kolumny świadczeń wypełnia/potwierdza prowadzący.",
+          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4 — zwolnienie lekarskie · DW — dzień wolny. Kolumny świadczeń wypełnia/potwierdza prowadzący.",
           size: 15,
         }),
       ],

@@ -3,9 +3,10 @@
 
 import { createClient } from "@/utils/supabase/client";
 
-// p=obecny(O) · u=nieob. usprawiedliwiony(NU) · a=nieob. nieusprawiedliwiony(NN)
+// p=obecny(O) · a=nieob. nieusprawiedliwiony(NN)
 // l=zwolnienie lekarskie(L4) · w=dzień wolny(DW)
-export type Znak = "p" | "u" | "a" | "l" | "w";
+// (NU usunięte — nie wynika z ustawy o zatrudnieniu socjalnym)
+export type Znak = "p" | "a" | "l" | "w";
 
 export interface WpisObecnosci {
   uczestnikId: string;

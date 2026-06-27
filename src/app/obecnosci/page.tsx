@@ -23,12 +23,6 @@ const ZNACZNIK: Record<
     kolor: "oklch(0.46 0.1 150)",
     label: "obecny",
   },
-  u: {
-    kod: "NU",
-    tlo: "oklch(0.96 0.045 75)",
-    kolor: "oklch(0.55 0.11 62)",
-    label: "nieobecny usprawiedliwiony",
-  },
   a: {
     kod: "NN",
     tlo: "oklch(0.95 0.04 25)",
@@ -64,8 +58,7 @@ const MIESIACE_M = [
 ];
 const NASTEPNY: Record<"" | Znak, Znak | null> = {
   "": "p",
-  p: "u",
-  u: "a",
+  p: "a",
   a: "l",
   l: "w",
   w: null,
@@ -193,7 +186,7 @@ export default function Obecnosci() {
 
   // ===== widok dzienny =====
   const dzienRoboczy = dzienTyg(kotwica) < 5;
-  const podsumowanieDnia = (["p", "u", "a", "l", "w"] as Znak[]).map((z) => ({
+  const podsumowanieDnia = (["p", "a", "l", "w"] as Znak[]).map((z) => ({
     z,
     n: aktywni.filter((u) => znak(u.id, iso(kotwica)) === z).length,
   }));
@@ -220,24 +213,40 @@ export default function Obecnosci() {
   }
 
   // ===== świadczenia (miesiąc kotwicy) =====
+  // Naliczanie wg art. 15 ustawy o zatrudnieniu socjalnym:
+  //  • świadczenie pełne (O) oraz dzień wolny (DW) — bez potrącenia,
+  //  • nieusprawiedliwiona (NN) — potrącenie 1/20 za dzień; > 3 dni w miesiącu
+  //    → świadczenie za cały miesiąc nie przysługuje (0),
+  //  • choroba (L4) — potrącenie 1/40 za dzień, do 21 dni; każdy kolejny dzień
+  //    (powyżej 21) — świadczenie za ten dzień nie przysługuje (1/30 kwoty).
   const swiadczenia = useMemo(() => {
     const dni = dniRoboczeMiesiaca(kotwica.getFullYear(), kotwica.getMonth());
     const dniRobocze = dni.length;
     const wiersze = aktywni.map((u) => {
       let p = 0,
-        usp = 0,
-        nieu = 0;
+        nieu = 0,
+        l4 = 0,
+        dw = 0;
       for (const d of dni) {
         const z = znak(u.id, iso(d));
         if (z === "p") p++;
-        else if (z === "u") usp++;
         else if (z === "a") nieu++;
+        else if (z === "l") l4++;
+        else if (z === "w") dw++;
       }
-      const nieoznaczone = dniRobocze - p - usp - nieu;
-      const zaliczone = p + usp; // obecne + usprawiedliwione liczą się do świadczenia
-      const kwota = dniRobocze > 0 ? (stawka * zaliczone) / dniRobocze : 0;
+      const nieoznaczone = dniRobocze - p - nieu - l4 - dw;
+      let kwota: number;
+      if (nieu > 3) {
+        kwota = 0; // > 3 dni NN — świadczenie za miesiąc nie przysługuje
+      } else {
+        const potrNN = (stawka / 20) * nieu;
+        const l4Platne = Math.min(l4, 21);
+        const l4Ponad = Math.max(l4 - 21, 0);
+        const potrL4 = (stawka / 40) * l4Platne + (stawka / 30) * l4Ponad;
+        kwota = Math.max(stawka - potrNN - potrL4, 0);
+      }
       const frekwencja = dniRobocze > 0 ? Math.round((p / dniRobocze) * 100) : 0;
-      return { u, p, usp, nieu, nieoznaczone, zaliczone, kwota, frekwencja };
+      return { u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja };
     });
     const suma = wiersze.reduce((s, w) => s + w.kwota, 0);
     return { dniRobocze, wiersze, suma };
@@ -249,9 +258,10 @@ export default function Obecnosci() {
       "Uczestnik",
       "Grupa",
       "Dni robocze",
-      "Obecne",
-      "Usprawiedliwione",
-      "Nieusprawiedliwione",
+      "Obecne (O)",
+      "Nieuspr. (NN)",
+      "Choroba (L4)",
+      "Dzień wolny (DW)",
       "Nieoznaczone",
       "Frekwencja %",
       "Kwota świadczenia (PLN)",
@@ -262,8 +272,9 @@ export default function Obecnosci() {
         w.u.grupa,
         swiadczenia.dniRobocze,
         w.p,
-        w.usp,
         w.nieu,
+        w.l4,
+        w.dw,
         w.nieoznaczone,
         w.frekwencja,
         fmtPLN(w.kwota).replace(/\s/g, ""),
@@ -422,7 +433,7 @@ export default function Obecnosci() {
                     <span className="text-xs text-faint">grupa {u.grupa}</span>
                   </div>
                   <div className="flex flex-wrap justify-end gap-1.5">
-                    {(["p", "u", "a", "l", "w"] as Znak[]).map((z) => {
+                    {(["p", "a", "l", "w"] as Znak[]).map((z) => {
                       const akt = biezacy === z;
                       return (
                         <button
@@ -682,23 +693,24 @@ export default function Obecnosci() {
           </div>
 
           <div className="card anim-card-in overflow-x-auto">
-            <div className="grid min-w-[760px] grid-cols-[minmax(180px,1.4fr)_repeat(5,minmax(64px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
+            <div className="grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
               <div className="th-label">Uczestnik</div>
-              <div className="th-label text-center">Obecne</div>
-              <div className="th-label text-center">Uspr.</div>
-              <div className="th-label text-center">Nieuspr.</div>
+              <div className="th-label text-center">O</div>
+              <div className="th-label text-center">NN</div>
+              <div className="th-label text-center">L4</div>
+              <div className="th-label text-center">DW</div>
               <div className="th-label text-center">Nieozn.</div>
               <div className="th-label text-center">Frekw.</div>
               <div className="th-label text-right">Świadczenie</div>
             </div>
 
             {swiadczenia.wiersze.map(
-              ({ u, p, usp, nieu, nieoznaczone, kwota, frekwencja }, i) => {
+              ({ u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja }, i) => {
                 const nazwa = `${u.imie} ${u.nazwisko}`;
                 return (
                   <div
                     key={u.id}
-                    className="anim-card-in grid min-w-[760px] grid-cols-[minmax(180px,1.4fr)_repeat(5,minmax(64px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
+                    className="anim-card-in grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
                     style={{ animationDelay: `${i * 0.04}s` }}
                   >
                     <div className="flex min-w-0 items-center gap-[11px]">
@@ -713,11 +725,14 @@ export default function Obecnosci() {
                     <div className="text-center text-[13.5px] font-bold text-primary-strong">
                       {p}
                     </div>
-                    <div className="text-center text-[13.5px] font-semibold text-amber-ink">
-                      {usp}
-                    </div>
                     <div className="text-center text-[13.5px] font-semibold text-red-ink">
                       {nieu}
+                    </div>
+                    <div className="text-center text-[13.5px] font-semibold text-ink-mid">
+                      {l4}
+                    </div>
+                    <div className="text-center text-[13.5px] text-ink-mid">
+                      {dw}
                     </div>
                     <div className="text-center text-[13.5px] text-faint">
                       {nieoznaczone}
@@ -753,10 +768,11 @@ export default function Obecnosci() {
           </div>
 
           <p className="text-xs text-faint">
-            Wyliczenie pomocnicze: kwota = stawka × (obecne + usprawiedliwione) ÷
-            dni robocze. Dni nieoznaczone liczone są jako 0 do czasu rejestracji.
-            Zasady naliczania świadczenia integracyjnego należy zweryfikować z
-            obowiązującymi przepisami i regulaminem CIS.
+            Naliczanie wg art. 15 ustawy o zatrudnieniu socjalnym: stawka =
+            pełne świadczenie (120% zasiłku dla bezrobotnych). Potrącenia: NN −1/20
+            za dzień (powyżej 3 dni w miesiącu świadczenie nie przysługuje), L4 −1/40
+            za dzień (do 21 dni). O i DW — bez potrącenia. Dni nieoznaczone nie
+            wpływają na kwotę. Wartości należy zweryfikować z regulaminem CIS.
           </p>
         </div>
       )}

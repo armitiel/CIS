@@ -46,8 +46,9 @@ export const LISTA_POL: [string, string][] = [
   // pola agregowane z obecności (liczone per uczestnik za wybrany okres)
   ["frekwencja", "Frekwencja % (z obecności)"],
   ["dni_obecny", "Liczba dni obecności"],
-  ["dni_nieobecny", "Liczba nieobecności"],
-  ["dni_usprawiedliwione", "Liczba usprawiedliwień"],
+  ["dni_nieobecny", "Liczba nieobecności (NN)"],
+  ["dni_l4", "Liczba dni zwolnienia lekarskiego (L4)"],
+  ["dni_wolne", "Liczba dni wolnych (DW)"],
   ["dni_wsparcia", "Liczba dni wsparcia (obecności)"],
   ["okres_obecnosci", "Okres, za który liczono obecność"],
 ];
@@ -207,7 +208,8 @@ export function polaUczestnika(
     frekwencja: PUSTE,
     dni_obecny: PUSTE,
     dni_nieobecny: PUSTE,
-    dni_usprawiedliwione: PUSTE,
+    dni_l4: PUSTE,
+    dni_wolne: PUSTE,
     dni_wsparcia: PUSTE,
     okres_obecnosci: PUSTE,
     ...(extra ?? {}),

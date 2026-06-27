@@ -113,9 +113,20 @@ export default function Dokumenty() {
     "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
     "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
   ];
-  const znakLitera = (uId: string, isoD: string): "P" | "U" | "A" | "" => {
+  const znakLitera = (
+    uId: string,
+    isoD: string,
+  ): "O" | "NN" | "L4" | "DW" | "" => {
     const z = znak(uId, isoD);
-    return z === "p" ? "P" : z === "u" ? "U" : z === "a" ? "A" : "";
+    return z === "p"
+      ? "O"
+      : z === "a"
+        ? "NN"
+        : z === "l"
+          ? "L4"
+          : z === "w"
+            ? "DW"
+            : "";
   };
 
   // Agregaty obecności per uczestnik za miesiąc z pola daty — do podstawienia
@@ -123,26 +134,29 @@ export default function Dokumenty() {
   function agregatyObecnosci(u: Uczestnik): Record<string, string> {
     const [rok, mc] = dataListy.split("-").map(Number);
     let p = 0;
-    let us = 0;
     let a = 0;
+    let l4 = 0;
+    let dw = 0;
     const d = new Date(rok, mc - 1, 1);
     while (d.getMonth() === mc - 1) {
       const dow = d.getDay();
       if (dow >= 1 && dow <= 5) {
         const z = znak(u.id, d.toISOString().slice(0, 10));
         if (z === "p") p++;
-        else if (z === "u") us++;
         else if (z === "a") a++;
+        else if (z === "l") l4++;
+        else if (z === "w") dw++;
       }
       d.setDate(d.getDate() + 1);
     }
-    const podstawa = p + us + a;
+    const podstawa = p + a + l4 + dw;
     const frek = podstawa > 0 ? `${Math.round((p / podstawa) * 100)}%` : "—";
     return {
       frekwencja: frek,
       dni_obecny: String(p),
       dni_nieobecny: String(a),
-      dni_usprawiedliwione: String(us),
+      dni_l4: String(l4),
+      dni_wolne: String(dw),
       dni_wsparcia: String(p),
       okres_obecnosci: `${MIES_M[mc - 1]} ${rok}`,
     };
@@ -1157,7 +1171,7 @@ export default function Dokumenty() {
             </h2>
             <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
               Druk wypełniony danymi z apki: uczestnicy ({aktywni.length}{" "}
-              aktywnych) i znaki obecności P/U/A z modułu Obecności.
+              aktywnych) i znaki obecności O/NN/L4/DW z modułu Obecności.
               {zeSwiadczeniami &&
                 " Wzór tego projektu obejmuje świadczenia — dochodzą kolumny „Wyżywienie” i „Transport”."}
             </p>
