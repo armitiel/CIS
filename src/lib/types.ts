@@ -53,10 +53,10 @@ export interface Uczestnik {
   sowa?: DaneSOWA;
 }
 
-/** Obecność uczestnika w dniach tygodnia: p obecny · u usprawiedliwiony · a nieobecny */
+/** Obecność uczestnika w dniach tygodnia: p obecny · a nieusprawiedliwiony · l L4 · w dzień wolny */
 export interface ObecnoscTygodnia {
   uczestnikId: string;
-  dni: ("p" | "u" | "a")[];
+  dni: ("p" | "a" | "l" | "w")[];
 }
 
 export type KolorZajec = "green" | "blue" | "amber";

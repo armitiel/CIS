@@ -75,13 +75,13 @@ export const limity = {
 
 /** Obecności aktywnych uczestników w bieżącym tygodniu (Pon–Pt). */
 export const obecnosciTygodnia: ObecnoscTygodnia[] = [
-  { uczestnikId: "u-001", dni: ["p", "p", "p", "u", "p"] },
-  { uczestnikId: "u-002", dni: ["p", "a", "p", "p", "u"] },
-  { uczestnikId: "u-003", dni: ["p", "p", "u", "p", "p"] },
+  { uczestnikId: "u-001", dni: ["p", "p", "p", "l", "p"] },
+  { uczestnikId: "u-002", dni: ["p", "a", "p", "p", "w"] },
+  { uczestnikId: "u-003", dni: ["p", "p", "l", "p", "p"] },
   { uczestnikId: "u-004", dni: ["p", "p", "p", "p", "p"] },
   { uczestnikId: "u-005", dni: ["p", "p", "p", "p", "p"] },
-  { uczestnikId: "u-006", dni: ["a", "p", "u", "a", "p"] },
-  { uczestnikId: "u-008", dni: ["p", "p", "p", "p", "u"] },
+  { uczestnikId: "u-006", dni: ["a", "p", "w", "a", "p"] },
+  { uczestnikId: "u-008", dni: ["p", "p", "p", "p", "l"] },
 ];
 
 export const tydzienEtykieta = "Tydzień 8–12 czerwca 2026";

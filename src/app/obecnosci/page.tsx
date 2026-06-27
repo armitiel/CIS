@@ -1,9 +1,10 @@
 "use client";
 
 // Obecności w czterech widokach: dzień / tydzień / miesiąc / świadczenia (E2).
-// Realna rejestracja — kliknięcie ustawia znak: obecny → usprawiedliwiony →
-// nieobecny → (pusty). Dane zapisywane do Supabase (po zalogowaniu) oraz do
-// localStorage. Świadczenia: miesięczne naliczanie z edytowalną stawką.
+// Realna rejestracja — kliknięcie cyklicznie ustawia znak: O (obecny) → NN
+// (nieusprawiedliwiony) → L4 (zwolnienie) → DW (dzień wolny) → (pusty). Dane
+// zapisywane do Supabase (po zalogowaniu) oraz do localStorage. Świadczenia
+// naliczane wg art. 15 ustawy o zatrudnieniu socjalnym (limity NN/L4/DW).
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -220,30 +221,44 @@ export default function Obecnosci() {
   //  • choroba (L4) — potrącenie 1/40 za dzień, do 21 dni; każdy kolejny dzień
   //    (powyżej 21) — świadczenie za ten dzień nie przysługuje (1/30 kwoty).
   const swiadczenia = useMemo(() => {
-    const dni = dniRoboczeMiesiaca(kotwica.getFullYear(), kotwica.getMonth());
-    const dniRobocze = dni.length;
-    const pierwszyIso = iso(new Date(kotwica.getFullYear(), kotwica.getMonth(), 1));
+    const dniRobocze = dniRoboczeMiesiaca(
+      kotwica.getFullYear(),
+      kotwica.getMonth(),
+    ).length;
+    const pierwszyIso = iso(
+      new Date(kotwica.getFullYear(), kotwica.getMonth(), 1),
+    );
+    const ostatniIso = iso(
+      new Date(kotwica.getFullYear(), kotwica.getMonth() + 1, 0),
+    );
+    const wMiesiacu = (d: string) => d >= pierwszyIso && d <= ostatniIso;
+
     const wiersze = aktywni.map((u) => {
+      // Jedno źródło prawdy: wszystkie wpisy uczestnika. Liczymy z nich zarówno
+      // miesięczne, jak i kumulatywne sumy — bez rozjazdu między alarmem a kwotą.
+      const wsz = wpisy(u.id);
       let p = 0,
         nieu = 0,
         l4 = 0,
         dw = 0;
-      for (const d of dni) {
-        const z = znak(u.id, iso(d));
-        if (z === "p") p++;
-        else if (z === "a") nieu++;
-        else if (z === "l") l4++;
-        else if (z === "w") dw++;
+      for (const w of wsz) {
+        if (!wMiesiacu(w.data)) continue;
+        if (w.znak === "p") p++;
+        else if (w.znak === "a") nieu++;
+        else if (w.znak === "l") l4++;
+        else if (w.znak === "w") dw++;
       }
-      const nieoznaczone = dniRobocze - p - nieu - l4 - dw;
+      const nieoznaczone = Math.max(0, dniRobocze - p - nieu - l4 - dw);
 
-      // Kumulatywne sumy z całego okresu uczestnictwa (do limitów ustawowych)
-      const wsz = wpisy(u.id);
+      // Sumy kumulatywne DO KOŃCA oglądanego miesiąca (limity ustawowe liczone
+      // narastająco w okresie uczestnictwa — nie biorą pod uwagę przyszłości).
       const l4Przed = wsz.filter(
         (w) => w.znak === "l" && w.data < pierwszyIso,
       ).length;
-      const l4Lacznie = wsz.filter((w) => w.znak === "l").length;
-      const dwLacznie = wsz.filter((w) => w.znak === "w").length;
+      const l4DoMies = l4Przed + l4; // L4 narastająco z bieżącym miesiącem
+      const dwDoMies = wsz.filter(
+        (w) => w.znak === "w" && w.data <= ostatniIso,
+      ).length;
 
       // L4: limit 21 dni łącznie w okresie uczestnictwa (art. 15 ust. 7a).
       // Dni do 21 → potrącenie 1/40; każdy dzień ponad 21 → świadczenie za ten
@@ -262,19 +277,19 @@ export default function Obecnosci() {
       }
       const frekwencja = dniRobocze > 0 ? Math.round((p / dniRobocze) * 100) : 0;
 
-      // Czerwone alarmy — przekroczenia limitów ustawowych
+      // Czerwone alarmy — przekroczenia limitów ustawowych (stan do końca miesiąca)
       const alarmy: string[] = [];
       if (nieu > 3)
         alarmy.push(
           `NN: ${nieu} dni (>3) — świadczenie za miesiąc nie przysługuje`,
         );
-      if (l4Lacznie > 21)
+      if (l4DoMies > 21)
         alarmy.push(
-          `L4: ${l4Lacznie} dni łącznie (>21) — nadwyżka bez świadczenia`,
+          `L4: ${l4DoMies} dni łącznie (>21) — nadwyżka bez świadczenia`,
         );
-      if (dwLacznie > 6)
+      if (dwDoMies > 6)
         alarmy.push(
-          `DW: ${dwLacznie} dni łącznie (>6) — przekroczony limit dni wolnych`,
+          `DW: ${dwDoMies} dni łącznie (>6) — przekroczony limit dni wolnych`,
         );
 
       return {
@@ -286,15 +301,15 @@ export default function Obecnosci() {
         nieoznaczone,
         kwota,
         frekwencja,
-        l4Lacznie,
-        dwLacznie,
+        l4DoMies,
+        dwDoMies,
         alarmy,
       };
     });
     const suma = wiersze.reduce((s, w) => s + w.kwota, 0);
     const zAlarmami = wiersze.filter((w) => w.alarmy.length > 0);
     return { dniRobocze, wiersze, suma, zAlarmami };
-  }, [aktywni, kotwica, znak, wpisy, stawka]);
+  }, [aktywni, kotwica, wpisy, stawka]);
 
   function eksportCSV() {
     const sep = ";";
