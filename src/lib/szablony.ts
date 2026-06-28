@@ -198,6 +198,14 @@ export function polaUczestnika(
     cb_degurba_miejski: cb(s.degurba === "1"),
     cb_degurba_podmiejski: cb(s.degurba === "2"),
     cb_degurba_wiejski: cb(s.degurba === "3"),
+    // PSF — punktacja premiująca (PAK1) + grupa ISCED (IPR)
+    cb_wiek50: cb((s.wiek ?? 0) >= 50),
+    cb_isced3minus: cb(!iscedWyzsze && !isced4),
+    isced_grupa: iscedWyzsze
+      ? "ISCED 5-8"
+      : iscedSrednie
+        ? "ISCED 3-4"
+        : "ISCED 0-2",
     // A-03: punkty cz. III + opis rozmowy cz. IV
     pkt_plec: String(pktPlec),
     pkt_wielokrotne: String(pktWielokrotne),
