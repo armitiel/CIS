@@ -80,7 +80,6 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
   const [dokumenty, setDokumenty] = useState<DokumentAnalizy[]>([]);
   const [trafienia, setTrafienia] = useState<TrafienieZeZrodlem[]>([]);
   const [uwagi, setUwagi] = useState<string[]>([]);
-  const [sekcje, setSekcje] = useState<Map<string, string>>(new Map());
   const [blad, setBlad] = useState<string | null>(null);
   const [pokazWklej, setPokazWklej] = useState(false);
   const [wklejony, setWklejony] = useState("");
@@ -145,13 +144,6 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
       })),
     ]);
     setUwagi((u) => [...u, ...noweUwagi]);
-    // E6 — kumuluj wykryte sekcje katalogu z kolejnych dokumentów
-    setSekcje((m) => {
-      const n = new Map(m);
-      for (const s of wynik.sugerowaneSekcje)
-        if (!n.has(s.sekcja)) n.set(s.sekcja, s.nazwa);
-      return n;
-    });
   }
 
   async function analizujPlik(file: File | undefined) {
@@ -203,7 +195,7 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
           ? `analiza dokumentów: ${rozpoznane.map((d) => d.nazwa).join(", ")}`
           : "wpis ręczny",
       utworzono: new Date().toISOString().slice(0, 10),
-      sekcje: sekcje.size > 0 ? [...sekcje.keys()] : undefined,
+      sekcje: undefined,
     };
     dodajProjekt(zapis);
     onClose();
@@ -364,32 +356,6 @@ export default function NowyProjekt({ onClose }: { onClose: () => void }) {
                   ))}
                 </ul>
               </details>
-            )}
-
-            {sekcje.size > 0 && (
-              <div className="anim-fade-in mt-3 rounded-xl border border-line bg-soft/60 px-4 py-3">
-                <p className="m-0 text-xs font-semibold text-ink-mid">
-                  Z wniosku wynikają sekcje dokumentów (katalog nowego
-                  projektu):
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {[...sekcje.entries()].map(([litera, nazwa]) => (
-                    <span
-                      key={litera}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-green-soft px-3 py-1 text-xs font-semibold text-primary-strong"
-                    >
-                      <span className="material-symbols-rounded notranslate text-[15px]">
-                        folder
-                      </span>
-                      {litera}. {nazwa}
-                    </span>
-                  ))}
-                </div>
-                <p className="m-0 mt-2 text-[11px] text-faint">
-                  Katalog formularzy zostanie wstępnie złożony z tych sekcji —
-                  doprecyzujesz go w module Dokumenty.
-                </p>
-              </div>
             )}
 
             {uwagi.map((u, i) => (
