@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import {
-  sekcjeNazwy,
+  nazwaSekcji,
   type Sekcja,
   type SpecyfikacjaProjektu,
   type WymaganyDokument,
@@ -223,7 +223,7 @@ export default function WyborGeneratora({
               {[...sekcje.entries()].map(([sekcja, dokumenty]) => (
                 <div key={sekcja} className="mb-3">
                   <div className="th-label mb-1 px-2">
-                    {sekcjeNazwy[sekcja]}
+                    {nazwaSekcji(spec, sekcja)}
                   </div>
                   {dokumenty.map((d) => (
                     <label

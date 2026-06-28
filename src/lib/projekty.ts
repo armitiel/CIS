@@ -22,7 +22,7 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
   nabor: "FELB.06.08-IZ.00-0004/25",
   wnioskodawca: "Stowarzyszenie na Rzecz Edukacji „Pomost”",
   okres: "2025–2026",
-  zrodlo: "Specyfikacja wstępna — do uzupełnienia (wczytaj wniosek / dodaj formularze)",
+  zrodlo: "Obowiązujący katalog wzorów SWA (folder „Wzory — Formularze_projektowe”)",
   dokumenty: [
     {
       id: "swa-a-01", symbol: "SWA_A-01", nazwa: "Formularz zgłoszeniowy uczestnika (pakiet)",
@@ -53,12 +53,6 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
       sekcja: "C", rodzaj: "grupowy", dotyczy: "wszyscy", moment: "cyklicznie",
       podpisUczestnika: "1 podpis na zajęcia", generowalny: true,
       opis: "Listy grupowe z zajęć (cykle szkoleniowe)",
-    },
-    {
-      id: "swa-c-04", symbol: "SWA_C-04", nazwa: "Karta wsparcia towarzyszącego",
-      sekcja: "C", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "udział",
-      podpisUczestnika: "1 podpis na spotkanie", generowalny: true,
-      opis: "Wsparcie towarzyszące / tutoring indywidualny",
     },
     {
       id: "swa-c-05", symbol: "SWA_C-05", nazwa: "Protokół przekazania smartfona",
@@ -96,13 +90,16 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
       podpisUczestnika: "1 podpis", generowalny: true,
       opis: "Zwrot kosztów dojazdu uczestnika (gdy dotyczy)",
     },
-    {
-      id: "swa-h-03", symbol: "SWA_H-03", nazwa: "Oświadczenie o adresie",
-      sekcja: "H", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "ad hoc",
-      podpisUczestnika: "1 podpis", generowalny: true,
-      opis: "Oświadczenie uczestnika o adresie zamieszkania / do korespondencji",
-    },
   ],
+  // Nazwy sekcji dopasowane do projektu Smartfon (bez „Kursów zawodowych”).
+  sekcjeNazwy: {
+    A: "A. Rekrutacja",
+    B: "B. Umowa i diagnoza",
+    C: "C. Obecności i przekazanie sprzętu",
+    D: "D. Walidacja, certyfikat, ewaluacja",
+    F: "F. Ankiety kompetencji",
+    G: "G. Rozliczenia",
+  },
 };
 
 /**

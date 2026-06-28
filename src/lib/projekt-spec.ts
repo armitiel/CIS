@@ -41,6 +41,13 @@ export interface SpecyfikacjaProjektu {
   okres: string;
   zrodlo: string;
   dokumenty: WymaganyDokument[];
+  /** Nazwy sekcji specyficzne dla projektu (nadpisują domyślne sekcjeNazwy). */
+  sekcjeNazwy?: Partial<Record<Sekcja, string>>;
+}
+
+/** Nazwa sekcji dla danej specyfikacji (override projektu albo domyślna). */
+export function nazwaSekcji(spec: SpecyfikacjaProjektu, sekcja: Sekcja): string {
+  return spec.sekcjeNazwy?.[sekcja] ?? sekcjeNazwy[sekcja];
 }
 
 export const sekcjeNazwy: Record<Sekcja, string> = {

@@ -12,19 +12,19 @@ import { maNadpisanie, surowyZNadpisania } from "./szablony-dokumentow";
 
 /** klucz: `${spec.id}:${dokument.id}` -> plik w public/wzory/ */
 const WZORY: Record<string, string> = {
-  // === Projekt „Smartfon w Akcji" (6.8) — pełny katalog SWA (szablony z polami {{}}) ===
+  // === Projekt „Smartfon w Akcji" (6.8) — 12 obowiązujących wzorów (z folderu Wzory) ===
   "swa-6.8:swa-a-01": "SWA_A-01_Pakiet_zgloszeniowy_uczestnika_szablon.docx",
+  "swa-6.8:swa-a-02": "SWA_A-02_Regulamin_rekrutacji_i_uczestnictwa_szablon.docx",
   "swa-6.8:swa-b-01": "SWA_B-01_Umowa_uczestnictwa_w_projekcie_szablon.docx",
   "swa-6.8:swa-b-02": "SWA_B-02_Arkusz_Diagnozy_Kompleksowej_szablon.docx",
   "swa-6.8:swa-b-03": "SWA_B-03_Wniosek_o_dostosowania_dla_ON_szablon.docx",
-  "swa-6.8:swa-c-04": "SWA_C-04_Karta_wsparcia_towarzyszacego_szablon.docx",
+  "swa-6.8:swa-c-01": "SWA_C-01_Lista_Obecnosci_szablon.docx",
   "swa-6.8:swa-c-05": "SWA_C-05_Protokol_przekazania_smartfona_szablon.docx",
   "swa-6.8:swa-d-01": "SWA_D-01_Arkusz_Walidacji_Ankieta_POST_szablon.docx",
   "swa-6.8:swa-d-02": "SWA_D-02_Certyfikat_szablon.docx",
   "swa-6.8:swa-d-03": "SWA_D-03_Ankieta_ewaluacyjna_trwalosc_szablon.docx",
   "swa-6.8:swa-f-01": "SWA_F-01_Ankieta_kompetencji_PRE_szablon.docx",
   "swa-6.8:swa-g-04": "SWA_G-04_Rozliczenie_kosztow_dojazdu_szablon.docx",
-  "swa-6.8:swa-h-03": "SWA_H-03_Oswiadczenie_o_adresie_szablon.docx",
 
   // === CIS Świebodzin (6.11) — pełny katalog formularzy A–H (10.06.2026) ===
   // Formularze uczestnika z polami {{}} są wypełniane danymi automatycznie;

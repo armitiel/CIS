@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import {
   brakiWTeczce,
-  sekcjeNazwy,
+  nazwaSekcji,
   wymaganeDokumenty,
   type Sekcja,
   type WymaganyDokument,
@@ -856,7 +856,7 @@ export default function Dokumenty() {
           {[...sekcje.entries()].map(([sekcja, dokumenty]) => (
             <details key={sekcja} className="rounded-xl border border-line">
               <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm font-semibold text-ink hover:bg-hover-row">
-                <span>{sekcjeNazwy[sekcja]}</span>
+                <span>{nazwaSekcji(spec, sekcja)}</span>
                 <span className="text-xs font-normal text-faint">
                   {dokumenty.length} formularzy
                 </span>
