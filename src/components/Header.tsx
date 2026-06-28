@@ -14,7 +14,7 @@ const norm = (s: string) =>
     .toLowerCase();
 
 const TYTULY: [string, string, string][] = [
-  ["/uczestnicy", "Uczestnicy", "Baza osób w projekcie CIS"],
+  ["/uczestnicy", "Uczestnicy", "Baza osób w projekcie"],
   ["/sciezki", "Ścieżki IŚR", "Indywidualne ścieżki reintegracji"],
   ["/obecnosci", "Obecności", "Frekwencja w bieżącym tygodniu"],
   ["/harmonogram", "Harmonogram", "Plan zajęć i warsztatów"],

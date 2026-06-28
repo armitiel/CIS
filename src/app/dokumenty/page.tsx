@@ -887,7 +887,7 @@ export default function Dokumenty() {
                         {d.dotyczy !== "wszyscy" && (
                           <span className="text-xs text-faint">
                             {d.dotyczy === "bezrobotny"
-                              ? "bezrobotni (CIS)"
+                              ? "bezrobotni"
                               : "bierni zawodowo"}
                           </span>
                         )}

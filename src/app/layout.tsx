@@ -15,7 +15,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "CIS Świebodzin — panel obsługi",
+  title: "Panel obsługi projektów — Pomost",
   description:
     "Aplikacja do obsługi Centrum Integracji Społecznej w Świebodzinie — Stowarzyszenie na Rzecz Edukacji „Pomost”",
 };

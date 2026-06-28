@@ -340,7 +340,7 @@ export default function GrafikKadry() {
           <button
             onClick={() => setPokazImport(true)}
             className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
-            title="Wczytaj plan z pliku Excel (Plan_pracy_kadry_CIS.xlsx)"
+            title="Wczytaj plan pracy kadry z pliku Excel"
           >
             <span className="material-symbols-rounded notranslate text-[18px]">
               upload_file

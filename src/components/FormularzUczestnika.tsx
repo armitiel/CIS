@@ -67,7 +67,7 @@ export default function FormularzUczestnika({
       b.pesel = "Uczestnik z tym numerem PESEL już jest w bazie";
     if (!f.wyksztalcenie) b.wyksztalcenie = "Wybierz ze słownika";
     if (!f.statusRynkuPracy) b.statusRynkuPracy = "Wybierz ze słownika";
-    if (f.statusRynkuPracy === "Osoba pracująca")
+    if (projektId === "cis-2026" && f.statusRynkuPracy === "Osoba pracująca")
       b.statusRynkuPracy =
         "Osoba pracująca nie kwalifikuje się do wsparcia CIS (bezrobotni/bierni)";
     if (f.kodPocztowy && !FORMATY.kodPocztowy.wzor.test(f.kodPocztowy))

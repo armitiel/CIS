@@ -885,7 +885,7 @@ export default function Obecnosci() {
             pełne świadczenie (120% zasiłku dla bezrobotnych). Potrącenia: NN −1/20
             za dzień (powyżej 3 dni w miesiącu świadczenie nie przysługuje), L4 −1/40
             za dzień (do 21 dni). O i DW — bez potrącenia. Dni nieoznaczone nie
-            wpływają na kwotę. Wartości należy zweryfikować z regulaminem CIS.
+            wpływają na kwotę. Wartości należy zweryfikować z regulaminem projektu.
           </p>
         </div>
       )}

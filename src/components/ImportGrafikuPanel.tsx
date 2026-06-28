@@ -175,7 +175,7 @@ export default function ImportGrafikuPanel({
           {!wynik && (
             <>
               <p className="mb-3 text-[13px] text-muted">
-                Wczytaj plik <b>Plan_pracy_kadry_CIS.xlsx</b>. Pobierzemy wpisy z
+                Wczytaj plik z planem pracy kadry (Excel). Pobierzemy wpisy z
                 zakładek miesięcy (Czerwiec…Grudzień) i dopiszemy je do grafiku.
                 Osoby na etacie (karty liczone regułą) nie są w tych zakładkach.
               </p>

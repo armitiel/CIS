@@ -446,8 +446,8 @@ export default function Uczestnicy() {
       </div>
 
       <p className="text-xs text-faint">
-        Import obsługuje pliki .xlsx i .csv w strukturze SOWA (Import
-        uczestników / CIS_uczestnicy.xlsx). Dane pozostają w przeglądarce —
+        Import obsługuje pliki .xlsx i .csv w strukturze SOWA (np. Import
+        uczestników / Uczestnicy_projektu_Efs). Dane pozostają w przeglądarce —
         baza z logowaniem i historią zmian to etap E1.
       </p>
 
