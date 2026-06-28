@@ -155,13 +155,17 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     };
   }, [gotowy]);
 
-  const wszystkieProjekty = useMemo(
-    () =>
-      trybBazy
-        ? zapisy.map(zbudujProjektWlasny)
-        : [...projektyWbudowane, ...zapisy.map(zbudujProjektWlasny)],
-    [trybBazy, zapisy],
-  );
+  const wszystkieProjekty = useMemo(() => {
+    const wlasne = zapisy.map(zbudujProjektWlasny);
+    if (!trybBazy) return [...projektyWbudowane, ...wlasne];
+    // Tryb bazy: projekty użytkownika + wbudowane z kodu, których baza jeszcze
+    // nie ma (np. projekt dodany w aktualizacji po pierwszym zasianiu bazy).
+    const idsBazy = new Set(zapisy.map((p) => p.id));
+    const brakujaceWbudowane = projektyWbudowane.filter(
+      (p) => !idsBazy.has(p.id),
+    );
+    return [...brakujaceWbudowane, ...wlasne];
+  }, [trybBazy, zapisy]);
 
   const projekt =
     wszystkieProjekty.find((p) => p.id === projektId) ??
