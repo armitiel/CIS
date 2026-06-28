@@ -381,8 +381,8 @@ export default function GrafikKadry() {
             badge
           </span>
           <div className="text-sm text-muted">
-            Najpierw dodaj osoby zatrudnione w CIS. Potem będziesz klikać w
-            siatce, kto kiedy pracuje.
+            Najpierw dodaj osoby zatrudnione w projekcie. Potem będziesz klikać
+            w siatce, kto kiedy pracuje.
           </div>
           <button
             onClick={() => setPokazKadre(true)}
