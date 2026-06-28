@@ -90,6 +90,19 @@ export function polaUczestnika(
   const wyk = (s.wyksztalcenie ?? "").toLowerCase();
   const iscedWyzsze = /isced\s*[5678]|wy[żz]sze/.test(wyk);
   const iscedSrednie = /isced\s*[34]|ponadgimn|policeal|średnie ii/.test(wyk);
+  // PSF — drobniejsze ISCED (6 poziomów) na podstawie wykształcenia
+  const isced58 = iscedWyzsze;
+  const isced4 = !isced58 && /policeal/.test(wyk);
+  const isced3 = !isced58 && !isced4 && /ponadgimn|pogimn|zawodow/.test(wyk);
+  const isced2 = !isced58 && !isced4 && !isced3 && /gimnazjaln/.test(wyk);
+  const isced1 = !isced58 && !isced4 && !isced3 && !isced2 && /podstawow/.test(wyk);
+  const isced0 = !isced58 && !isced4 && !isced3 && !isced2 && !isced1;
+  // PSF — status na rynku pracy (4 opcje) z pola SOWA
+  const srp = (s.statusRynkuPracy ?? "").toLowerCase();
+  const stPracujaca = /pracuj/.test(srp);
+  const stBezrobZarej = /bezrobotn/.test(srp) && /zarejestrowan/.test(srp) && !/niezarejestrowan/.test(srp);
+  const stBezrobNiezarej = /bezrobotn/.test(srp) && /niezarejestrowan/.test(srp);
+  const stBierna = /biern/.test(srp);
   const ulicaNr = s.ulica
     ? `${s.ulica} ${s.nrDomu ?? ""}${s.nrLokalu ? "/" + s.nrLokalu : ""}`.trim()
     : PUSTE;
@@ -170,6 +183,21 @@ export function polaUczestnika(
     cb_isced58: cb(iscedWyzsze),
     cb_isced34: cb(!iscedWyzsze && iscedSrednie),
     cb_isced02: cb(!iscedWyzsze && !iscedSrednie),
+    // PSF — ISCED 6-poziomowy (PAK2)
+    cb_isced0: cb(isced0),
+    cb_isced1: cb(isced1),
+    cb_isced2: cb(isced2),
+    cb_isced3: cb(isced3),
+    cb_isced4: cb(isced4),
+    // PSF — status na rynku pracy (PAK1)
+    cb_pracujaca: cb(stPracujaca),
+    cb_bezrob_zarej: cb(stBezrobZarej),
+    cb_bezrob_niezarej: cb(stBezrobNiezarej),
+    cb_bierna: cb(stBierna),
+    // PSF — DEGURBA 3-opcyjny (PAK1)
+    cb_degurba_miejski: cb(s.degurba === "1"),
+    cb_degurba_podmiejski: cb(s.degurba === "2"),
+    cb_degurba_wiejski: cb(s.degurba === "3"),
     // A-03: punkty cz. III + opis rozmowy cz. IV
     pkt_plec: String(pktPlec),
     pkt_wielokrotne: String(pktWielokrotne),
