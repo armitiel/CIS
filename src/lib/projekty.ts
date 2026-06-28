@@ -108,6 +108,74 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
   },
 };
 
+/** Projekt PSF „Moja ścieżka rozwoju" (FELB.06.08-IZ.00-0014/25) — 8 formularzy uczestnika. */
+export const specyfikacjaPSF: SpecyfikacjaProjektu = {
+  id: "psf-sciezka",
+  nazwa: "Moja ścieżka rozwoju – PSF 300 osób dorosłych w województwie lubuskim",
+  nabor: "FELB.06.08-IZ.00-0014/25",
+  wnioskodawca:
+    "Stowarzyszenie Pomocy Bliźniemu im. Brata Krystyna (partner: Stowarzyszenie na Rzecz Edukacji „Pomost”)",
+  okres: "01.01.2026 – 31.12.2028",
+  zrodlo: "Folder „Sprawdzone” (Dokumenty PSF) — komplet formularzy uczestnika",
+  dokumenty: [
+    {
+      id: "psf-pak1", symbol: "PAK1", nazwa: "Zgłoszenie potrzeb rozwojowych",
+      sekcja: "A", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "rekrutacja",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Zgłoszenie uczestnika do projektu i jego potrzeb rozwojowych",
+    },
+    {
+      id: "psf-e1", symbol: "E1", nazwa: "Klauzula informacyjna RODO",
+      sekcja: "E", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "rekrutacja",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Klauzula informacyjna o przetwarzaniu danych osobowych",
+    },
+    {
+      id: "psf-a3", symbol: "A3", nazwa: "Umowa wsparcia – usługa rozwojowa",
+      sekcja: "B", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "przystąpienie",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Umowa o udzielenie wsparcia w formie usługi rozwojowej",
+    },
+    {
+      id: "psf-pak2", symbol: "PAK2", nazwa: "Karta doradztwa zawodowego i bilans kompetencji",
+      sekcja: "B", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "udział",
+      podpisUczestnika: "1 podpis (uczestnik + doradca)", generowalny: true,
+      opis: "Indywidualne doradztwo i bilans kompetencji — podstawa IPR",
+    },
+    {
+      id: "psf-b", symbol: "B", nazwa: "Indywidualny Plan Rozwoju (IPR)",
+      sekcja: "B", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "udział",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Indywidualny plan rozwoju uczestnika na podstawie bilansu kompetencji",
+    },
+    {
+      id: "psf-c1", symbol: "C1", nazwa: "Formularz zapotrzebowania – usługa rozwojowa",
+      sekcja: "C", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "udział",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Zapotrzebowanie na konkretną usługę rozwojową z BUR",
+    },
+    {
+      id: "psf-pak3", symbol: "PAK3", nazwa: "Formularz rozliczenia",
+      sekcja: "C", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "zakończenie",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Rozliczenie zrealizowanej usługi rozwojowej",
+    },
+    {
+      id: "psf-f1", symbol: "F1", nazwa: "Ankieta ewaluacyjna",
+      sekcja: "F", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "zakończenie",
+      podpisUczestnika: "1 podpis", generowalny: true,
+      opis: "Ankieta ewaluacyjna po zakończeniu wsparcia",
+    },
+  ],
+  sekcjeNazwy: {
+    A: "A. Zgłoszenie i rekrutacja",
+    B: "B. Umowa, doradztwo i plan rozwoju",
+    C: "C. Usługa rozwojowa i rozliczenie",
+    E: "E. RODO",
+    F: "F. Ewaluacja",
+  },
+};
+
 /**
  * Dane projektu zapisywane poza kodem — w bazie Supabase (tryb prywatny,
  * per użytkownik) albo, gdy baza niedostępna, w localStorage przeglądarki.
@@ -128,7 +196,7 @@ export interface ProjektWlasnyZapis {
    * Szablon dla projektów przykładowych: "cis" → pełny katalog CIS + przykładowi
    * uczestnicy, "swa" → katalog 6.8. Brak → katalog generyczny z sekcji.
    */
-  szablon?: "cis" | "swa";
+  szablon?: "cis" | "swa" | "psf";
 }
 
 /**
@@ -157,6 +225,17 @@ export const SEEDY_PRZYKLADOWE: ProjektWlasnyZapis[] = [
     zrodlo: "Projekt przykładowy (szablon 6.8)",
     utworzono: "2025-01-01",
     szablon: "swa",
+  },
+  {
+    id: "psf-sciezka",
+    nazwa: "Moja ścieżka rozwoju (PSF)",
+    skrot: "PSF Moja ścieżka",
+    nabor: specyfikacjaPSF.nabor,
+    wnioskodawca: specyfikacjaPSF.wnioskodawca,
+    okres: specyfikacjaPSF.okres,
+    zrodlo: "Projekt przykładowy (szablon PSF)",
+    utworzono: "2026-01-01",
+    szablon: "psf",
   },
 ];
 
@@ -322,6 +401,16 @@ export function zbudujProjektWlasny(z: ProjektWlasnyZapis): Projekt {
       uczestnicyDomyslni: [],
     };
   }
+  if (z.szablon === "psf") {
+    return {
+      id: z.id,
+      nazwa: z.nazwa,
+      skrot: z.skrot,
+      nabor: z.nabor || specyfikacjaPSF.nabor,
+      spec: specyfikacjaPSF,
+      uczestnicyDomyslni: [],
+    };
+  }
   return {
     id: z.id,
     nazwa: z.nazwa,
@@ -347,6 +436,14 @@ export const projekty: Projekt[] = [
     skrot: "6.8 Smartfon",
     nabor: "FELB.06.08-IZ.00-0004/25",
     spec: specyfikacjaSWA,
+    uczestnicyDomyslni: [],
+  },
+  {
+    id: "psf-sciezka",
+    nazwa: "Moja ścieżka rozwoju (PSF)",
+    skrot: "PSF Moja ścieżka",
+    nabor: "FELB.06.08-IZ.00-0014/25",
+    spec: specyfikacjaPSF,
     uczestnicyDomyslni: [],
   },
 ];

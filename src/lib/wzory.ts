@@ -26,6 +26,16 @@ const WZORY: Record<string, string> = {
   "swa-6.8:swa-f-01": "SWA_F-01_Ankieta_kompetencji_PRE_szablon.docx",
   "swa-6.8:swa-g-04": "SWA_G-04_Rozliczenie_kosztow_dojazdu_szablon.docx",
 
+  // === Projekt PSF „Moja ścieżka rozwoju" (6.8 / 0014/25) — 8 formularzy uczestnika ===
+  "psf-sciezka:psf-pak1": "PSF_PAK1_Zgloszenie_potrzeb_szablon.docx",
+  "psf-sciezka:psf-e1": "PSF_E1_Klauzula_RODO_szablon.docx",
+  "psf-sciezka:psf-a3": "PSF_A3_Umowa_wsparcia_szablon.docx",
+  "psf-sciezka:psf-pak2": "PSF_PAK2_Karta_doradztwa_bilans_szablon.docx",
+  "psf-sciezka:psf-b": "PSF_B_Indywidualny_Plan_Rozwoju_szablon.docx",
+  "psf-sciezka:psf-c1": "PSF_C1_Formularz_zapotrzebowania_szablon.docx",
+  "psf-sciezka:psf-pak3": "PSF_PAK3_Formularz_rozliczenia_szablon.docx",
+  "psf-sciezka:psf-f1": "PSF_F1_Ankieta_ewaluacyjna_szablon.docx",
+
   // === CIS Świebodzin (6.11) — pełny katalog formularzy A–H (10.06.2026) ===
   // Formularze uczestnika z polami {{}} są wypełniane danymi automatycznie;
   // pozostałe są serwowane jako aktualne wzory 1:1.
