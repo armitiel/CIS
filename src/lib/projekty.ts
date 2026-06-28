@@ -31,6 +31,12 @@ export const specyfikacjaSWA: SpecyfikacjaProjektu = {
       opis: "Dane uczestnika w strukturze SOWA + oświadczenia i RODO (synchronizowane z plikiem Import)",
     },
     {
+      id: "swa-a-02", symbol: "SWA_A-02", nazwa: "Regulamin rekrutacji i uczestnictwa",
+      sekcja: "A", rodzaj: "organizacyjny", dotyczy: "wszyscy", moment: "rekrutacja",
+      podpisUczestnika: "bez podpisu", generowalny: true,
+      opis: "Dokument projektowy — publikowany, nie podpisywany przez uczestników",
+    },
+    {
       id: "swa-b-01", symbol: "SWA_B-01", nazwa: "Umowa uczestnictwa w projekcie",
       sekcja: "B", rodzaj: "uczestnik", dotyczy: "wszyscy", moment: "przystąpienie",
       podpisUczestnika: "1 podpis", generowalny: true,
