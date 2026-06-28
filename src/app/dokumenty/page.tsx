@@ -788,8 +788,9 @@ export default function Dokumenty() {
             </h2>
             <p className="m-0 mt-[5px] text-[13.5px] text-muted">
               Katalog formularzy pochodzi ze specyfikacji projektu. Wgranie
-              wniosku weryfikuje zgodność i odświeża dane projektu
-              (automatyczne wyznaczanie katalogu z treści wniosku — etap E6).
+              wniosku służy tylko do potwierdzenia zgodności (numer naboru /
+              tytuł) — dla projektów wbudowanych nie zmienia danych; dane
+              nadpisuje wyłącznie w projektach własnych.
             </p>
             <div className="mt-[13px] inline-flex items-center gap-[7px] rounded-[10px] bg-green-soft px-[13px] py-[7px] text-[13px] font-semibold text-primary-strong">
               <span className="material-symbols-rounded notranslate text-lg">
