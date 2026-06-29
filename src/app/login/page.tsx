@@ -38,6 +38,8 @@ export default function Login() {
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          // zawsze pokaż wybór konta Google (nie loguj automatycznie na ostatnie)
+          queryParams: { prompt: "select_account" },
         },
       });
       if (error) {
