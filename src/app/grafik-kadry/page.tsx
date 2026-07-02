@@ -81,6 +81,8 @@ export default function GrafikKadry() {
     zapisz: zapiszWpis,
     usun: usunWpis,
     usunOsobe: usunWpisyOsoby,
+    bladZapisu,
+    wyczyscBlad,
   } = useGrafikKadry(projekt.id);
 
   const dzis = useMemo(() => {
@@ -289,6 +291,17 @@ export default function GrafikKadry() {
 
   return (
     <div className="flex max-w-[1100px] flex-col gap-[18px]">
+      {bladZapisu && (
+        <div className="anim-fade-in flex items-start justify-between gap-3 rounded-xl bg-red-soft px-4 py-3 text-[13px] text-red-ink">
+          <span>{bladZapisu}</span>
+          <button
+            onClick={wyczyscBlad}
+            className="shrink-0 font-semibold hover:underline"
+          >
+            Zamknij
+          </button>
+        </div>
+      )}
       {/* Pasek nawigacji + przełącznik widoku */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -788,6 +801,9 @@ export default function GrafikKadry() {
           domyslnaDo={isoMiesiacaDo(kotwica)}
           istnieje={(kadraId, dataISO) => wpisyDla(kadraId, dataISO).length > 0}
           onZapisz={zapiszWpis}
+          onWyczyscDzien={(kadraId, dataISO) => {
+            for (const w of wpisyDla(kadraId, dataISO)) usunWpis(w.id);
+          }}
           onClose={() => setPokazWypelnij(false)}
         />
       )}

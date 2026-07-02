@@ -66,6 +66,7 @@ export default function WypelnijGrafikPanel({
   domyslnaDo,
   istnieje,
   onZapisz,
+  onWyczyscDzien,
   onClose,
 }: {
   kadra: OsobaKadry[];
@@ -73,6 +74,8 @@ export default function WypelnijGrafikPanel({
   domyslnaDo: string; // ISO — proponowany koniec zakresu
   istnieje: (kadraId: string, dataISO: string) => boolean;
   onZapisz: (dane: Omit<WpisGrafiku, "id"> & { id?: string }) => void;
+  // usuwa wszystkie istniejące wpisy osoby w danym dniu (tryb „Nadpisz")
+  onWyczyscDzien: (kadraId: string, dataISO: string) => void;
   onClose: () => void;
 }) {
   // "*" = cała kadra
@@ -84,7 +87,10 @@ export default function WypelnijGrafikPanel({
   const [dniTyg, setDniTyg] = useState<number[]>([1, 2, 3, 4, 5]); // dni robocze
   const [odDnia, setOdDnia] = useState(domyslnaOd);
   const [doDnia, setDoDnia] = useState(domyslnaDo);
-  const [pomijajZajete, setPomijajZajete] = useState(true);
+  // co zrobić z dniem, który już ma wpis: pominąć / nadpisać / dodać obok
+  const [trybZajetych, setTrybZajetych] = useState<
+    "pomin" | "nadpisz" | "dodaj"
+  >("pomin");
   const [pomijajSwieta, setPomijajSwieta] = useState(true);
 
   function przelaczDzien(dow: number) {
@@ -110,17 +116,17 @@ export default function WypelnijGrafikPanel({
     return pomijajSwieta ? lista.filter((d) => !czySwieto(parseISO(d))) : lista;
   }, [odDnia, doDnia, dniTyg, pomijajSwieta]);
 
-  // ile wpisów realnie powstanie (po pominięciu zajętych)
+  // ile wpisów realnie powstanie (po pominięciu zajętych, gdy tryb „pomiń")
   const doWstawienia = useMemo(() => {
     let n = 0;
     for (const o of osoby) {
       for (const d of daty) {
-        if (pomijajZajete && istnieje(o.id, d)) continue;
+        if (trybZajetych === "pomin" && istnieje(o.id, d)) continue;
         n++;
       }
     }
     return n;
-  }, [osoby, daty, pomijajZajete, istnieje]);
+  }, [osoby, daty, trybZajetych, istnieje]);
 
   const bledneGodziny = liczbaGodzin(godzinaOd, godzinaDo) <= 0;
   const mozna = osoby.length > 0 && daty.length > 0 && !bledneGodziny;
@@ -129,7 +135,10 @@ export default function WypelnijGrafikPanel({
     if (!mozna) return;
     for (const o of osoby) {
       for (const d of daty) {
-        if (pomijajZajete && istnieje(o.id, d)) continue;
+        const zajete = istnieje(o.id, d);
+        if (trybZajetych === "pomin" && zajete) continue;
+        // „Nadpisz": usuń istniejące wpisy tego dnia, zanim dodasz nowy
+        if (trybZajetych === "nadpisz" && zajete) onWyczyscDzien(o.id, d);
         onZapisz({
           kadraId: o.id,
           data: d,
@@ -287,15 +296,38 @@ export default function WypelnijGrafikPanel({
               </div>
             </div>
 
-            <label className="flex items-center gap-2.5 text-[13px] text-ink-mid">
-              <input
-                type="checkbox"
-                checked={pomijajZajete}
-                onChange={(e) => setPomijajZajete(e.target.checked)}
-                className="h-4 w-4 accent-[oklch(0.52_0.09_152)]"
-              />
-              Pomiń dni, które już mają wpis (nie nadpisuj)
-            </label>
+            <div>
+              <label className={etyk}>Gdy dzień już ma wpis</label>
+              <div className="flex gap-1.5">
+                {(
+                  [
+                    ["pomin", "Pomiń"],
+                    ["nadpisz", "Nadpisz"],
+                    ["dodaj", "Dodaj obok"],
+                  ] as [typeof trybZajetych, string][]
+                ).map(([w, label]) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => setTrybZajetych(w)}
+                    className={`flex-1 rounded-lg px-2 py-2 text-[12.5px] font-semibold transition-all ${
+                      trybZajetych === w
+                        ? "bg-primary text-white"
+                        : "border border-line-strong bg-surface text-ink-mid hover:bg-soft"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11.5px] text-faint">
+                {trybZajetych === "pomin"
+                  ? "Dni z istniejącym wpisem zostaną pominięte."
+                  : trybZajetych === "nadpisz"
+                    ? "Istniejące wpisy w tych dniach zostaną zastąpione nowymi (bez duplikatów)."
+                    : "Nowy wpis zostanie dodany obok istniejących — mogą powstać duplikaty."}
+              </p>
+            </div>
 
             <label className="flex items-center gap-2.5 text-[13px] text-ink-mid">
               <input

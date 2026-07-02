@@ -41,16 +41,26 @@ export interface StanGrafiku {
   /** usuwa wszystkie wpisy danej osoby (po skasowaniu jej z kadry) */
   usunOsobe: (kadraId: string) => void;
   gotowa: boolean;
+  /** komunikat, gdy zapis/usuwanie w bazie się nie powiodło (null = brak błędu) */
+  bladZapisu: string | null;
+  /** kasuje komunikat błędu (po zamknięciu przez użytkownika) */
+  wyczyscBlad: () => void;
 }
+
+const KOMUNIKAT_BLEDU =
+  "Nie udało się zapisać zmian w bazie. Odśwież stronę (mogłaś zostać wylogowana), a potem spróbuj ponownie.";
 
 export function useGrafikKadry(projektId: string): StanGrafiku {
   const [grafik, setGrafik] = useState<WpisGrafiku[]>([]);
   const [gotowa, setGotowa] = useState(false);
+  const [bladZapisu, setBladZapisu] = useState<string | null>(null);
+  const wyczyscBlad = useCallback(() => setBladZapisu(null), []);
   const projektRef = useRef(projektId);
   projektRef.current = projektId;
 
   useEffect(() => {
     setGotowa(false);
+    setBladZapisu(null);
     let anulowane = false;
     let lokalne: WpisGrafiku[] = [];
     try {
@@ -107,7 +117,7 @@ export function useGrafikKadry(projektId: string): StanGrafiku {
       });
       if (bazaDostepna()) {
         zapiszWpisDB(w, projektId).catch(() => {
-          /* brak sesji/tabeli — pozostaje zapis lokalny */
+          setBladZapisu(KOMUNIKAT_BLEDU);
         });
       }
     },
@@ -123,7 +133,7 @@ export function useGrafikKadry(projektId: string): StanGrafiku {
       });
       if (bazaDostepna()) {
         usunWpisDB(id).catch(() => {
-          /* brak sesji/tabeli — pozostaje zapis lokalny */
+          setBladZapisu(KOMUNIKAT_BLEDU);
         });
       }
     },
@@ -139,12 +149,12 @@ export function useGrafikKadry(projektId: string): StanGrafiku {
       });
       if (bazaDostepna()) {
         usunWpisyOsobyDB(kadraId, projektId).catch(() => {
-          /* brak sesji/tabeli — pozostaje zapis lokalny */
+          setBladZapisu(KOMUNIKAT_BLEDU);
         });
       }
     },
     [projektId, zapiszLokalnie],
   );
 
-  return { grafik, zapisz, usun, usunOsobe, gotowa };
+  return { grafik, zapisz, usun, usunOsobe, gotowa, bladZapisu, wyczyscBlad };
 }
