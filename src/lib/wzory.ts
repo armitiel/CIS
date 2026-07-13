@@ -46,6 +46,8 @@ const WZORY: Record<string, string> = {
   "cis-2026:b-01": "CIS_B-01_Umowa_uczestnictwa_w_projekcie.docx",
   "cis-2026:b-02": "CIS_B-02_Arkusz_diagnozy_kompleksowej.docx",
   "cis-2026:b-03": "CIS_B-03-1_Indywidualny_Program_Zatrudnienia_Socjalnego_cz_I.docx",
+  "cis-2026:b-03-2": "CIS_B-03-2_Indywidualny_Program_Zatrudnienia_Socjalnego_cz_II.docx",
+  "cis-2026:b-03-3": "CIS_B-03-3_Indywidualny_Program_Zatrudnienia_Socjalnego_cz_III.docx",
   "cis-2026:b-04": "CIS_B-04_Indywidualny_Program_Rozwoju.docx",
   "cis-2026:b-05": "CIS_B-05_Karta_monitoringu_ISR_z_opinia_koncowa.docx",
   "cis-2026:c-02": "CIS_C-02_Miesieczna_indywidualna_karta_obecnosci.docx",

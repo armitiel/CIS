@@ -213,11 +213,17 @@ function trescDokumentu(
         ...podpisy("podpis uczestnika/uczestniczki", "podpis osoby prowadzącej diagnozę"),
       ];
     case "b-03":
+    case "b-03-2":
+    case "b-03-3":
     case "b-04": {
       const nazwa =
         d.id === "b-03"
-          ? "INDYWIDUALNY PROGRAM ZATRUDNIENIA SOCJALNEGO (IPZS)"
-          : "INDYWIDUALNY PROGRAM ROZWOJU (IPR)";
+          ? "INDYWIDUALNY PROGRAM ZATRUDNIENIA SOCJALNEGO (IPZS) — CZĘŚĆ I"
+          : d.id === "b-03-2"
+            ? "INDYWIDUALNY PROGRAM ZATRUDNIENIA SOCJALNEGO (IPZS) — CZĘŚĆ II"
+            : d.id === "b-03-3"
+              ? "INDYWIDUALNY PROGRAM ZATRUDNIENIA SOCJALNEGO (IPZS) — CZĘŚĆ III"
+              : "INDYWIDUALNY PROGRAM ROZWOJU (IPR)";
       return [
         ...base,
         tytul(nazwa),
@@ -227,7 +233,7 @@ function trescDokumentu(
         pole("Zaplanowane formy wsparcia", undefined),
         pole("Terminy przeglądów programu", undefined),
         akapit(
-          d.id === "b-03"
+          d.id.startsWith("b-03")
             ? "Dokument wymagany ustawą o zatrudnieniu socjalnym (art. 12). Zmiany programu wprowadzane są aneksem podpisywanym przez uczestnika; karta monitoringu IŚR (B-05) pozostaje dokumentem kadrowym."
             : "Zmiany programu wprowadzane są aneksem podpisywanym przez uczestnika; karta monitoringu IŚR (B-05) pozostaje dokumentem kadrowym.",
           true,
