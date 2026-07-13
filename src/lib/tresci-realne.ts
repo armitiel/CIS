@@ -464,7 +464,7 @@ export function trescRealna(
         tytul("ARKUSZ DIAGNOZY KOMPLEKSOWEJ UCZESTNIKA / UCZESTNICZKI"),
         ...podtytul("CIS/B-02", spec),
         akapit(
-          "DOTYCZY: wszystkich uczestników projektu (101 osób) — podstawa do opracowania IŚR w formie IPZS lub IPR. Diagnoza kompleksowa w ramach Zadania 1. Realizowana przez zespół: koordynator procesu włączenia, psycholog, doradca zawodowy, pracownik socjalny.",
+          "DOTYCZY: wszystkich uczestników projektu (101 osób) — podstawa do opracowania IŚR w formie IPZS lub IPR. Diagnoza kompleksowa w ramach Zadania 1. Realizowana przez wykonawcę zewnętrznego.",
           true,
         ),
         sekcja("CZĘŚĆ I. DANE UCZESTNIKA / UCZESTNICZKI"),
@@ -534,20 +534,15 @@ export function trescRealna(
           "w formie Indywidualnego Programu Rozwoju (IPR) — osoba bierna zawodowo lub bezrobotna spoza CIS",
           u.sciezka === "IPR",
         ),
-        sekcja("CZĘŚĆ IV. ZESPÓŁ DIAGNOZUJĄCY"),
+        sekcja("CZĘŚĆ IV. POTWIERDZENIE WYKONANIA DIAGNOZY"),
+        akapit(
+          "Diagnoza indywidualna uczestnika/uczestniczki została przeprowadzona przez wykonawcę zewnętrznego. Niniejszy arkusz stanowi oficjalny zapis wyników diagnozy, odzwierciedlający sytuację społeczną, zawodową i zdrowotną uczestnika/uczestniczki.",
+        ),
+        akapit("Potwierdzają to:"),
         tabelaN(
           [3200, 3500, 2326],
-          ["Rola", "Imię i nazwisko", "Podpis"],
-          [
-            ["Koordynator procesu włączenia", "", ""],
-            ["Psycholog", "", ""],
-            ["Doradca zawodowy", "", ""],
-            ["Pracownik socjalny", "", ""],
-          ],
-        ),
-        ...podpisy2(
-          "data i podpis uczestnika/uczestniczki",
-          "data sporządzenia diagnozy",
+          ["Imię i nazwisko wykonawcy zewnętrznego", "Rola / Specjalizacja", "Podpis"],
+          [["", "", ""]],
         ),
       ];
     }

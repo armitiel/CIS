@@ -36,7 +36,7 @@ const WZORY: Record<string, string> = {
   "psf-sciezka:psf-pak3": "PSF_PAK3_Formularz_rozliczenia_szablon.docx",
   "psf-sciezka:psf-f1": "PSF_F1_Ankieta_ewaluacyjna_szablon.docx",
 
-  // === CIS Świebodzin (6.11) — pełny katalog formularzy A–H (10.06.2026) ===
+  // === CIS Świebodzin (6.11) — pełny katalog formularzy A–H (13.07.2026) ===
   // Formularze uczestnika z polami {{}} są wypełniane danymi automatycznie;
   // pozostałe są serwowane jako aktualne wzory 1:1.
   "cis-2026:a-01": "CIS_A-01_Pakiet_zgloszeniowy_uczestnika.docx",
