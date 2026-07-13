@@ -673,7 +673,7 @@ export function trescRealna(
         ]),
         pusty(),
         akapit(
-          "Rodzaj wsparcia: ☐ psycholog  ☐ terapeuta uzależnień  ☐ doradca zawodowy  ☐ pośrednik pracy  ☐ diagnoza IŚR",
+          "Rodzaj wsparcia: ☐ psycholog  ☐ terapeuta uzależnień  ☐ doradca zawodowy  ☐ pracownik socjalny",
         ),
         sekcja("CZĘŚĆ I. EWIDENCJA SPOTKAŃ"),
         tabelaN(
@@ -746,7 +746,7 @@ export function trescRealna(
         tytul("ANKIETA KOMPETENCJI PRE (pomiar wejściowy)"),
         ...podtytul("CIS/F-01a", spec),
         akapit(
-          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar PRE wykonywany przy diagnozie (Zadanie 1) — odrębny dokument od pomiaru POST. Fakt wypełnienia na zajęciach potwierdza dzienna lista obecności (CIS/C-01).",
+          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar PRE wykonywany przy diagnozie (Zadanie 1) — odrębny dokument od pomiaru POST. Fakt wypełnienia rejestrowany jest w module Obecności.",
           true,
         ),
         tabela2([
@@ -787,7 +787,7 @@ export function trescRealna(
         tytul("ANKIETA KOMPETENCJI POST (pomiar końcowy)"),
         ...podtytul("CIS/F-01b", spec),
         akapit(
-          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar POST wykonywany przy zakończeniu udziału — odrębny dokument od pomiaru PRE. Fakt wypełnienia na zajęciach potwierdza dzienna lista obecności (CIS/C-01).",
+          "Ankieta nie wymaga podpisu uczestnika. Identyfikacja po numerze uczestnika w projekcie. Pomiar POST wykonywany przy zakończeniu udziału — odrębny dokument od pomiaru PRE. Fakt wypełnienia rejestrowany jest w module Obecności.",
           true,
         ),
         tabela2([
@@ -884,7 +884,7 @@ export function trescRealna(
         ),
         sekcja("§ 3. Kryteria i etapy rekrutacji"),
         akapit(
-          "Rekrutacja prowadzona jest w 2 cyklach. Etapy: złożenie pakietu zgłoszeniowego (CIS/A-01), ocena formalna i merytoryczna (CIS/A-03), posiedzenie komisji rekrutacyjnej (CIS/A-06), utworzenie listy podstawowej i rezerwowej (CIS/A-04).",
+          "Rekrutacja prowadzona jest w 2 cyklach. Etapy: złożenie pakietu zgłoszeniowego (CIS/A-01), ocena formalna i merytoryczna (CIS/A-03), posiedzenie komisji rekrutacyjnej oraz utworzenie listy podstawowej i rezerwowej (CIS/A-04).",
         ),
         akapit(
           "Kryteria premiujące (punktowane): osoba długotrwale bezrobotna, z niepełnosprawnością, korzystająca z pomocy społecznej, zamieszkująca obszar wiejski, o niskich kwalifikacjach.",
@@ -909,7 +909,7 @@ export function trescRealna(
         tytul("KARTA OCENY KANDYDATA"),
         ...podtytul("CIS/A-03", spec),
         akapit(
-          "Karta wypełniana przez komisję rekrutacyjną na podstawie pakietu zgłoszeniowego (CIS/A-01) i załączonych dokumentów. Stanowi podstawę do utworzenia listy rankingowej (CIS/A-06).",
+          "Karta wypełniana przez komisję rekrutacyjną na podstawie pakietu zgłoszeniowego (CIS/A-01) i załączonych dokumentów. Stanowi podstawę do utworzenia listy podstawowej i rezerwowej (CIS/A-04).",
           true,
         ),
         tabela2([
@@ -948,7 +948,7 @@ export function trescRealna(
         tytul("LISTA PODSTAWOWA I REZERWOWA"),
         ...podtytul("CIS/A-04", spec),
         akapit(
-          `Lista utworzona na podstawie ocen punktowych (CIS/A-03) i protokołu komisji (CIS/A-06). Cykl rekrutacji: ${String(u.cykl)}. Data sporządzenia: ${dzis()}.`,
+          `Lista utworzona na podstawie ocen punktowych (CIS/A-03) i decyzji komisji rekrutacyjnej. Cykl rekrutacji: ${String(u.cykl)}. Data sporządzenia: ${dzis()}.`,
           true,
         ),
         sekcja("LISTA PODSTAWOWA"),
@@ -1106,34 +1106,6 @@ export function trescRealna(
       ];
 
     // ===================== SEKCJA C — OBECNOŚCI I WSPARCIE =====================
-    case "c-01":
-      return [
-        tytul("DZIENNA LISTA OBECNOŚCI ZE ŚWIADCZENIAMI"),
-        ...podtytul("CIS/C-01", spec),
-        akapit(
-          "Lista grupowa potwierdzająca obecność na zajęciach reintegracji zawodowej i społecznej w danym dniu. Podpis uczestnika jest podstawą naliczenia świadczenia integracyjnego (art. 15 ustawy o zatrudnieniu socjalnym).",
-          true,
-        ),
-        tabela2([
-          ["Data zajęć", ""],
-          ["Grupa", v(u.grupa)],
-          ["Rodzaj zajęć", ""],
-          ["Prowadzący", ""],
-        ]),
-        pusty(),
-        tabelaN(
-          [500, 3600, 1500, 1500, 1926],
-          ["Lp.", "Imię i nazwisko", "Godz. od–do", "Świadczenie", "Podpis uczestnika"],
-          Array.from({ length: 12 }, (_, i) => [`${i + 1}.`, "", "", "", ""]),
-        ),
-        pusty(),
-        akapit("Liczba obecnych: …………   Liczba nieobecnych usprawiedliwionych: …………   nieusprawiedliwionych: …………"),
-        ...podpisy2(
-          "data i podpis prowadzącego zajęcia",
-          "data i podpis kierownika CIS",
-        ),
-      ];
-
     case "c-02":
       return [
         tytul("MIESIĘCZNA INDYWIDUALNA KARTA OBECNOŚCI"),
@@ -1252,7 +1224,7 @@ export function trescRealna(
         ),
         sekcja("§ 3. Zasady naliczania i wypłaty"),
         akapit(
-          "Podstawą naliczenia jest frekwencja udokumentowana dzienną listą obecności (CIS/C-01) i miesięczną kartą obecności (CIS/C-02). Wypłata realizowana przelewem na rachunek uczestnika.",
+          "Podstawą naliczenia jest frekwencja zarejestrowana w module Obecności i miesięczna karta obecności (CIS/C-02). Wypłata realizowana przelewem na rachunek uczestnika.",
         ),
         sekcja("WZÓR LISTY WYPŁAT ŚWIADCZEŃ"),
         tabelaN(
@@ -1497,7 +1469,7 @@ export function trescRealna(
         sekcja("§ 2. Wysokość i tryb finansowania"),
         akapit(`Planowana kwota świadczeń: …………………… zł   Tryb przekazywania: ${K}`),
         akapit(
-          "Rozliczenie następuje na podstawie list wypłat świadczeń (CIS/E-01) oraz dokumentacji obecności (CIS/C-01, CIS/C-02).",
+          "Rozliczenie następuje na podstawie list wypłat świadczeń (CIS/E-01), danych z modułu Obecności oraz miesięcznych kart obecności (CIS/C-02).",
         ),
         sekcja("§ 3. Sprawozdawczość"),
         akapit("Realizator przedkłada JST okresowe sprawozdania z wykorzystania środków."),

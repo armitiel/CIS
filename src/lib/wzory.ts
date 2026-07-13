@@ -48,7 +48,6 @@ const WZORY: Record<string, string> = {
   "cis-2026:b-03": "CIS_B-03-1_Indywidualny_Program_Zatrudnienia_Socjalnego_cz_I.docx",
   "cis-2026:b-04": "CIS_B-04_Indywidualny_Program_Rozwoju.docx",
   "cis-2026:b-05": "CIS_B-05_Karta_monitoringu_ISR_z_opinia_koncowa.docx",
-  "cis-2026:c-01": "CIS_C-01_Dzienna_lista_obecnosci_ze_swiadczeniami.docx",
   "cis-2026:c-02": "CIS_C-02_Miesieczna_indywidualna_karta_obecnosci.docx",
   "cis-2026:c-03": "CIS_C-03_Dziennik_zajec_z_programem.docx",
   "cis-2026:c-03-1": "CIS_C-03-1_Dziennik_zajec_Wsparcie_psychologa.docx",
@@ -73,6 +72,7 @@ const WZORY: Record<string, string> = {
   "cis-2026:g-02": "CIS_G-02_Ewidencja_czasu_pracy.docx",
   "cis-2026:g-03": "CIS_G-03_Protokol_odbioru_uslug_zewnetrznych.docx",
   "cis-2026:h-01": "CIS_H-01_Regulamin_zarzadzania_projektem.docx",
+  "cis-2026:h-07": "CIS_H-07_Porozumienie_JST_swiadczenia_integracyjne.docx",
 };
 
 const cache = new Map<string, ArrayBuffer>();

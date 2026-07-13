@@ -92,11 +92,9 @@ export default function Dokumenty() {
   const spec = projekt.spec;
   const { znak } = useObecnosci(projekt.id);
 
-  // ---- Listy obecności (dane z apki → druk wg wzoru z katalogu sekcji C) ----
+  // ---- Listy obecności (dane z apki → pomocniczy druk operacyjny) ----
   const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
-  const dokDzienny = spec.dokumenty.find(
-    (d) => d.sekcja === "C" && /dzien/i.test(d.nazwa),
-  );
+  const dokDzienny = spec.dokumenty.find((d) => d.id === "c-01");
   const zeSwiadczeniami =
     !!dokDzienny &&
     /świadcz|wy[żz]yw|transport|posi[łl]|dojazd/i.test(
@@ -1211,9 +1209,11 @@ export default function Dokumenty() {
           <span className="material-symbols-rounded notranslate text-base text-blue-ink">
             info
           </span>
-          Tytuł i kolumny dopasowane do wzoru z katalogu (sekcja C
-          {dokDzienny ? `: „${dokDzienny.nazwa}”` : ""}); logotypy projektu w
-          stopce. Dane bierą się z modułów Uczestnicy i Obecności.
+          {dokDzienny
+            ? `Tytuł i kolumny dopasowane do wzoru z katalogu: „${dokDzienny.nazwa}”. `
+            : "Lista robocza generowana z danych aplikacji; formularz C-01 nie jest częścią aktualnego katalogu. "}
+          Logotypy projektu są w stopce. Dane pochodzą z modułów Uczestnicy i
+          Obecności.
         </p>
       </section>
 

@@ -240,11 +240,11 @@ function trescDokumentu(
         ...base,
         tytul("KARTA WSPARCIA INDYWIDUALNEGO (UNIWERSALNA)"),
         ...daneSOWA(u, false),
-        pole("Rodzaj wsparcia", "psycholog / terapeuta / doradca zawodowy (IPD) / pośrednik pracy *"),
+        pole("Rodzaj wsparcia", "psycholog / terapeuta uzależnień / doradca zawodowy / pracownik socjalny"),
         pole("Data i godziny spotkania", undefined),
         pole("Zakres / przebieg wsparcia", undefined),
         akapit(
-          "Podpis uczestnika przy każdym spotkaniu jest dowodem wykonania usługi rozliczanej godzinowo (poz. 1.1, 2.2, 2.3) — K6. (* niepotrzebne skreślić)",
+          "Podpis uczestnika przy każdym spotkaniu jest dowodem udzielenia wsparcia indywidualnego — K6.",
           true,
         ),
         ...podpisy("podpis uczestnika/uczestniczki", "podpis osoby udzielającej wsparcia"),
@@ -272,7 +272,7 @@ function trescDokumentu(
         pole("Data pomiaru PRE", undefined),
         akapit("Część pomiarowa: samoocena kompetencji społecznych i zawodowych (skala 1–5) — pozycje zgodnie z wzorem F-01a."),
         akapit(
-          "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia potwierdza dzienna lista obecności C-01.",
+          "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia rejestrowany jest w module Obecności.",
           true,
         ),
         ...podpisy("(bez podpisu uczestnika)", "data i podpis osoby prowadzącej pomiar PRE"),
@@ -286,7 +286,7 @@ function trescDokumentu(
         pole("Data pomiaru POST", undefined),
         akapit("Część pomiarowa: samoocena kompetencji społecznych i zawodowych (skala 1–5) — pozycje zgodnie z wzorem F-01b. Wynik POST porównywany z pomiarem PRE (wzrost = POST − PRE)."),
         akapit(
-          "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia potwierdza dzienna lista obecności C-01.",
+          "Ankieta bez podpisu uczestnika (K10): nie jest źródłem wskaźnika; identyfikowalność zapewnia kod uczestnika, datę i podpis osoby prowadzącej pomiar. Fakt wypełnienia rejestrowany jest w module Obecności.",
           true,
         ),
         ...podpisy("(bez podpisu uczestnika)", "data i podpis osoby prowadzącej pomiar POST"),
@@ -308,10 +308,10 @@ function trescDokumentu(
         tytul("MIESIĘCZNA INDYWIDUALNA KARTA OBECNOŚCI"),
         ...daneSOWA(u, false),
         pole("Miesiąc / rok", undefined),
-        pole("Liczba dni obecności (wg list dziennych C-01)", undefined),
+        pole("Liczba dni obecności (wg ewidencji w module Obecności)", undefined),
         pole("Nieobecności usprawiedliwione / nieusprawiedliwione", undefined),
         pole("Wymiar świadczenia integracyjnego do wypłaty", undefined),
-        akapit("Sporządza pracownik socjalny na podstawie list dziennych; podpisuje kadra — uczestnik nie podpisuje drugi raz (K4). Podstawa wypłaty świadczenia (wniosek s. 29).", true),
+        akapit("Sporządza pracownik socjalny na podstawie danych z modułu Obecności; podpisuje kadra — uczestnik nie podpisuje drugi raz (K4). Podstawa wypłaty świadczenia (wniosek s. 29).", true),
         ...podpisy("sporządził/-a (kadra)", "zatwierdził/-a (koordynator)"),
       ];
     default:

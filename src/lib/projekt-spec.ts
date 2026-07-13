@@ -1,5 +1,5 @@
 // Specyfikacja dokumentacyjna projektu CIS Świebodzin (FELB.06.11-IZ.00-0001/26)
-// Źródło: katalog formularzy projektowych A–H (Formularze_projektowe, stan 10.06.2026)
+// Źródło: katalog formularzy projektowych A–H (Formularze_projektowe, stan 13.07.2026)
 // oraz "Analiza optymalizacji formularzy CIS 6.11" v3 (15 konsolidacji, zasady podpisów).
 // Docelowo (etap E6) specyfikacje będą tworzone przez analizę AI wczytanego wniosku.
 
@@ -91,7 +91,7 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
   wnioskodawca: "Stowarzyszenie na Rzecz Edukacji „Pomost”",
   okres: "01.06.2026 – 31.12.2027",
   zrodlo:
-    "Katalog formularzy A–H (10.06.2026) + Analiza optymalizacji formularzy v3",
+    "Katalog formularzy A–H (13.07.2026) + Analiza optymalizacji formularzy v3",
   dokumenty: [
     // ===== A. Rekrutacja =====
     D("CIS_A-01", "Pakiet zgłoszeniowy uczestnika", "A", "uczestnik", "wszyscy", "rekrutacja",
@@ -121,11 +121,8 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "Opinia o poprawie sytuacji społecznej = źródło wskaźnika rezultatu (K3)"),
 
     // ===== C. Obecności i wsparcie =====
-    D("CIS_C-01", "Dzienna lista obecności ze świadczeniami", "C", "grupowy", "wszyscy", "cyklicznie",
-      "1 podpis dziennie (obecność + wyżywienie + transport na jednej liście — K4)", true,
-      "Jedna lista zamiast trzech ewidencji; pola wyżywienie/transport odhacza kadra"),
     D("CIS_C-02", "Miesięczna indywidualna karta obecności", "C", "kadrowy", "bezrobotny", "cyklicznie",
-      "bez podpisu uczestnika — sporządza kadra z list dziennych", true,
+      "bez podpisu uczestnika — sporządza kadra z danych modułu Obecności", true,
       "Wymóg wniosku (s. 29): podstawa wypłaty świadczenia integracyjnego"),
     D("CIS_C-03", "Dziennik zajęć z programem", "C", "kadrowy", "wszyscy", "cyklicznie",
       "kadra (program = karta tytułowa — K5)", true, "Jeden zeszyt na grupę/formę wsparcia"),
@@ -137,7 +134,7 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "kadra (prowadzący zajęcia)", true, "Dziennik zajęć z doradcą zawodowym"),
     D("CIS_C-04", "Karta wsparcia indywidualnego (uniwersalna)", "C", "uczestnik", "wszyscy", "udział",
       "1 podpis na spotkanie — dowód wykonania usługi (K6)", true,
-      "Jeden wzór: psycholog / terapeuta / doradca (IPD) / pośrednik pracy"),
+      "Jeden wzór: psycholog / terapeuta uzależnień / doradca zawodowy / pracownik socjalny"),
     D("CIS_C-05", "Harmonogram realizacji wsparcia", "C", "kadrowy", "wszyscy", "cyklicznie",
       "kadra", true, "Harmonogram grup i form wsparcia"),
     D("CIS_C-06", "Broszura informacyjna dla uczestników", "C", "organizacyjny", "wszyscy", "przystąpienie",
@@ -166,7 +163,7 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
       "Dotyczy uczestników korzystających z opieki; karta pracy opiekuna = wzór G-02"),
     D("CIS_E-04", "Zgłoszenie zbiorcze na wyjazd integracyjny + program", "E", "grupowy", "wszyscy", "ad hoc",
       "1 podpis na wyjazd (zgoda + oświadczenie zdrowotne — K14)", true,
-      "Obecność na wyjeździe na standardowej liście dziennej C-01"),
+      "Obecność na wyjeździe rejestrowana w module Obecności"),
     D("CIS_E-05", "Protokół przekazania / OT samochodu brygadowego", "E", "kadrowy", "wszyscy", "ad hoc",
       "kadra/księgowość", true, "Dokument majątkowy"),
 
@@ -195,6 +192,9 @@ export const specyfikacjaCIS: SpecyfikacjaProjektu = {
     // ===== H. Zarządzanie =====
     D("CIS_H-01", "Regulamin zarządzania projektem", "H", "organizacyjny", "wszyscy", "cyklicznie",
       "kadra zarządzająca", true, "Struktura, obiegi, odpowiedzialności"),
+    D("CIS_H-07", "Porozumienie JST — świadczenia integracyjne", "H", "organizacyjny", "wszyscy", "ad hoc",
+      "przedstawiciele JST i realizatora CIS", true,
+      "Finansowanie świadczeń integracyjnych z dotacji JST jako wkładu własnego projektu"),
   ],
 };
 
