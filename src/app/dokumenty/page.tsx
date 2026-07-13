@@ -59,6 +59,7 @@ import {
 import { wykryjZestaw, type RolaLogo } from "@/lib/logotypy";
 import {
   maWzorEdytowalny,
+  plikWbudowanegoWzoru,
   surowySzablonDokumentu,
 } from "@/lib/wzory"; // edytowalne szablony + „Otwórz w Wordzie"
 import {
@@ -659,6 +660,12 @@ export default function Dokumenty() {
   async function pokazPodgladWzoru(d: WymaganyDokument) {
     setPodgladLaduje(`wzor:${d.id}`);
     try {
+      if (plikWbudowanegoWzoru(spec, d)?.toLowerCase().endsWith(".xlsx")) {
+        setKomunikat(
+          `${d.symbol} jest skoroszytem Excel. Pobierz go przyciskiem ze strzałką.`,
+        );
+        return;
+      }
       const blob = await dokumentBlob(d, uczestnikWzor(d.dotyczy), spec);
       setPodglad({
         tytul: `${d.symbol} · ${d.nazwa} — wzór (pola puste)`,
@@ -677,11 +684,22 @@ export default function Dokumenty() {
   async function pobierzWzor(d: WymaganyDokument) {
     setPobieraWzor(d.id);
     try {
-      const blob = await dokumentBlob(d, uczestnikWzor(d.dotyczy), spec);
+      const plik = plikWbudowanegoWzoru(spec, d);
+      const arkusz = plik?.toLowerCase().endsWith(".xlsx") ?? false;
+      let blob: Blob;
+      if (arkusz) {
+        const surowy = await surowySzablonDokumentu(spec, d);
+        if (!surowy) throw new Error(`Brak skoroszytu ${d.symbol}.`);
+        blob = new Blob([surowy], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = await dokumentBlob(d, uczestnikWzor(d.dotyczy), spec);
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${d.symbol}_wzor.docx`;
+      a.download = `${d.symbol}_wzor.${arkusz ? "xlsx" : "docx"}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -708,17 +726,24 @@ export default function Dokumenty() {
         );
         return;
       }
+      const arkusz =
+        plikWbudowanegoWzoru(spec, d)?.toLowerCase().endsWith(".xlsx") ??
+        false;
       const blob = new Blob([ab], {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        type: arkusz
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${d.symbol}_szablon.docx`;
+      a.download = `${d.symbol}_szablon.${arkusz ? "xlsx" : "docx"}`;
       a.click();
       URL.revokeObjectURL(url);
       setKomunikat(
-        `Pobrano szablon ${d.symbol}. Zmień treść w Wordzie, zostaw znaczniki {{…}}, zapisz i wgraj z powrotem („Wgraj zmieniony”).`,
+        arkusz
+          ? `Pobrano skoroszyt ${d.symbol}.`
+          : `Pobrano szablon ${d.symbol}. Zmień treść w Wordzie, zostaw znaczniki {{…}}, zapisz i wgraj z powrotem („Wgraj zmieniony”).`,
       );
     } catch (e) {
       setKomunikat(
@@ -740,8 +765,17 @@ export default function Dokumenty() {
     const d = wgrywamSzablonDla.current;
     if (szablonDokRef.current) szablonDokRef.current.value = "";
     if (!file || !d) return;
-    if (!/\.docx$/i.test(file.name)) {
-      setKomunikat("Szablon musi być plikiem .docx ze znacznikami {{pole}}.");
+    const arkusz =
+      plikWbudowanegoWzoru(spec, d)?.toLowerCase().endsWith(".xlsx") ?? false;
+    const poprawneRozszerzenie = arkusz
+      ? /\.xlsx$/i.test(file.name)
+      : /\.docx$/i.test(file.name);
+    if (!poprawneRozszerzenie) {
+      setKomunikat(
+        arkusz
+          ? "Szablon musi być plikiem .xlsx."
+          : "Szablon musi być plikiem .docx ze znacznikami {{pole}}.",
+      );
       return;
     }
     try {
@@ -810,7 +844,7 @@ export default function Dokumenty() {
             <input
               ref={szablonDokRef}
               type="file"
-              accept=".docx"
+              accept=".docx,.xlsx"
               className="hidden"
               onChange={(e) => wgrajZmienionySzablon(e.target.files?.[0])}
             />
@@ -927,9 +961,19 @@ export default function Dokumenty() {
                               <span className="material-symbols-rounded notranslate text-[16px]">
                                 {otwieraSzablon === d.id
                                   ? "hourglass_empty"
-                                  : "edit_document"}
+                                  : plikWbudowanegoWzoru(spec, d)
+                                        ?.toLowerCase()
+                                        .endsWith(".xlsx")
+                                    ? "table_view"
+                                    : "edit_document"}
                               </span>
-                              <span className="hidden sm:inline">Word</span>
+                              <span className="hidden sm:inline">
+                                {plikWbudowanegoWzoru(spec, d)
+                                  ?.toLowerCase()
+                                  .endsWith(".xlsx")
+                                  ? "Excel"
+                                  : "Word"}
+                              </span>
                             </button>
                             <button
                               onClick={() => wybierzZmienionySzablon(d)}
@@ -971,8 +1015,8 @@ export default function Dokumenty() {
           ))}
         </div>
         <p className="mt-3 text-xs text-faint">
-          Specyfikacja wbudowana — automatyczna analiza dowolnego wniosku (AI)
-          to etap E6. Pełne odwzorowanie treści wzorów PDF — etap E5.
+          Formularze są generowane bezpośrednio z aktualnych wzorów DOCX/XLSX;
+          aplikacja zachowuje ich układ, style, nagłówki, stopki i logotypy.
         </p>
       </section>
 

@@ -29,8 +29,6 @@ import {
 import { trescRealna } from "./tresci-realne";
 import { polaUczestnika, wypelnijSzablon } from "./szablony";
 import { wzorDlaDokumentu } from "./wzory";
-import { nadrukujStopke } from "./stopka-szablonu";
-// (wpięcie stopki na ścieżce szablonu — patrz dokumentBlob)
 
 type Blok = Paragraph | Table;
 
@@ -420,8 +418,8 @@ export async function generujDokument(
  * Buduje pojedynczy dokument jako Blob — używany przez podgląd i pobieranie.
  * Kolejność źródeł treści:
  * 1) surowy szablon .docx (nadpisanie kadry lub wzór z public/wzory) —
- *    wypełniany polami uczestnika, a następnie z nadrukowaną stopką z logo
- *    projektu (to samo źródło brandingu co ścieżka „z kodu"),
+ *    wypełniany polami uczestnika bez zmiany jego nagłówka, stopki, stylów
+ *    ani układu. Szablon jest źródłem prawdy dla wyglądu dokumentu,
  * 2) treść realna przepisana w tresci-realne.ts,
  * 3) ogólna treść generowana (fallback).
  */
@@ -432,9 +430,7 @@ export async function dokumentBlob(
 ): Promise<Blob> {
   const wzor = await wzorDlaDokumentu(spec, d);
   if (wzor) {
-    const wypelniony = wypelnijSzablon(wzor, polaUczestnika(u, spec));
-    // Ten sam branding co dokumenty „z kodu": logotypy projektu w stopce.
-    return nadrukujStopke(await wypelniony.arrayBuffer(), brandingStopki);
+    return wypelnijSzablon(wzor, polaUczestnika(u, spec));
   }
   return Packer.toBlob(dokumentDocx(trescDokumentu(d, u, spec)));
 }

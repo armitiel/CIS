@@ -10,8 +10,8 @@ export const config = {
     /*
      * Dopasuj wszystkie ścieżki poza:
      * - _next/static, _next/image (zasoby Next.js)
-     * - favicon.ico, pliki graficzne, czcionki
+     * - favicon.ico, pliki graficzne, czcionki i publiczne wzory dokumentów
      */
-    "/((?!_next/static|_next/image|favicon.ico|fonts|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ttf|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|fonts|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ttf|woff2?|docx|xlsx)$).*)",
   ],
 };

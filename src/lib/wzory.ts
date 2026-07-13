@@ -70,6 +70,7 @@ const WZORY: Record<string, string> = {
   "cis-2026:f-01a": "CIS_F-01a_Ankieta_kompetencji_PRE.docx",
   "cis-2026:f-01b": "CIS_F-01b_Ankieta_kompetencji_POST.docx",
   "cis-2026:f-02": "CIS_F-02_Ankieta_koncowa_z_oswiadczeniem.docx",
+  "cis-2026:f-03": "CIS_F-03_Skoroszyt_monitoringu_wskaznikow.xlsx",
   "cis-2026:g-01": "CIS_G-01_Zakres_obowiazkow_kadry_merytorycznej.docx",
   "cis-2026:g-02": "CIS_G-02_Ewidencja_czasu_pracy.docx",
   "cis-2026:g-03": "CIS_G-03_Protokol_odbioru_uslug_zewnetrznych.docx",
