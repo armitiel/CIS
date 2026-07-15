@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useProjekt } from "@/components/ProjektProvider";
 import { Avatar } from "@/components/ui";
 import { useObecnosci, type Znak } from "@/lib/use-obecnosci";
+import { podzielL4 } from "@/lib/swiadczenia-l4";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
@@ -255,10 +256,8 @@ export default function Obecnosci() {
 
       // Sumy kumulatywne DO KOŃCA oglądanego miesiąca (limity ustawowe liczone
       // narastająco w okresie uczestnictwa — nie biorą pod uwagę przyszłości).
-      const l4Przed = wsz.filter(
-        (w) => w.znak === "l" && w.data < pierwszyIso,
-      ).length;
-      const l4DoMies = l4Przed + l4; // L4 narastająco z bieżącym miesiącem
+      const podzialL4 = podzielL4(wsz, pierwszyIso, ostatniIso);
+      const l4DoMies = podzialL4.l4LacznieDoKoncaMiesiaca;
       const dwDoMies = wsz.filter(
         (w) => w.znak === "w" && w.data <= ostatniIso,
       ).length;
@@ -266,9 +265,8 @@ export default function Obecnosci() {
       // L4: limit 21 dni łącznie w okresie uczestnictwa (art. 15 ust. 7a).
       // Dni do 21 → potrącenie 1/40; każdy dzień ponad 21 → świadczenie za ten
       // dzień nie przysługuje (przyjęto 1/30 pełnej kwoty miesięcznej).
-      const l4DostepneWMies = Math.max(0, 21 - l4Przed);
-      const l4Platne = Math.min(l4, l4DostepneWMies);
-      const l4Ponad = l4 - l4Platne;
+      const l4Platne = podzialL4.l4Do21;
+      const l4Ponad = podzialL4.l4Ponad21;
 
       let kwota: number;
       if (nieu > 3) {

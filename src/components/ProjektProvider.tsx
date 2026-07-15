@@ -28,6 +28,7 @@ import {
   type ProjektWlasnyZapis,
 } from "@/lib/projekty";
 import type { Uczestnik } from "@/lib/types";
+import { poprawBledneStatusy } from "@/lib/migracje-uczestnikow";
 import {
   importujUczestnikow,
   scalUczestnikow,
@@ -55,18 +56,6 @@ import {
 const KLUCZ_PROJEKT = "cis-app:aktywny-projekt";
 const kluczUczestnikow = (projektId: string) =>
   `cis-app:uczestnicy:${projektId}`;
-
-// Rekordy utworzone przed naprawą importera otrzymywały błędnie status
-// „rezerwowy”, gdy plik nie zawierał rozpoznanej daty rozpoczęcia. Granica
-// czasowa chroni prawdziwych uczestników rezerwowych dodanych później.
-const GRANICA_BLEDNEGO_STATUSU = Date.parse("2026-07-15T12:30:00Z");
-
-function wymagaNaprawyStatusu(projektId: string, u: Uczestnik): boolean {
-  if (projektId !== "cis-2026" || u.status !== "rezerwowy" || !u.utworzono)
-    return false;
-  const utworzono = Date.parse(u.utworzono);
-  return Number.isFinite(utworzono) && utworzono <= GRANICA_BLEDNEGO_STATUSU;
-}
 
 const IDS_WBUDOWANE = projektyWbudowane.map((p) => p.id);
 
@@ -193,14 +182,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const pobrani = await pobierzUczestnikow(projekt.id);
-        const doNaprawy = pobrani.filter((u) =>
-          wymagaNaprawyStatusu(projekt.id, u),
-        );
-        const zBazy = pobrani.map((u) =>
-          wymagaNaprawyStatusu(projekt.id, u)
-            ? { ...u, status: "aktywny" as const }
-            : u,
-        );
+        const migracja = poprawBledneStatusy(projekt.id, pobrani);
+        const zBazy = migracja.uczestnicy;
         if (!anulowane && zBazy.length > 0) {
           setImportowani((stan) => ({ ...stan, [projekt.id]: zBazy }));
           try {
@@ -212,10 +195,10 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
             /* brak miejsca — stan pozostaje w pamięci */
           }
         }
-        if (doNaprawy.length > 0) {
+        if (migracja.poprawioneId.length > 0) {
           await Promise.all(
-            doNaprawy.map((u) =>
-              aktualizujUczestnikaDB(u.id, { status: "aktywny" }),
+            migracja.poprawioneId.map((id) =>
+              aktualizujUczestnikaDB(id, { status: "aktywny" }),
             ),
           );
         }
