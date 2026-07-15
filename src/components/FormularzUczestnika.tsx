@@ -15,6 +15,9 @@ import {
 import { powiatyDlaWojewodztwa } from "@/lib/powiaty";
 import type { Uczestnik } from "@/lib/types";
 
+const STATUSY_UDZIALU = ["aktywny", "rezerwowy", "zakończył", "przerwał"] as const;
+const DEGURBA = ["1", "2", "3"] as const;
+
 export default function FormularzUczestnika({
   projektId,
   istniejacy,
@@ -34,11 +37,18 @@ export default function FormularzUczestnika({
     pesel: edytowany?.sowa?.pesel ?? "",
     wyksztalcenie: edytowany?.sowa?.wyksztalcenie ?? "",
     statusRynkuPracy: edytowany?.sowa?.statusRynkuPracy ?? "",
+    status: edytowany?.status ?? "aktywny",
+    obywatelstwo: edytowany?.sowa?.obywatelstwo ?? "polskie",
+    kraj: edytowany?.sowa?.kraj ?? "Polska",
     miejscowosc: edytowany?.sowa?.miejscowosc ?? "",
     gmina: edytowany?.sowa?.gmina ?? "",
     powiat: edytowany?.sowa?.powiat ?? "",
     wojewodztwo: edytowany?.sowa?.wojewodztwo ?? "lubuskie",
+    ulica: edytowany?.sowa?.ulica ?? "",
+    nrDomu: edytowany?.sowa?.nrDomu ?? "",
+    nrLokalu: edytowany?.sowa?.nrLokalu ?? "",
     kodPocztowy: edytowany?.sowa?.kodPocztowy ?? "",
+    degurba: edytowany?.sowa?.degurba ?? "",
     telefon: edytowany?.sowa?.telefon ?? "",
     email: edytowany?.sowa?.email ?? "",
     dataPrzystapienia:
@@ -67,6 +77,7 @@ export default function FormularzUczestnika({
       b.pesel = "Uczestnik z tym numerem PESEL już jest w bazie";
     if (!f.wyksztalcenie) b.wyksztalcenie = "Wybierz ze słownika";
     if (!f.statusRynkuPracy) b.statusRynkuPracy = "Wybierz ze słownika";
+    if (!f.status) b.status = "Wybierz status udziału";
     if (projektId === "cis-2026" && f.statusRynkuPracy === "Osoba pracująca")
       b.statusRynkuPracy =
         "Osoba pracująca nie kwalifikuje się do wsparcia CIS (bezrobotni/bierni)";
@@ -103,11 +114,7 @@ export default function FormularzUczestnika({
       sciezka: kategoria === "bezrobotny" ? "IPZS" : "IPR",
       cykl: f.cykl === "2" ? 2 : 1,
       grupa: f.grupa.trim() || "—",
-      status: edytowany
-        ? edytowany.status
-        : f.dataPrzystapienia
-          ? "aktywny"
-          : "rezerwowy",
+      status: f.status as Uczestnik["status"],
       dataPrzystapienia: f.dataPrzystapienia || "—",
       frekwencja: edytowany?.frekwencja ?? 0,
       posiadaneDokumenty: edytowany?.posiadaneDokumenty ?? [],
@@ -120,13 +127,17 @@ export default function FormularzUczestnika({
         dataUrodzenia: wp.dataUrodzenia ?? edytowany?.sowa?.dataUrodzenia,
         wiek: wiek ?? edytowany?.sowa?.wiek ?? undefined,
         wyksztalcenie: f.wyksztalcenie,
-        obywatelstwo: edytowany?.sowa?.obywatelstwo ?? "polskie",
-        kraj: edytowany?.sowa?.kraj ?? "Polska",
+        obywatelstwo: f.obywatelstwo || undefined,
+        kraj: f.kraj || undefined,
         wojewodztwo: f.wojewodztwo || undefined,
         powiat: f.powiat || undefined,
         gmina: f.gmina || undefined,
         miejscowosc: f.miejscowosc || undefined,
+        ulica: f.ulica || undefined,
+        nrDomu: f.nrDomu || undefined,
+        nrLokalu: f.nrLokalu || undefined,
         kodPocztowy: f.kodPocztowy || undefined,
+        degurba: (f.degurba || undefined) as "1" | "2" | "3" | undefined,
         telefon: f.telefon || undefined,
         email: f.email || undefined,
         statusRynkuPracy: f.statusRynkuPracy,
@@ -289,6 +300,13 @@ export default function FormularzUczestnika({
             klucz: "statusRynkuPracy",
             opcje: SLOWNIK_STATUS_RYNKU_PRACY,
           })}
+          {Slownik({
+            label: "Status udziału w projekcie *",
+            klucz: "status",
+            opcje: STATUSY_UDZIALU,
+          })}
+          {Pole({ label: "Obywatelstwo", klucz: "obywatelstwo" })}
+          {Pole({ label: "Kraj", klucz: "kraj" })}
           {Pole({ label: "Miejscowość (TERYT)", klucz: "miejscowosc" })}
           {Pole({ label: "Gmina (TERYT)", klucz: "gmina" })}
           {Slownik({
@@ -308,7 +326,16 @@ export default function FormularzUczestnika({
               ? "— wybierz powiat —"
               : "— najpierw wybierz województwo —",
           })}
+          {Pole({ label: "Ulica", klucz: "ulica" })}
+          {Pole({ label: "Numer domu", klucz: "nrDomu" })}
+          {Pole({ label: "Numer lokalu", klucz: "nrLokalu" })}
           {Pole({ label: "Kod pocztowy", klucz: "kodPocztowy", hint: "00-000" })}
+          {Slownik({
+            label: "DEGURBA (1 — gęsty, 2 — pośredni, 3 — słaby)",
+            klucz: "degurba",
+            opcje: DEGURBA,
+            szeroki: false,
+          })}
           {Pole({ label: "Telefon", klucz: "telefon" })}
           {Pole({
             label: "E-mail",
@@ -317,7 +344,7 @@ export default function FormularzUczestnika({
             szeroki: true,
           })}
           {Pole({
-            label: "Data przystąpienia (puste = lista rezerwowa)",
+            label: "Data przystąpienia",
             klucz: "dataPrzystapienia",
             typ: "date",
           })}
@@ -326,8 +353,8 @@ export default function FormularzUczestnika({
 
         <div className="flex items-center justify-between gap-3 border-t border-line bg-soft px-6 py-4">
           <span className="text-xs text-muted">
-            Kategoria (IPZS/IPR) ustawiana automatycznie ze statusu na rynku
-            pracy; płeć i wiek — z numeru PESEL.
+            Status udziału ustawiasz osobno. Kategoria (IPZS/IPR) wynika ze
+            statusu na rynku pracy; płeć i wiek — z numeru PESEL.
           </span>
           <button onClick={zapisz} className="btn-primary">
             <span className="material-symbols-rounded notranslate text-[19px]">

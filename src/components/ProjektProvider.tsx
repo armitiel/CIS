@@ -30,6 +30,7 @@ import {
 import type { Uczestnik } from "@/lib/types";
 import {
   importujUczestnikow,
+  scalUczestnikow,
   type WynikImportu,
 } from "@/lib/import-uczestnikow";
 import {
@@ -39,7 +40,7 @@ import {
   pobierzUczestnikow,
   usunUczestnikaDB,
   usunUczestnikowProjektu,
-  zastapUczestnikow,
+  scalImportUczestnikowDB,
 } from "@/lib/db-uczestnicy";
 import {
   aktualizujProjektDB,
@@ -205,29 +206,43 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     async (file: File): Promise<WynikImportu> => {
       const wynik = await importujUczestnikow(file, projekt.id);
       if (wynik.uczestnicy.length > 0) {
+        const obecni =
+          importowani[projekt.id] ?? projekt.uczestnicyDomyslni;
+        const scaleni = scalUczestnikow(obecni, wynik.uczestnicy);
         setImportowani((stan) => ({
           ...stan,
-          [projekt.id]: wynik.uczestnicy,
+          [projekt.id]: scaleni.uczestnicy,
         }));
         try {
           localStorage.setItem(
             kluczUczestnikow(projekt.id),
-            JSON.stringify(wynik.uczestnicy),
+            JSON.stringify(scaleni.uczestnicy),
           );
         } catch {
           /* np. brak miejsca — dane pozostaną tylko w pamięci sesji */
         }
         if (bazaDostepna()) {
           try {
-            await zastapUczestnikow(wynik.uczestnicy, projekt.id);
+            const zBazy = await scalImportUczestnikowDB(
+              wynik.uczestnicy,
+              projekt.id,
+            );
+            setImportowani((stan) => ({ ...stan, [projekt.id]: zBazy }));
+            localStorage.setItem(
+              kluczUczestnikow(projekt.id),
+              JSON.stringify(zBazy),
+            );
           } catch {
             /* brak sesji/tabeli — pozostaje zapis lokalny */
           }
         }
+        wynik.dodano = scaleni.dodano;
+        wynik.zaktualizowano = scaleni.zaktualizowano;
+        wynik.lacznie = scaleni.uczestnicy.length;
       }
       return wynik;
     },
-    [projekt.id],
+    [importowani, projekt.id, projekt.uczestnicyDomyslni],
   );
 
   const wyczyscImport = useCallback(() => {

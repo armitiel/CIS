@@ -11,6 +11,7 @@ import type {
   TypSciezki,
   Uczestnik,
 } from "./types";
+import { kluczUczestnika, scalUczestnikow } from "./import-uczestnikow";
 
 interface WierszUczestnika {
   id: string;
@@ -140,24 +141,21 @@ export async function aktualizujUczestnikaDB(
   if (error) throw error;
 }
 
-/** Zastępuje całą bazę uczestników projektu (import): usuwa i wstawia od nowa. */
-export async function zastapUczestnikow(
-  lista: Uczestnik[],
+/** Scala import z bazą bez usuwania osób, których nie ma w importowanym pliku. */
+export async function scalImportUczestnikowDB(
+  importowani: Uczestnik[],
   projektId: string,
 ): Promise<Uczestnik[]> {
-  const supabase = klient();
-  const { error: errDel } = await supabase
-    .from("uczestnicy")
-    .delete()
-    .eq("projekt_id", projektId);
-  if (errDel) throw errDel;
-  if (lista.length === 0) return [];
-  const { data, error } = await supabase
-    .from("uczestnicy")
-    .insert(lista.map((u) => doWiersza(u, projektId)))
-    .select("*");
-  if (error) throw error;
-  return (data as WierszUczestnika[]).map(zWiersza);
+  const obecni = await pobierzUczestnikow(projektId);
+  const obecniPoKluczu = new Map(obecni.map((u) => [kluczUczestnika(u), u]));
+  const scaleni = scalUczestnikow(obecni, importowani).uczestnicy;
+
+  for (const u of scaleni) {
+    const stary = obecniPoKluczu.get(kluczUczestnika(u));
+    if (stary) await aktualizujUczestnikaDB(stary.id, u);
+    else await dodajUczestnikaDB(u, projektId);
+  }
+  return pobierzUczestnikow(projektId);
 }
 
 /** Usuwa pojedynczego uczestnika (po id). */

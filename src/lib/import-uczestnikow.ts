@@ -3,7 +3,12 @@
 // Parsowanie w przeglądarce (SheetJS) — plik nie opuszcza komputera użytkownika.
 
 import * as XLSX from "xlsx";
-import type { DaneSOWA, KategoriaUczestnika, Uczestnik } from "./types";
+import type {
+  DaneSOWA,
+  KategoriaUczestnika,
+  StatusUdzialu,
+  Uczestnik,
+} from "./types";
 
 /** normalizacja nagłówka: małe litery, bez polskich znaków i interpunkcji */
 function norm(s: string): string {
@@ -32,10 +37,114 @@ function kategoriaZeStatusu(status: string): KategoriaUczestnika {
   return norm(status).includes("biern") ? "bierny" : "bezrobotny";
 }
 
+function pierwszaNiepusta(
+  wiersz: Record<string, unknown>,
+  warianty: string[][],
+): string {
+  for (const frazy of warianty) {
+    const wartosc = znajdz(wiersz, ...frazy);
+    if (wartosc) return wartosc;
+  }
+  return "";
+}
+
+function statusUdzialu(
+  wiersz: Record<string, unknown>,
+  dataZakonczenia: string,
+): StatusUdzialu {
+  const jawny = norm(
+    pierwszaNiepusta(wiersz, [
+      ["status", "udzialu"],
+      ["status", "uczestnika"],
+      ["status", "w projekcie"],
+    ]),
+  );
+  if (jawny.includes("rezerw")) return "rezerwowy";
+  if (jawny.includes("przerw") || jawny.includes("rezygn")) return "przerwał";
+  if (jawny.includes("zakoncz")) return "zakończył";
+  if (jawny.includes("aktyw")) return "aktywny";
+  if (dataZakonczenia) return "zakończył";
+  return "aktywny";
+}
+
+function daneNiepuste<T extends object>(dane: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(dane).filter(([, v]) => v !== undefined && v !== ""),
+  ) as Partial<T>;
+}
+
+/** Stabilny klucz do rozpoznawania tej samej osoby przy imporcie przyrostowym. */
+export function kluczUczestnika(u: Uczestnik): string {
+  const pesel = String(u.sowa?.pesel ?? "").replace(/\D/g, "");
+  if (pesel.length === 11) return `pesel:${pesel}`;
+  const osoba = norm(`${u.imie} ${u.nazwisko}`);
+  const dataUrodzenia = u.sowa?.dataUrodzenia ?? "";
+  return `osoba:${osoba}:${dataUrodzenia}`;
+}
+
+export interface WynikScalania {
+  uczestnicy: Uczestnik[];
+  dodano: number;
+  zaktualizowano: number;
+}
+
+/** Scala import z obecną bazą bez usuwania osób nieobecnych w nowym pliku. */
+export function scalUczestnikow(
+  obecni: Uczestnik[],
+  importowani: Uczestnik[],
+): WynikScalania {
+  const wynik = [...obecni];
+  const indeks = new Map(wynik.map((u, i) => [kluczUczestnika(u), i]));
+  let dodano = 0;
+  let zaktualizowano = 0;
+
+  for (const nowy of importowani) {
+    const klucz = kluczUczestnika(nowy);
+    const pozycja = indeks.get(klucz);
+    if (pozycja === undefined) {
+      indeks.set(klucz, wynik.length);
+      wynik.push(nowy);
+      dodano += 1;
+      continue;
+    }
+
+    const stary = wynik[pozycja];
+    const status =
+      nowy.status === "zakończył" || nowy.status === "przerwał"
+        ? nowy.status
+        : stary.status === "rezerwowy" && nowy.status === "aktywny"
+          ? "aktywny"
+          : stary.status;
+    wynik[pozycja] = {
+      ...nowy,
+      id: stary.id,
+      status,
+      dataPrzystapienia:
+        nowy.dataPrzystapienia !== "—"
+          ? nowy.dataPrzystapienia
+          : stary.dataPrzystapienia,
+      frekwencja: stary.frekwencja,
+      posiadaneDokumenty: stary.posiadaneDokumenty,
+      etapSciezki: stary.etapSciezki,
+      postepSciezki: stary.postepSciezki,
+      sowa: {
+        ...(stary.sowa ?? {}),
+        ...daneNiepuste(nowy.sowa ?? {}),
+      },
+    };
+    zaktualizowano += 1;
+  }
+
+  return { uczestnicy: wynik, dodano, zaktualizowano };
+}
+
 export interface WynikImportu {
   uczestnicy: Uczestnik[];
   pominieto: number;
   uwagi: string[];
+  dodano?: number;
+  zaktualizowano?: number;
+  lacznie?: number;
 }
 
 export async function importujUczestnikow(
@@ -61,8 +170,14 @@ export async function importujUczestnikow(
       return;
     }
     const status = znajdz(w, "status", "rynku pracy");
-    const dataRozp = znajdz(w, "data rozpoczecia");
-    const dataZak = znajdz(w, "data zakonczenia");
+    const dataRozp = pierwszaNiepusta(w, [
+      ["data", "rozpoczecia"],
+      ["data", "przystapienia"],
+    ]);
+    const dataZak = pierwszaNiepusta(w, [
+      ["data", "zakonczenia"],
+      ["data", "zakonczenia", "udzialu"],
+    ]);
     const kategoria = kategoriaZeStatusu(status);
 
     const sowa: DaneSOWA = {
@@ -99,7 +214,7 @@ export async function importujUczestnikow(
       sciezka: kategoria === "bezrobotny" ? "IPZS" : "IPR",
       cykl: 1,
       grupa: "—",
-      status: dataZak ? "zakończył" : dataRozp ? "aktywny" : "rezerwowy",
+      status: statusUdzialu(w, dataZak),
       dataPrzystapienia: dataRozp || "—",
       frekwencja: 0,
       posiadaneDokumenty: [],

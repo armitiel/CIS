@@ -300,6 +300,8 @@ export default function Obecnosci() {
         p,
         nieu,
         l4,
+        l4Do21: l4Platne,
+        l4Ponad21: l4Ponad,
         dw,
         nieoznaczone,
         kwota,
@@ -322,7 +324,8 @@ export default function Obecnosci() {
       "Dni robocze",
       "Obecne (O)",
       "Nieuspr. (NN)",
-      "Choroba (L4)",
+      "L4 do 21. dnia",
+      "L4 powyżej 21. dnia",
       "Dzień wolny (DW)",
       "Nieoznaczone",
       "Frekwencja %",
@@ -335,7 +338,8 @@ export default function Obecnosci() {
         swiadczenia.dniRobocze,
         w.p,
         w.nieu,
-        w.l4,
+        w.l4Do21,
+        w.l4Ponad21,
         w.dw,
         w.nieoznaczone,
         w.frekwencja,
@@ -778,11 +782,12 @@ export default function Obecnosci() {
           )}
 
           <div className="card anim-card-in overflow-x-auto">
-            <div className="grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
+            <div className="grid min-w-[920px] grid-cols-[minmax(180px,1.4fr)_repeat(7,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-b border-line px-[22px] py-3.5">
               <div className="th-label">Uczestnik</div>
               <div className="th-label text-center">O</div>
               <div className="th-label text-center">NN</div>
-              <div className="th-label text-center">L4</div>
+              <div className="th-label text-center">L4 ≤21</div>
+              <div className="th-label text-center">L4 &gt;21</div>
               <div className="th-label text-center">DW</div>
               <div className="th-label text-center">Nieozn.</div>
               <div className="th-label text-center">Frekw.</div>
@@ -791,7 +796,18 @@ export default function Obecnosci() {
 
             {swiadczenia.wiersze.map(
               (
-                { u, p, nieu, l4, dw, nieoznaczone, kwota, frekwencja, alarmy },
+                {
+                  u,
+                  p,
+                  nieu,
+                  l4Do21,
+                  l4Ponad21,
+                  dw,
+                  nieoznaczone,
+                  kwota,
+                  frekwencja,
+                  alarmy,
+                },
                 i,
               ) => {
                 const nazwa = `${u.imie} ${u.nazwisko}`;
@@ -799,7 +815,7 @@ export default function Obecnosci() {
                 return (
                   <div key={u.id}>
                     <div
-                      className="anim-card-in grid min-w-[820px] grid-cols-[minmax(180px,1.4fr)_repeat(6,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
+                      className="anim-card-in grid min-w-[920px] grid-cols-[minmax(180px,1.4fr)_repeat(7,minmax(60px,0.7fr))_minmax(120px,1fr)] items-center gap-2 border-t border-line-soft px-[22px] py-[12px]"
                       style={{
                         animationDelay: `${i * 0.04}s`,
                         background: alarm ? "var(--color-red-soft)" : undefined,
@@ -833,7 +849,10 @@ export default function Obecnosci() {
                         {nieu}
                       </div>
                       <div className="text-center text-[13.5px] font-semibold text-ink-mid">
-                        {l4}
+                        {l4Do21}
+                      </div>
+                      <div className="text-center text-[13.5px] font-semibold text-red-ink">
+                        {l4Ponad21}
                       </div>
                       <div className="text-center text-[13.5px] text-ink-mid">
                         {dw}
@@ -849,7 +868,7 @@ export default function Obecnosci() {
                       </div>
                     </div>
                     {alarm && (
-                      <div className="min-w-[820px] border-t border-red-ink bg-red-soft px-[22px] py-2 text-[12px] font-semibold text-red-ink">
+                      <div className="min-w-[920px] border-t border-red-ink bg-red-soft px-[22px] py-2 text-[12px] font-semibold text-red-ink">
                         ⚠ {alarmy.join(" · ")}
                       </div>
                     )}
@@ -884,8 +903,11 @@ export default function Obecnosci() {
             art. 15 ustawy o zatrudnieniu socjalnym: stawka =
             pełne świadczenie (120% zasiłku dla bezrobotnych). Potrącenia: NN −1/20
             za dzień (powyżej 3 dni w miesiącu świadczenie nie przysługuje), L4 −1/40
-            za dzień (do 21 dni). O i DW — bez potrącenia. Dni nieoznaczone nie
-            wpływają na kwotę. Wartości należy zweryfikować z regulaminem projektu.
+            za dzień do 21. dnia L4; od 22. dnia stosowane jest odrębne
+            potrącenie 1/30. Aplikacja klasyfikuje dni automatycznie narastająco
+            w całym okresie uczestnictwa. O i DW — bez potrącenia. Dni
+            nieoznaczone nie wpływają na kwotę. Wartości należy zweryfikować z
+            regulaminem projektu.
           </p>
         </div>
       )}

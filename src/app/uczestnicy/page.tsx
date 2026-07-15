@@ -91,7 +91,10 @@ export default function Uczestnicy() {
       const wynik = await importuj(file);
       if (wynik.uczestnicy.length > 0) {
         setKomunikat(
-          `✓ Zaimportowano ${wynik.uczestnicy.length} uczestników z pliku „${file.name}”.` +
+          `✓ Import zakończony: dodano ${wynik.dodano ?? wynik.uczestnicy.length}, ` +
+            `zaktualizowano ${wynik.zaktualizowano ?? 0}, ` +
+            `w bazie łącznie ${wynik.lacznie ?? wynik.uczestnicy.length} osób. ` +
+            `Nie usunięto wcześniejszych uczestników. Plik: „${file.name}”.` +
             (wynik.uwagi.length ? ` ${wynik.uwagi.join(" ")}` : ""),
         );
       } else {
