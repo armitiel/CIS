@@ -55,6 +55,8 @@ export interface DaneSOWA {
 
 export interface Uczestnik {
   id: string;
+  /** Data utworzenia rekordu w bazie — używana do bezpiecznych migracji danych. */
+  utworzono?: string;
   imie: string;
   nazwisko: string;
   kategoria: KategoriaUczestnika;

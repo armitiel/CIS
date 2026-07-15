@@ -129,6 +129,7 @@ export function scalUczestnikow(
     wynik[pozycja] = {
       ...nowy,
       id: stary.id,
+      utworzono: stary.utworzono,
       status,
       dataPrzystapienia:
         nowy.dataPrzystapienia !== "—"

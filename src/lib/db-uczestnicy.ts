@@ -15,6 +15,7 @@ import { kluczUczestnika, scalUczestnikow } from "./import-uczestnikow";
 
 interface WierszUczestnika {
   id: string;
+  created_at: string;
   projekt_id: string;
   imie: string;
   nazwisko: string;
@@ -34,6 +35,7 @@ interface WierszUczestnika {
 function zWiersza(w: WierszUczestnika): Uczestnik {
   return {
     id: w.id,
+    utworzono: w.created_at,
     imie: w.imie,
     nazwisko: w.nazwisko,
     kategoria: w.kategoria as KategoriaUczestnika,
