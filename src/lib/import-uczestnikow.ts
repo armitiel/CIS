@@ -37,6 +37,17 @@ function kategoriaZeStatusu(status: string): KategoriaUczestnika {
   return norm(status).includes("biern") ? "bierny" : "bezrobotny";
 }
 
+function znajdzDokladnie(
+  wiersz: Record<string, unknown>,
+  naglowek: string,
+): string {
+  const cel = norm(naglowek);
+  for (const [k, v] of Object.entries(wiersz)) {
+    if (norm(k) === cel) return String(v ?? "").trim();
+  }
+  return "";
+}
+
 function pierwszaNiepusta(
   wiersz: Record<string, unknown>,
   warianty: string[][],
@@ -182,7 +193,13 @@ export async function importujUczestnikow(
 
     const sowa: DaneSOWA = {
       obywatelstwo: znajdz(w, "obywatelstwo") || undefined,
+      rodzajUczestnika: (znajdz(w, "rodzaj uczestnika") ||
+        undefined) as DaneSOWA["rodzajUczestnika"],
+      nazwaInstytucji: znajdz(w, "nazwa instytucji") || undefined,
       pesel: znajdz(w, "pesel") || undefined,
+      brakPesel: (znajdz(w, "brak pesel") ||
+        undefined) as DaneSOWA["brakPesel"],
+      technicznyId: znajdz(w, "techniczny identyfikator") || undefined,
       plec: norm(znajdz(w, "plec")).startsWith("k")
         ? "kobieta"
         : norm(znajdz(w, "plec")).startsWith("m")
@@ -204,6 +221,36 @@ export async function importujUczestnikow(
       telefon: znajdz(w, "telefon") || undefined,
       email: znajdz(w, "mail") || undefined,
       statusRynkuPracy: status || undefined,
+      wTymStatus: znajdzDokladnie(w, "w tym") || undefined,
+      dataZakonczeniaUdzialu: dataZak || undefined,
+      planowanaDataZakonczeniaEdukacji:
+        znajdz(w, "planowana", "zakonczenia edukacji") || undefined,
+      sytuacjaPoZakonczeniu:
+        znajdz(w, "sytuacja", "po zakonczeniu") || undefined,
+      zakonczenieZgodneZeSciezka:
+        znajdz(w, "zakonczenie", "zgodne", "sciezka") || undefined,
+      zakresWsparcia: znajdz(w, "zakres wsparcia") || undefined,
+      rodzajWsparcia:
+        znajdz(w, "rodzaj", "przyznanego wsparcia") || undefined,
+      wTymWsparcia:
+        znajdzDokladnie(w, "w tym_1") ||
+        znajdzDokladnie(w, "w tym 1") ||
+        undefined,
+      dataRozpoczeciaWsparcia:
+        znajdz(w, "data", "rozpoczecia", "wsparciu") || undefined,
+      dataZalozeniaDG: znajdz(w, "data", "zalozenia dg") || undefined,
+      osobaObcegoPochodzenia:
+        (znajdz(w, "osoba", "obcego pochodzenia") ||
+          undefined) as DaneSOWA["osobaObcegoPochodzenia"],
+      obywatelPanstwaTrzeciego:
+        (znajdz(w, "obywatel", "panstwa trzeciego") ||
+          undefined) as DaneSOWA["obywatelPanstwaTrzeciego"],
+      mniejszosc: (znajdz(w, "mniejszosc") ||
+        undefined) as DaneSOWA["mniejszosc"],
+      bezdomnosc: (znajdz(w, "bezdomnosc") ||
+        undefined) as DaneSOWA["bezdomnosc"],
+      niepelnosprawnosc: znajdz(w, "niepelnosprawnosc") || undefined,
+      uwagi: znajdz(w, "uwagi") || undefined,
     };
 
     uczestnicy.push({

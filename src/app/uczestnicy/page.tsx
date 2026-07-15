@@ -47,7 +47,7 @@ export default function Uczestnicy() {
     );
     setKomunikat(
       `Wygenerowano plik Import (${uczestnicy.length} uczestników). ` +
-        "Pola „Zakres wsparcia” / „Rodzaj wsparcia” uzupełnij wartościami słownikowymi z eksportu systemowego naboru.",
+        "Dane pochodzą z pełnego formularza uczestnika; przed importem użyj przycisku „Waliduj SOWA”.",
     );
   }
 

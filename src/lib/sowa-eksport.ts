@@ -101,11 +101,13 @@ export function wierszSOWA(u: Uczestnik, o: OpcjeEksportu): string[] {
   const w = new Array<string>(NAGLOWKI.length).fill("");
   w[0] = o.numerProjektu;
   w[1] = obywatelstwo;
-  w[2] = "Indywidualny";
+  w[2] = s?.rodzajUczestnika ?? "Indywidualny";
+  w[3] = s?.nazwaInstytucji ?? "";
   w[4] = u.imie;
   w[5] = u.nazwisko;
   w[6] = s?.pesel ?? "";
-  w[7] = s?.pesel ? "Nie" : "Tak";
+  w[7] = s?.brakPesel ?? (s?.pesel ? "Nie" : "Tak");
+  w[8] = s?.technicznyId ?? "";
   w[9] = plec;
   w[10] = s?.wiek ? String(s.wiek) : "";
   w[11] = wyksztalcenie;
@@ -119,18 +121,23 @@ export function wierszSOWA(u: Uczestnik, o: OpcjeEksportu): string[] {
   w[19] = s?.telefon ?? "";
   w[20] = s?.email ?? "";
   w[21] = data(u.dataPrzystapienia);
-  // w[22] data zakończenia — uzupełniana po zakończeniu udziału
+  w[22] = data(s?.dataZakonczeniaUdzialu);
   w[23] = statusSowa;
-  w[24] = wTymDlaStatusu(statusSowa);
-  w[28] = o.zakresWsparcia ?? "";
-  w[29] = o.rodzajWsparcia ?? "";
-  w[30] = o.wTymWsparcia ?? "";
-  w[31] = data(u.dataPrzystapienia);
-  w[33] = "Nie";
-  w[34] = "Nie";
-  w[35] = "Nie";
-  w[36] = "Nie";
-  w[37] = "Nie";
+  w[24] = s?.wTymStatus ?? wTymDlaStatusu(statusSowa);
+  w[25] = data(s?.planowanaDataZakonczeniaEdukacji);
+  w[26] = s?.sytuacjaPoZakonczeniu ?? "";
+  w[27] = s?.zakonczenieZgodneZeSciezka ?? "";
+  w[28] = s?.zakresWsparcia ?? o.zakresWsparcia ?? "";
+  w[29] = s?.rodzajWsparcia ?? o.rodzajWsparcia ?? "";
+  w[30] = s?.wTymWsparcia ?? o.wTymWsparcia ?? "";
+  w[31] = data(s?.dataRozpoczeciaWsparcia ?? u.dataPrzystapienia);
+  w[32] = data(s?.dataZalozeniaDG);
+  w[33] = s?.osobaObcegoPochodzenia ?? "Nie";
+  w[34] = s?.obywatelPanstwaTrzeciego ?? "Nie";
+  w[35] = s?.mniejszosc ?? "Nie";
+  w[36] = s?.bezdomnosc ?? "Nie";
+  w[37] = s?.niepelnosprawnosc ?? "Nie";
+  w[42] = s?.uwagi ?? "";
   return w;
 }
 

@@ -13,7 +13,11 @@ export type StatusObecnosci =
 /** Dane uczestnika w strukturze SOWA EFS (kolumny pliku Import). */
 export interface DaneSOWA {
   obywatelstwo?: string;
+  rodzajUczestnika?: "Indywidualny" | "Instytucjonalny";
+  nazwaInstytucji?: string;
   pesel?: string; // UWAGA RODO: w wersji rozwojowej wyłącznie wartości fikcyjne
+  brakPesel?: "Tak" | "Nie";
+  technicznyId?: string;
   plec?: "kobieta" | "mężczyzna";
   dataUrodzenia?: string; // RRRR-MM-DD — rozpoznawana z numeru PESEL
   wiek?: number;
@@ -31,6 +35,22 @@ export interface DaneSOWA {
   telefon?: string;
   email?: string;
   statusRynkuPracy?: string; // słownik SOWA
+  wTymStatus?: string;
+  dataZakonczeniaUdzialu?: string;
+  planowanaDataZakonczeniaEdukacji?: string;
+  sytuacjaPoZakonczeniu?: string;
+  zakonczenieZgodneZeSciezka?: string;
+  zakresWsparcia?: string;
+  rodzajWsparcia?: string;
+  wTymWsparcia?: string;
+  dataRozpoczeciaWsparcia?: string;
+  dataZalozeniaDG?: string;
+  osobaObcegoPochodzenia?: "Tak" | "Nie";
+  obywatelPanstwaTrzeciego?: "Tak" | "Nie";
+  mniejszosc?: "Tak" | "Nie";
+  bezdomnosc?: "Tak" | "Nie";
+  niepelnosprawnosc?: string;
+  uwagi?: string;
 }
 
 export interface Uczestnik {

@@ -252,6 +252,33 @@ export function walidujUczestnika(u: Uczestnik): ProblemWalidacji[] {
     );
   }
 
+  // Zakres wsparcia i pola wymagane przez 43-kolumnowy Import SOWA
+  if (!s?.zakresWsparcia)
+    dodaj("blad", "Zakres wsparcia", "Brak zakresu wsparcia.");
+  if (!s?.rodzajWsparcia)
+    dodaj(
+      "blad",
+      "Rodzaj wsparcia",
+      "Brak rodzaju przyznanego wsparcia.",
+    );
+  if (!s?.wTymWsparcia)
+    dodaj("blad", "W tym — wsparcia", "Brak szczegółu rodzaju wsparcia.");
+  if (!s?.dataRozpoczeciaWsparcia)
+    dodaj(
+      "blad",
+      "Data rozpoczęcia wsparcia",
+      "Brak daty rozpoczęcia udziału we wsparciu.",
+    );
+  for (const [pole, wartosc] of [
+    ["Osoba obcego pochodzenia", s?.osobaObcegoPochodzenia],
+    ["Obywatel państwa trzeciego", s?.obywatelPanstwaTrzeciego],
+    ["Mniejszość", s?.mniejszosc],
+    ["Bezdomność", s?.bezdomnosc],
+    ["Niepełnosprawność", s?.niepelnosprawnosc],
+  ] as const) {
+    if (!wartosc) dodaj("blad", pole, `Brak wartości pola „${pole}”.`);
+  }
+
   // Daty
   if (
     u.dataPrzystapienia &&
@@ -269,6 +296,15 @@ export function walidujUczestnika(u: Uczestnik): ProblemWalidacji[] {
       "Data rozpoczęcia",
       "Uczestnik aktywny bez daty rozpoczęcia udziału.",
     );
+  for (const [pole, wartosc] of [
+    ["Data zakończenia udziału", s?.dataZakonczeniaUdzialu],
+    ["Planowana data zakończenia edukacji", s?.planowanaDataZakonczeniaEdukacji],
+    ["Data rozpoczęcia wsparcia", s?.dataRozpoczeciaWsparcia],
+    ["Data założenia DG", s?.dataZalozeniaDG],
+  ] as const) {
+    if (wartosc && !RE_DATA.test(wartosc))
+      dodaj("blad", pole, `Data „${wartosc}” — wymagany format yyyy-MM-dd.`);
+  }
 
   return p;
 }

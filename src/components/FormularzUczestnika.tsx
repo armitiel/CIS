@@ -7,16 +7,20 @@ import { useState } from "react";
 import {
   FORMATY,
   SLOWNIK_STATUS_RYNKU_PRACY,
+  SLOWNIK_TAK_NIE,
+  SLOWNIK_W_TYM,
   SLOWNIK_WOJEWODZTWA,
   SLOWNIK_WYKSZTALCENIE,
   walidujPesel,
   wiekWDniu,
 } from "@/lib/slowniki";
+import { SLOWNIK_OBYWATELSTWO } from "@/lib/sowa-walidacja";
 import { powiatyDlaWojewodztwa } from "@/lib/powiaty";
 import type { Uczestnik } from "@/lib/types";
 
 const STATUSY_UDZIALU = ["aktywny", "rezerwowy", "zakończył", "przerwał"] as const;
 const DEGURBA = ["1", "2", "3"] as const;
+const RODZAJE_UCZESTNIKA = ["Indywidualny", "Instytucjonalny"] as const;
 
 export default function FormularzUczestnika({
   projektId,
@@ -34,11 +38,20 @@ export default function FormularzUczestnika({
   const [f, setF] = useState({
     imie: edytowany?.imie ?? "",
     nazwisko: edytowany?.nazwisko ?? "",
+    rodzajUczestnika: edytowany?.sowa?.rodzajUczestnika ?? "Indywidualny",
+    nazwaInstytucji: edytowany?.sowa?.nazwaInstytucji ?? "",
     pesel: edytowany?.sowa?.pesel ?? "",
+    brakPesel: edytowany?.sowa?.brakPesel ?? "Nie",
+    technicznyId: edytowany?.sowa?.technicznyId ?? "",
     wyksztalcenie: edytowany?.sowa?.wyksztalcenie ?? "",
     statusRynkuPracy: edytowany?.sowa?.statusRynkuPracy ?? "",
+    wTymStatus: edytowany?.sowa?.wTymStatus ?? "",
     status: edytowany?.status ?? "aktywny",
-    obywatelstwo: edytowany?.sowa?.obywatelstwo ?? "polskie",
+    obywatelstwo: edytowany?.sowa?.obywatelstwo
+      ? edytowany.sowa.obywatelstwo.toLowerCase().includes("pol")
+        ? "Obywatelstwo polskie"
+        : edytowany.sowa.obywatelstwo
+      : "Obywatelstwo polskie",
     kraj: edytowany?.sowa?.kraj ?? "Polska",
     miejscowosc: edytowany?.sowa?.miejscowosc ?? "",
     gmina: edytowany?.sowa?.gmina ?? "",
@@ -51,6 +64,27 @@ export default function FormularzUczestnika({
     degurba: edytowany?.sowa?.degurba ?? "",
     telefon: edytowany?.sowa?.telefon ?? "",
     email: edytowany?.sowa?.email ?? "",
+    dataZakonczeniaUdzialu:
+      edytowany?.sowa?.dataZakonczeniaUdzialu ?? "",
+    planowanaDataZakonczeniaEdukacji:
+      edytowany?.sowa?.planowanaDataZakonczeniaEdukacji ?? "",
+    sytuacjaPoZakonczeniu: edytowany?.sowa?.sytuacjaPoZakonczeniu ?? "",
+    zakonczenieZgodneZeSciezka:
+      edytowany?.sowa?.zakonczenieZgodneZeSciezka ?? "",
+    zakresWsparcia: edytowany?.sowa?.zakresWsparcia ?? "",
+    rodzajWsparcia: edytowany?.sowa?.rodzajWsparcia ?? "",
+    wTymWsparcia: edytowany?.sowa?.wTymWsparcia ?? "",
+    dataRozpoczeciaWsparcia:
+      edytowany?.sowa?.dataRozpoczeciaWsparcia ?? "",
+    dataZalozeniaDG: edytowany?.sowa?.dataZalozeniaDG ?? "",
+    osobaObcegoPochodzenia:
+      edytowany?.sowa?.osobaObcegoPochodzenia ?? "Nie",
+    obywatelPanstwaTrzeciego:
+      edytowany?.sowa?.obywatelPanstwaTrzeciego ?? "Nie",
+    mniejszosc: edytowany?.sowa?.mniejszosc ?? "Nie",
+    bezdomnosc: edytowany?.sowa?.bezdomnosc ?? "Nie",
+    niepelnosprawnosc: edytowany?.sowa?.niepelnosprawnosc ?? "Nie",
+    uwagi: edytowany?.sowa?.uwagi ?? "",
     dataPrzystapienia:
       edytowany?.dataPrzystapienia && edytowany.dataPrzystapienia !== "—"
         ? edytowany.dataPrzystapienia
@@ -67,9 +101,13 @@ export default function FormularzUczestnika({
     const b: Record<string, string> = {};
     if (!f.imie.trim()) b.imie = "Wpisz imię";
     if (!f.nazwisko.trim()) b.nazwisko = "Wpisz nazwisko";
+    if (f.rodzajUczestnika === "Instytucjonalny" && !f.nazwaInstytucji.trim())
+      b.nazwaInstytucji = "Wpisz nazwę instytucji";
     const wp = walidujPesel(f.pesel);
-    if (!wp.poprawny) b.pesel = wp.blad ?? "Niepoprawny PESEL";
+    if (f.brakPesel !== "Tak" && !wp.poprawny)
+      b.pesel = wp.blad ?? "Niepoprawny PESEL";
     else if (
+      f.brakPesel !== "Tak" &&
       istniejacy.some(
         (u) => u.sowa?.pesel === f.pesel && u.id !== edytowany?.id,
       )
@@ -77,16 +115,45 @@ export default function FormularzUczestnika({
       b.pesel = "Uczestnik z tym numerem PESEL już jest w bazie";
     if (!f.wyksztalcenie) b.wyksztalcenie = "Wybierz ze słownika";
     if (!f.statusRynkuPracy) b.statusRynkuPracy = "Wybierz ze słownika";
+    if (f.statusRynkuPracy === "Osoba bezrobotna" && !f.wTymStatus)
+      b.wTymStatus = "Wybierz wartość pola „w tym”";
     if (!f.status) b.status = "Wybierz status udziału";
     if (projektId === "cis-2026" && f.statusRynkuPracy === "Osoba pracująca")
       b.statusRynkuPracy =
         "Osoba pracująca nie kwalifikuje się do wsparcia CIS (bezrobotni/bierni)";
-    if (f.kodPocztowy && !FORMATY.kodPocztowy.wzor.test(f.kodPocztowy))
+    if (!f.obywatelstwo) b.obywatelstwo = "Wybierz obywatelstwo";
+    if (!f.kraj.trim()) b.kraj = "Wpisz kraj";
+    if (!f.wojewodztwo) b.wojewodztwo = "Wybierz województwo";
+    if (!f.powiat) b.powiat = "Wybierz powiat";
+    if (!f.gmina.trim()) b.gmina = "Wpisz gminę wg TERYT";
+    if (!f.miejscowosc.trim()) b.miejscowosc = "Wpisz miejscowość wg TERYT";
+    if (!f.kodPocztowy) b.kodPocztowy = "Wpisz kod pocztowy";
+    else if (!FORMATY.kodPocztowy.wzor.test(f.kodPocztowy))
       b.kodPocztowy = `Format: ${FORMATY.kodPocztowy.opis}`;
+    if (!f.degurba) b.degurba = "Wybierz stopień DEGURBA";
+    if (!f.telefon.trim()) b.telefon = "Wpisz telefon kontaktowy";
+    else if (!FORMATY.telefon.wzor.test(f.telefon))
+      b.telefon = FORMATY.telefon.opis;
+    if (!f.email.trim()) b.email = "Wpisz adres e-mail";
+    else if (!FORMATY.email.wzor.test(f.email)) b.email = FORMATY.email.opis;
+    if (f.status === "aktywny" && !f.dataPrzystapienia)
+      b.dataPrzystapienia = "Aktywny uczestnik musi mieć datę przystąpienia";
     if (f.dataPrzystapienia && !FORMATY.data.wzor.test(f.dataPrzystapienia))
       b.dataPrzystapienia = FORMATY.data.opis;
-    if (f.email && !FORMATY.email.wzor.test(f.email))
-      b.email = FORMATY.email.opis;
+    if (!f.zakresWsparcia.trim()) b.zakresWsparcia = "Wpisz zakres wsparcia";
+    if (!f.rodzajWsparcia.trim())
+      b.rodzajWsparcia = "Wpisz rodzaj przyznanego wsparcia";
+    if (!f.wTymWsparcia.trim()) b.wTymWsparcia = "Uzupełnij pole „w tym”";
+    if (!f.dataRozpoczeciaWsparcia)
+      b.dataRozpoczeciaWsparcia = "Wpisz datę rozpoczęcia wsparcia";
+    for (const k of [
+      "dataZakonczeniaUdzialu",
+      "planowanaDataZakonczeniaEdukacji",
+      "dataRozpoczeciaWsparcia",
+      "dataZalozeniaDG",
+    ] as const) {
+      if (f[k] && !FORMATY.data.wzor.test(f[k])) b[k] = FORMATY.data.opis;
+    }
     setBledy(b);
     return Object.keys(b).length === 0;
   }
@@ -122,8 +189,18 @@ export default function FormularzUczestnika({
       postepSciezki: edytowany?.postepSciezki ?? 0,
       sowa: {
         ...(edytowany?.sowa ?? {}),
-        pesel: f.pesel,
-        plec: wp.plec === "Kobieta" ? "kobieta" : "mężczyzna",
+        rodzajUczestnika: f.rodzajUczestnika as
+          | "Indywidualny"
+          | "Instytucjonalny",
+        nazwaInstytucji: f.nazwaInstytucji || undefined,
+        pesel: f.brakPesel === "Tak" ? undefined : f.pesel,
+        brakPesel: f.brakPesel as "Tak" | "Nie",
+        technicznyId: f.technicznyId || undefined,
+        plec: wp.plec
+          ? wp.plec === "Kobieta"
+            ? "kobieta"
+            : "mężczyzna"
+          : edytowany?.sowa?.plec,
         dataUrodzenia: wp.dataUrodzenia ?? edytowany?.sowa?.dataUrodzenia,
         wiek: wiek ?? edytowany?.sowa?.wiek ?? undefined,
         wyksztalcenie: f.wyksztalcenie,
@@ -141,6 +218,25 @@ export default function FormularzUczestnika({
         telefon: f.telefon || undefined,
         email: f.email || undefined,
         statusRynkuPracy: f.statusRynkuPracy,
+        wTymStatus:
+          f.wTymStatus || SLOWNIK_W_TYM[f.statusRynkuPracy]?.[0] || undefined,
+        dataZakonczeniaUdzialu: f.dataZakonczeniaUdzialu || undefined,
+        planowanaDataZakonczeniaEdukacji:
+          f.planowanaDataZakonczeniaEdukacji || undefined,
+        sytuacjaPoZakonczeniu: f.sytuacjaPoZakonczeniu || undefined,
+        zakonczenieZgodneZeSciezka:
+          f.zakonczenieZgodneZeSciezka || undefined,
+        zakresWsparcia: f.zakresWsparcia || undefined,
+        rodzajWsparcia: f.rodzajWsparcia || undefined,
+        wTymWsparcia: f.wTymWsparcia || undefined,
+        dataRozpoczeciaWsparcia: f.dataRozpoczeciaWsparcia || undefined,
+        dataZalozeniaDG: f.dataZalozeniaDG || undefined,
+        osobaObcegoPochodzenia: f.osobaObcegoPochodzenia as "Tak" | "Nie",
+        obywatelPanstwaTrzeciego: f.obywatelPanstwaTrzeciego as "Tak" | "Nie",
+        mniejszosc: f.mniejszosc as "Tak" | "Nie",
+        bezdomnosc: f.bezdomnosc as "Tak" | "Nie",
+        niepelnosprawnosc: f.niepelnosprawnosc || undefined,
+        uwagi: f.uwagi || undefined,
       },
     };
     onSave(u);
@@ -247,7 +343,7 @@ export default function FormularzUczestnika({
       onClick={onClose}
     >
       <div
-        className="anim-pop card flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden"
+        className="anim-pop card flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
@@ -264,17 +360,46 @@ export default function FormularzUczestnika({
         </div>
 
         <div className="grid flex-1 grid-cols-1 gap-3.5 overflow-y-auto px-6 py-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 rounded-xl bg-soft px-4 py-3">
+            <div className="font-semibold text-ink-strong">Dane podstawowe SOWA</div>
+            <div className="mt-1 text-xs text-muted">
+              Numer projektu oraz pola systemowe dodania/modyfikacji uzupełnia aplikacja i SOWA.
+            </div>
+          </div>
+          {Slownik({
+            label: "Rodzaj uczestnika *",
+            klucz: "rodzajUczestnika",
+            opcje: RODZAJE_UCZESTNIKA,
+            szeroki: false,
+          })}
+          {Pole({
+            label: "Nazwa instytucji (dla uczestnika instytucjonalnego)",
+            klucz: "nazwaInstytucji",
+          })}
           {Pole({ label: "Imię *", klucz: "imie" })}
           {Pole({ label: "Nazwisko *", klucz: "nazwisko" })}
+          {Slownik({
+            label: "Brak PESEL *",
+            klucz: "brakPesel",
+            opcje: SLOWNIK_TAK_NIE,
+            szeroki: false,
+          })}
+          {Pole({
+            label: "Techniczny identyfikator (zwykle puste dla nowej osoby)",
+            klucz: "technicznyId",
+          })}
           <div className="sm:col-span-2">
-            <label className="th-label mb-1 block">PESEL *</label>
+            <label className="th-label mb-1 block">
+              PESEL / inny identyfikator {f.brakPesel === "Tak" ? "" : "*"}
+            </label>
             <input
               value={f.pesel}
+              disabled={f.brakPesel === "Tak"}
               onChange={(e) =>
                 set("pesel")(e.target.value.replace(/\D/g, "").slice(0, 11))
               }
               placeholder="11 cyfr — płeć i data urodzenia rozpoznawane automatycznie"
-              className={`w-full rounded-xl border px-3 py-2 font-mono text-sm text-ink outline-none ${
+              className={`w-full rounded-xl border px-3 py-2 font-mono text-sm text-ink outline-none disabled:opacity-50 ${
                 bledy.pesel
                   ? "border-red-ink bg-red-soft/40"
                   : "border-line-strong bg-surface focus:border-[oklch(0.62_0.09_152)]"
@@ -291,6 +416,11 @@ export default function FormularzUczestnika({
             )}
           </div>
           {Slownik({
+            label: "Obywatelstwo *",
+            klucz: "obywatelstwo",
+            opcje: SLOWNIK_OBYWATELSTWO,
+          })}
+          {Slownik({
             label: "Wykształcenie (słownik ISCED) *",
             klucz: "wyksztalcenie",
             opcje: SLOWNIK_WYKSZTALCENIE,
@@ -299,25 +429,29 @@ export default function FormularzUczestnika({
             label: "Status na rynku pracy *",
             klucz: "statusRynkuPracy",
             opcje: SLOWNIK_STATUS_RYNKU_PRACY,
+            przyZmianie: (v) =>
+              set("wTymStatus")(SLOWNIK_W_TYM[v]?.[0] ?? ""),
           })}
           {Slownik({
-            label: "Status udziału w projekcie *",
-            klucz: "status",
-            opcje: STATUSY_UDZIALU,
+            label: "W tym — szczegół statusu",
+            klucz: "wTymStatus",
+            opcje: SLOWNIK_W_TYM[f.statusRynkuPracy] ?? [],
+            wylaczony: !f.statusRynkuPracy,
           })}
-          {Pole({ label: "Obywatelstwo", klucz: "obywatelstwo" })}
-          {Pole({ label: "Kraj", klucz: "kraj" })}
-          {Pole({ label: "Miejscowość (TERYT)", klucz: "miejscowosc" })}
-          {Pole({ label: "Gmina (TERYT)", klucz: "gmina" })}
+
+          <div className="sm:col-span-2 mt-2 rounded-xl bg-soft px-4 py-3 font-semibold text-ink-strong">
+            Adres i kontakt
+          </div>
+          {Pole({ label: "Kraj *", klucz: "kraj" })}
           {Slownik({
-            label: "Województwo",
+            label: "Województwo *",
             klucz: "wojewodztwo",
             opcje: SLOWNIK_WOJEWODZTWA,
             szeroki: false,
             przyZmianie: () => set("powiat")(""),
           })}
           {Slownik({
-            label: "Powiat",
+            label: "Powiat *",
             klucz: "powiat",
             opcje: powiatyOpcje,
             szeroki: false,
@@ -326,35 +460,101 @@ export default function FormularzUczestnika({
               ? "— wybierz powiat —"
               : "— najpierw wybierz województwo —",
           })}
+          {Pole({ label: "Gmina (TERYT) *", klucz: "gmina" })}
+          {Pole({ label: "Miejscowość (TERYT) *", klucz: "miejscowosc" })}
           {Pole({ label: "Ulica", klucz: "ulica" })}
           {Pole({ label: "Numer domu", klucz: "nrDomu" })}
           {Pole({ label: "Numer lokalu", klucz: "nrLokalu" })}
-          {Pole({ label: "Kod pocztowy", klucz: "kodPocztowy", hint: "00-000" })}
+          {Pole({ label: "Kod pocztowy *", klucz: "kodPocztowy", hint: "00-000" })}
           {Slownik({
-            label: "DEGURBA (1 — gęsty, 2 — pośredni, 3 — słaby)",
+            label: "DEGURBA * (1 — gęsty, 2 — pośredni, 3 — wiejski)",
             klucz: "degurba",
             opcje: DEGURBA,
             szeroki: false,
           })}
-          {Pole({ label: "Telefon", klucz: "telefon" })}
+          {Pole({ label: "Telefon kontaktowy *", klucz: "telefon" })}
           {Pole({
-            label: "E-mail",
+            label: "Adres e-mail *",
             klucz: "email",
             hint: "bez polskich znaków",
-            szeroki: true,
+          })}
+
+          <div className="sm:col-span-2 mt-2 rounded-xl bg-soft px-4 py-3 font-semibold text-ink-strong">
+            Udział w projekcie
+          </div>
+          {Slownik({
+            label: "Status udziału w projekcie *",
+            klucz: "status",
+            opcje: STATUSY_UDZIALU,
           })}
           {Pole({
-            label: "Data przystąpienia",
+            label: "Data rozpoczęcia udziału w projekcie *",
             klucz: "dataPrzystapienia",
             typ: "date",
           })}
+          {Pole({
+            label: "Data zakończenia udziału w projekcie",
+            klucz: "dataZakonczeniaUdzialu",
+            typ: "date",
+          })}
+          {Pole({
+            label: "Planowana data zakończenia edukacji",
+            klucz: "planowanaDataZakonczeniaEdukacji",
+            typ: "date",
+          })}
+          {Pole({
+            label: "Sytuacja po zakończeniu udziału",
+            klucz: "sytuacjaPoZakonczeniu",
+          })}
+          {Pole({
+            label: "Zakończenie zgodne ze ścieżką",
+            klucz: "zakonczenieZgodneZeSciezka",
+          })}
           {Pole({ label: "Grupa", klucz: "grupa", hint: "np. A" })}
+          {Slownik({
+            label: "Cykl",
+            klucz: "cykl",
+            opcje: ["1", "2"],
+            szeroki: false,
+          })}
+
+          <div className="sm:col-span-2 mt-2 rounded-xl bg-soft px-4 py-3 font-semibold text-ink-strong">
+            Zakres i rodzaj wsparcia
+          </div>
+          {Pole({
+            label: "Zakres wsparcia *",
+            klucz: "zakresWsparcia",
+            hint: "dokładna wartość słownikowa SOWA",
+            szeroki: true,
+          })}
+          {Pole({
+            label: "Rodzaj przyznanego wsparcia *",
+            klucz: "rodzajWsparcia",
+            hint: "np. doradztwo/konsultacje",
+          })}
+          {Pole({ label: "W tym — wsparcia *", klucz: "wTymWsparcia", hint: "np. inne" })}
+          {Pole({
+            label: "Data rozpoczęcia udziału we wsparciu *",
+            klucz: "dataRozpoczeciaWsparcia",
+            typ: "date",
+          })}
+          {Pole({ label: "Data założenia działalności gospodarczej", klucz: "dataZalozeniaDG", typ: "date" })}
+
+          <div className="sm:col-span-2 mt-2 rounded-xl bg-soft px-4 py-3 font-semibold text-ink-strong">
+            Dane wrażliwe i wskaźniki SOWA
+          </div>
+          {Slownik({ label: "Osoba obcego pochodzenia *", klucz: "osobaObcegoPochodzenia", opcje: SLOWNIK_TAK_NIE, szeroki: false })}
+          {Slownik({ label: "Obywatel państwa trzeciego *", klucz: "obywatelPanstwaTrzeciego", opcje: SLOWNIK_TAK_NIE, szeroki: false })}
+          {Slownik({ label: "Przynależność do mniejszości *", klucz: "mniejszosc", opcje: SLOWNIK_TAK_NIE, szeroki: false })}
+          {Slownik({ label: "Bezdomność lub wykluczenie mieszkaniowe *", klucz: "bezdomnosc", opcje: SLOWNIK_TAK_NIE, szeroki: false })}
+          {Pole({ label: "Niepełnosprawność *", klucz: "niepelnosprawnosc", hint: "Nie / Tak / kod stopnia" })}
+          {Pole({ label: "Uwagi", klucz: "uwagi", szeroki: true })}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-line bg-soft px-6 py-4">
           <span className="text-xs text-muted">
-            Status udziału ustawiasz osobno. Kategoria (IPZS/IPR) wynika ze
-            statusu na rynku pracy; płeć i wiek — z numeru PESEL.
+            Formularz odpowiada kolumnom Import CSV SOWA. Płeć i wiek są
+            wyliczane z PESEL, a numer projektu i pola systemowe — automatycznie.
           </span>
           <button onClick={zapisz} className="btn-primary">
             <span className="material-symbols-rounded notranslate text-[19px]">
