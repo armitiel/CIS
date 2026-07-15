@@ -6,6 +6,7 @@ import { poprawBledneStatusy } from "../migracje-uczestnikow";
 import { eksportujCSV, wierszSOWA } from "../sowa-eksport";
 import { walidujUczestnika } from "../sowa-walidacja";
 import { podzielL4 } from "../swiadczenia-l4";
+import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obecnosci";
 import type { Uczestnik } from "../types";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
@@ -146,6 +147,29 @@ describe("statusy i świadczenia", () => {
       l4Do21: 1,
       l4Ponad21: 3,
       l4LacznieDoKoncaMiesiaca: 24,
+    });
+  });
+
+  it("udostępnia dwa osobne oznaczenia L4 i zachowuje je w dokumentach", () => {
+    expect(ZNAKI_DO_WYBORU).toEqual(["p", "a", "l21", "l22", "w"]);
+    expect(NASTEPNY_ZNAK.a).toBe("l21");
+    expect(NASTEPNY_ZNAK.l21).toBe("l22");
+    expect(kodObecnosci("l21")).toBe("L4≤21");
+    expect(kodObecnosci("l22")).toBe("L4>21");
+  });
+
+  it("respektuje ręcznie wskazane L4 do i powyżej 21 dni", () => {
+    const wpisy = [
+      { data: "2026-07-01", znak: "l21" },
+      { data: "2026-07-02", znak: "l21" },
+      { data: "2026-07-03", znak: "l22" },
+      { data: "2026-07-04", znak: "l22" },
+    ];
+    expect(podzielL4(wpisy, "2026-07-01", "2026-07-31")).toEqual({
+      l4WMiesiacu: 4,
+      l4Do21: 2,
+      l4Ponad21: 2,
+      l4LacznieDoKoncaMiesiaca: 4,
     });
   });
 });

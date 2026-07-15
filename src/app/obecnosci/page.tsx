@@ -2,7 +2,7 @@
 
 // Obecności w czterech widokach: dzień / tydzień / miesiąc / świadczenia (E2).
 // Realna rejestracja — kliknięcie cyklicznie ustawia znak: O (obecny) → NN
-// (nieusprawiedliwiony) → L4 (zwolnienie) → DW (dzień wolny) → (pusty). Dane
+// (nieusprawiedliwiony) → L4≤21 → L4>21 → DW (dzień wolny) → (pusty). Dane
 // zapisywane do Supabase (po zalogowaniu) oraz do localStorage. Świadczenia
 // naliczane wg art. 15 ustawy o zatrudnieniu socjalnym (limity NN/L4/DW).
 
@@ -12,6 +12,11 @@ import { useProjekt } from "@/components/ProjektProvider";
 import { Avatar } from "@/components/ui";
 import { useObecnosci, type Znak } from "@/lib/use-obecnosci";
 import { podzielL4 } from "@/lib/swiadczenia-l4";
+import {
+  NASTEPNY_ZNAK,
+  ZNAKI_DO_WYBORU,
+  czyL4,
+} from "@/lib/oznaczenia-obecnosci";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "swiadczenia";
 
@@ -35,7 +40,19 @@ const ZNACZNIK: Record<
     kod: "L4",
     tlo: "oklch(0.95 0.04 295)",
     kolor: "oklch(0.5 0.13 295)",
-    label: "zwolnienie lekarskie (L4)",
+    label: "zwolnienie lekarskie (stary wpis)",
+  },
+  l21: {
+    kod: "L4≤21",
+    tlo: "oklch(0.95 0.04 295)",
+    kolor: "oklch(0.5 0.13 295)",
+    label: "zwolnienie lekarskie do 21 dni",
+  },
+  l22: {
+    kod: "L4>21",
+    tlo: "oklch(0.94 0.045 335)",
+    kolor: "oklch(0.5 0.14 335)",
+    label: "zwolnienie lekarskie powyżej 21 dni",
   },
   w: {
     kod: "DW",
@@ -58,14 +75,6 @@ const MIESIACE_M = [
   "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
   "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
 ];
-const NASTEPNY: Record<"" | Znak, Znak | null> = {
-  "": "p",
-  p: "a",
-  a: "l",
-  l: "w",
-  w: null,
-};
-
 function dzienTyg(d: Date): number {
   return (d.getDay() + 6) % 7;
 }
@@ -166,7 +175,7 @@ export default function Obecnosci() {
   function cyklUstaw(uczestnikId: string, data: Date) {
     if (dzienTyg(data) >= 5) return; // tylko dni robocze
     const obecny = (znak(uczestnikId, iso(data)) ?? "") as "" | Znak;
-    ustaw(uczestnikId, iso(data), NASTEPNY[obecny]);
+    ustaw(uczestnikId, iso(data), NASTEPNY_ZNAK[obecny]);
   }
 
   // ===== widok tygodniowy =====
@@ -188,7 +197,7 @@ export default function Obecnosci() {
 
   // ===== widok dzienny =====
   const dzienRoboczy = dzienTyg(kotwica) < 5;
-  const podsumowanieDnia = (["p", "a", "l", "w"] as Znak[]).map((z) => ({
+  const podsumowanieDnia = ZNAKI_DO_WYBORU.map((z) => ({
     z,
     n: aktywni.filter((u) => znak(u.id, iso(kotwica)) === z).length,
   }));
@@ -249,7 +258,7 @@ export default function Obecnosci() {
         if (!wMiesiacu(w.data)) continue;
         if (w.znak === "p") p++;
         else if (w.znak === "a") nieu++;
-        else if (w.znak === "l") l4++;
+        else if (czyL4(w.znak)) l4++;
         else if (w.znak === "w") dw++;
       }
       const nieoznaczone = Math.max(0, dniRobocze - p - nieu - l4 - dw);
@@ -430,7 +439,7 @@ export default function Obecnosci() {
       {/* Legenda znaczników (zawsze widoczna poza widokiem świadczeń) */}
       {widok !== "swiadczenia" && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line-soft bg-surface px-3.5 py-2.5 text-[12.5px] text-muted">
-          {(Object.keys(ZNACZNIK) as Znak[]).map((z) => (
+          {ZNAKI_DO_WYBORU.map((z) => (
             <span key={z} className="flex items-center gap-1.5">
               <span
                 className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md"
@@ -497,7 +506,7 @@ export default function Obecnosci() {
                     <span className="text-xs text-faint">grupa {u.grupa}</span>
                   </div>
                   <div className="flex flex-wrap justify-end gap-1.5">
-                    {(["p", "a", "l", "w"] as Znak[]).map((z) => {
+                    {ZNAKI_DO_WYBORU.map((z) => {
                       const akt = biezacy === z;
                       return (
                         <button
@@ -584,7 +593,7 @@ export default function Obecnosci() {
                             ? ZNACZNIK[z].label
                             : "Kliknij, aby oznaczyć obecność"
                         }
-                        className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] transition-colors hover:ring-2 hover:ring-line-strong"
+                        className="flex h-[30px] w-[42px] items-center justify-center rounded-[9px] transition-colors hover:ring-2 hover:ring-line-strong"
                         style={{
                           background: z ? ZNACZNIK[z].tlo : "var(--color-soft)",
                         }}

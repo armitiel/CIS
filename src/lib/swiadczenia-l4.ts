@@ -3,6 +3,8 @@ export interface WpisL4 {
   znak: string;
 }
 
+const JEST_L4 = new Set(["l", "l21", "l22"]);
+
 /** Dzieli L4 w oglądanym miesiącu według narastającego limitu 21 dni. */
 export function podzielL4(
   wpisy: WpisL4[],
@@ -15,14 +17,21 @@ export function podzielL4(
   l4LacznieDoKoncaMiesiaca: number;
 } {
   const l4Przed = wpisy.filter(
-    (w) => w.znak === "l" && w.data < pierwszyIso,
+    (w) => JEST_L4.has(w.znak) && w.data < pierwszyIso,
   ).length;
-  const l4WMiesiacu = wpisy.filter(
-    (w) => w.znak === "l" && w.data >= pierwszyIso && w.data <= ostatniIso,
-  ).length;
-  const pozostalyLimit = Math.max(0, 21 - l4Przed);
-  const l4Do21 = Math.min(l4WMiesiacu, pozostalyLimit);
-  const l4Ponad21 = l4WMiesiacu - l4Do21;
+  const wMiesiacu = wpisy.filter(
+    (w) => JEST_L4.has(w.znak) && w.data >= pierwszyIso && w.data <= ostatniIso,
+  );
+  const l4WMiesiacu = wMiesiacu.length;
+  const jawneDo21 = wMiesiacu.filter((w) => w.znak === "l21").length;
+  const jawnePonad21 = wMiesiacu.filter((w) => w.znak === "l22").length;
+  const historyczne = wMiesiacu.filter((w) => w.znak === "l").length;
+  // Jawne oznaczenia użytkownika mają pierwszeństwo. Stare wpisy `l` dzielimy
+  // automatycznie według pozostałej części narastającego limitu.
+  const pozostalyLimit = Math.max(0, 21 - l4Przed - jawneDo21);
+  const historyczneDo21 = Math.min(historyczne, pozostalyLimit);
+  const l4Do21 = jawneDo21 + historyczneDo21;
+  const l4Ponad21 = jawnePonad21 + historyczne - historyczneDo21;
   return {
     l4WMiesiacu,
     l4Do21,

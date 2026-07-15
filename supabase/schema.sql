@@ -144,7 +144,8 @@ create policy "profil_wlasciciel_update" on public.profil
 ------------------------------------------------------------------------------
 -- 4) OBECNOŚCI (etap E2) — prywatne per użytkownik.
 --    Jeden wpis = znak obecności uczestnika danego dnia roboczego.
---    znak: 'p' obecny · 'u' usprawiedliwiony · 'a' nieobecny nieuspr.
+--    znak: p obecny · a nieobecny nieuspr. · l historyczne L4
+--          l21 L4 do 21 dni · l22 L4 powyżej 21 dni · w dzień wolny.
 ------------------------------------------------------------------------------
 create table if not exists public.obecnosci (
   id uuid primary key default gen_random_uuid(),
@@ -152,7 +153,7 @@ create table if not exists public.obecnosci (
   projekt_id text not null,
   uczestnik_id text not null,
   data date not null,
-  znak text not null check (znak in ('p', 'u', 'a')),
+  znak text not null check (znak in ('p', 'a', 'l', 'l21', 'l22', 'w')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, projekt_id, uczestnik_id, data)

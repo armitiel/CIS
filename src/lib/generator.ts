@@ -29,6 +29,7 @@ import {
 import { trescRealna } from "./tresci-realne";
 import { polaUczestnika, wypelnijSzablon } from "./szablony";
 import { wzorDlaDokumentu } from "./wzory";
+import type { KodObecnosci } from "./oznaczenia-obecnosci";
 
 type Blok = Paragraph | Table;
 
@@ -586,7 +587,7 @@ export interface DzienListy {
 
 /**
  * Druk „Lista obecności" (sekcja C) — tabela uczestnicy × dni, z wpisanymi
- * znakami O/NN/L4/DW z rejestracji obecności. Orientacja pozioma, ze stopką
+ * znakami O/NN/L4≤21/L4>21/DW z rejestracji obecności. Orientacja pozioma, ze stopką
  * logotypów. Gotowy do druku i podpisu prowadzącego.
  */
 export async function generujListeObecnosci(
@@ -596,7 +597,7 @@ export async function generujListeObecnosci(
   znakDla: (
     uczestnikId: string,
     iso: string,
-  ) => "O" | "NN" | "L4" | "DW" | "",
+  ) => KodObecnosci,
   opcje: { tytul: string; podtytul?: string },
 ) {
   const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
@@ -680,7 +681,7 @@ export async function generujListeObecnosci(
       spacing: { before: 160 },
       children: [
         new TextRun({
-          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4 — zwolnienie lekarskie · DW — dzień wolny. Puste pole = brak rejestracji (do uzupełnienia/podpisu).",
+          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4≤21 — zwolnienie lekarskie do 21 dni · L4>21 — zwolnienie lekarskie powyżej 21 dni · DW — dzień wolny. L4 bez zakresu oznacza wpis historyczny.",
           size: 15,
         }),
       ],
@@ -732,7 +733,7 @@ export async function generujListeDzienna(
     podtytul?: string;
     dataLabel: string;
     kolumny: string[];
-    znakDla: (uczestnikId: string) => "O" | "NN" | "L4" | "DW" | "";
+    znakDla: (uczestnikId: string) => KodObecnosci;
   },
 ) {
   const kraw = { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" };
@@ -822,7 +823,7 @@ export async function generujListeDzienna(
       spacing: { before: 160 },
       children: [
         new TextRun({
-          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4 — zwolnienie lekarskie · DW — dzień wolny. Kolumny świadczeń wypełnia/potwierdza prowadzący.",
+          text: "Legenda: O — obecny · NN — nieobecność nieusprawiedliwiona · L4≤21 — zwolnienie lekarskie do 21 dni · L4>21 — zwolnienie lekarskie powyżej 21 dni · DW — dzień wolny.",
           size: 15,
         }),
       ],

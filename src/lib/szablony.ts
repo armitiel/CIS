@@ -48,6 +48,8 @@ export const LISTA_POL: [string, string][] = [
   ["dni_obecny", "Liczba dni obecności"],
   ["dni_nieobecny", "Liczba nieobecności (NN)"],
   ["dni_l4", "Liczba dni zwolnienia lekarskiego (L4)"],
+  ["dni_l4_do21", "Liczba dni L4 do 21 dni"],
+  ["dni_l4_ponad21", "Liczba dni L4 powyżej 21 dni"],
   ["dni_wolne", "Liczba dni wolnych (DW)"],
   ["dni_wsparcia", "Liczba dni wsparcia (obecności)"],
   ["okres_obecnosci", "Okres, za który liczono obecność"],

@@ -75,10 +75,10 @@ export interface Uczestnik {
   sowa?: DaneSOWA;
 }
 
-/** Obecność uczestnika w dniach tygodnia: p obecny · a nieusprawiedliwiony · l L4 · w dzień wolny */
+/** Obecność: l = wpis historyczny, l21 = L4 do 21 dni, l22 = L4 ponad 21 dni. */
 export interface ObecnoscTygodnia {
   uczestnikId: string;
-  dni: ("p" | "a" | "l" | "w")[];
+  dni: ("p" | "a" | "l" | "l21" | "l22" | "w")[];
 }
 
 export type KolorZajec = "green" | "blue" | "amber";

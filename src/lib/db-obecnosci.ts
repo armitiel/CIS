@@ -2,11 +2,12 @@
 // Gdy baza/sesja niedostępne, wołający (hook useObecnosci) wraca do localStorage.
 
 import { createClient } from "@/utils/supabase/client";
+import type { Znak } from "@/lib/oznaczenia-obecnosci";
 
 // p=obecny(O) · a=nieob. nieusprawiedliwiony(NN)
-// l=zwolnienie lekarskie(L4) · w=dzień wolny(DW)
+// l=historyczne L4 · l21=L4 do 21 dni · l22=L4 powyżej 21 dni · w=dzień wolny
 // (NU usunięte — nie wynika z ustawy o zatrudnieniu socjalnym)
-export type Znak = "p" | "a" | "l" | "w";
+export type { Znak };
 
 export interface WpisObecnosci {
   uczestnikId: string;

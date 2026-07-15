@@ -1,20 +1,20 @@
 "use client";
 
 // Hook stanu obecności dla aktywnego projektu (etap E2).
-// Utrzymuje mapę znaków `${uczestnikId}|${dataISO}` → 'p'|'a'|'l'|'w'.
+// Utrzymuje mapę znaków `${uczestnikId}|${dataISO}` → znak obecności.
 // Źródła prawdy: localStorage (natychmiast) + Supabase (po zalogowaniu,
 // best-effort). Zapisy idą do obu, aby działało też bez logowania.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bazaDostepna } from "@/lib/db-uczestnicy";
+import type { Znak } from "@/lib/oznaczenia-obecnosci";
 import {
   pobierzObecnosci,
   usunObecnoscDB,
   zapiszObecnoscDB,
-  type Znak,
 } from "@/lib/db-obecnosci";
 
-export type { Znak };
+export type { Znak } from "@/lib/oznaczenia-obecnosci";
 
 const kluczLS = (projektId: string) => `cis-app:obecnosci:${projektId}`;
 const klucz = (uczestnikId: string, dataIso: string) =>

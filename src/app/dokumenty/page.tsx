@@ -26,6 +26,8 @@ import {
   type DzienListy,
 } from "@/lib/generator";
 import { useObecnosci } from "@/lib/use-obecnosci";
+import { czyL4, kodObecnosci, type KodObecnosci } from "@/lib/oznaczenia-obecnosci";
+import { podzielL4 } from "@/lib/swiadczenia-l4";
 import PodgladDocxModal from "@/components/PodgladDocxModal";
 import {
   LISTA_POL,
@@ -91,7 +93,7 @@ export default function Dokumenty() {
   const { projekt, uczestnicy, projektWlasny, aktualizujProjekt } =
     useProjekt();
   const spec = projekt.spec;
-  const { znak } = useObecnosci(projekt.id);
+  const { znak, wpisy } = useObecnosci(projekt.id);
 
   // ---- Listy obecności (dane z apki → pomocniczy druk operacyjny) ----
   const aktywni = uczestnicy.filter((u) => u.status === "aktywny");
@@ -115,18 +117,7 @@ export default function Dokumenty() {
   const znakLitera = (
     uId: string,
     isoD: string,
-  ): "O" | "NN" | "L4" | "DW" | "" => {
-    const z = znak(uId, isoD);
-    return z === "p"
-      ? "O"
-      : z === "a"
-        ? "NN"
-        : z === "l"
-          ? "L4"
-          : z === "w"
-            ? "DW"
-            : "";
-  };
+  ): KodObecnosci => kodObecnosci(znak(uId, isoD));
 
   // Agregaty obecności per uczestnik za miesiąc z pola daty — do podstawienia
   // w szablonach ({{frekwencja}}, {{dni_obecny}}, {{dni_wsparcia}}…).
@@ -143,18 +134,26 @@ export default function Dokumenty() {
         const z = znak(u.id, d.toISOString().slice(0, 10));
         if (z === "p") p++;
         else if (z === "a") a++;
-        else if (z === "l") l4++;
+        else if (z && czyL4(z)) {
+          l4++;
+        }
         else if (z === "w") dw++;
       }
       d.setDate(d.getDate() + 1);
     }
     const podstawa = p + a + l4 + dw;
     const frek = podstawa > 0 ? `${Math.round((p / podstawa) * 100)}%` : "—";
+    const pierwszyIso = `${rok}-${String(mc).padStart(2, "0")}-01`;
+    const ostatniDzien = new Date(rok, mc, 0).getDate();
+    const ostatniIso = `${rok}-${String(mc).padStart(2, "0")}-${ostatniDzien}`;
+    const podzialL4 = podzielL4(wpisy(u.id), pierwszyIso, ostatniIso);
     return {
       frekwencja: frek,
       dni_obecny: String(p),
       dni_nieobecny: String(a),
       dni_l4: String(l4),
+      dni_l4_do21: String(podzialL4.l4Do21),
+      dni_l4_ponad21: String(podzialL4.l4Ponad21),
       dni_wolne: String(dw),
       dni_wsparcia: String(p),
       okres_obecnosci: `${MIES_M[mc - 1]} ${rok}`,
@@ -1214,7 +1213,7 @@ export default function Dokumenty() {
             </h2>
             <p className="m-0 mt-[5px] max-w-2xl text-[13.5px] text-muted">
               Druk wypełniony danymi z apki: uczestnicy ({aktywni.length}{" "}
-              aktywnych) i znaki obecności O/NN/L4/DW z modułu Obecności.
+              aktywnych) i znaki obecności O/NN/L4≤21/L4&gt;21/DW z modułu Obecności.
               {zeSwiadczeniami &&
                 " Wzór tego projektu obejmuje świadczenia — dochodzą kolumny „Wyżywienie” i „Transport”."}
             </p>
