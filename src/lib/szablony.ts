@@ -153,7 +153,7 @@ export function polaUczestnika(
   // Dane, których nie ma w standardowym eksporcie SOWA, są dobierane
   // deterministycznie: wyglądają jak losowe, lecz po ponownym wygenerowaniu
   // dokumentu tej samej osoby pozostają identyczne.
-  const rokUmowy = /^\d{4}/.test(u.dataPrzystapienia)
+  const rokUmowy = /^\d{4}-\d{2}-\d{2}$/.test(u.dataPrzystapienia)
     ? u.dataPrzystapienia.slice(0, 4)
     : String(new Date().getFullYear());
   const numerUmowy = `${String(((seed * 37) % 999) + 1).padStart(3, "0")}/FELB.06.08/${rokUmowy}`;

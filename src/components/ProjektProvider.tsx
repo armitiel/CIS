@@ -197,9 +197,12 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         }
         if (migracja.poprawioneId.length > 0) {
           await Promise.all(
-            migracja.poprawioneId.map((id) =>
-              aktualizujUczestnikaDB(id, { status: "aktywny" }),
-            ),
+            migracja.poprawioneId.map((id) => {
+              const poprawiony = zBazy.find((u) => u.id === id);
+              return poprawiony
+                ? aktualizujUczestnikaDB(id, poprawiony)
+                : Promise.resolve();
+            }),
           );
         }
       } catch {

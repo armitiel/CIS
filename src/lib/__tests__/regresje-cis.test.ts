@@ -10,6 +10,7 @@ import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obec
 import type { Uczestnik } from "../types";
 import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika } from "../szablony";
 import { specyfikacjaPSF } from "../projekty";
+import { wymaganeDokumenty } from "../projekt-spec";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
   return {
@@ -143,6 +144,11 @@ describe("pola dokumentów PSF", () => {
     expect(pola.godzina_spotkania_do).toMatch(/^\d{2}:00$/);
     expect(polaUczestnika(u, specyfikacjaPSF).nr_umowy).toBe(pola.nr_umowy);
   });
+
+  it("generuje pełny komplet ośmiu formularzy PSF także dla osoby aktywnej", () => {
+    expect(wymaganeDokumenty(uczestnik(), specyfikacjaPSF).map((d) => d.symbol))
+      .toEqual(["PAK1", "E1", "A3", "PAK2", "B", "C1", "PAK3", "F1"]);
+  });
 });
 
 describe("format SOWA", () => {
@@ -185,6 +191,17 @@ describe("statusy i świadczenia", () => {
     expect(poprawBledneStatusy("psf-sciezka", [stary]).uczestnicy[0].status).toBe("aktywny");
     expect(poprawBledneStatusy("psf-sciezka", [prawdziwaRezerwa]).uczestnicy[0].status).toBe("rezerwowy");
     expect(poprawBledneStatusy("inny-projekt", [stary]).uczestnicy[0].status).toBe("rezerwowy");
+  });
+
+  it("naprawia numery seryjne Excela zapisane wcześniej w bazie", () => {
+    const stary = uczestnik({
+      dataPrzystapienia: "46211",
+      sowa: { ...uczestnik().sowa, dataRozpoczeciaWsparcia: "46211" },
+    });
+    const wynik = poprawBledneStatusy("psf-sciezka", [stary]);
+    expect(wynik.poprawioneId).toEqual(["u-1"]);
+    expect(wynik.uczestnicy[0].dataPrzystapienia).toBe("2026-07-08");
+    expect(wynik.uczestnicy[0].sowa?.dataRozpoczeciaWsparcia).toBe("2026-07-08");
   });
 
   it("dzieli L4 narastająco na dni do 21 i powyżej limitu", () => {

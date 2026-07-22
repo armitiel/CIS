@@ -213,7 +213,15 @@ export function wymaganeDokumenty(
     if (d.rodzaj !== "uczestnik") return false;
     if (d.moment === "ad hoc") return false;
     if (d.dotyczy !== "wszyscy" && d.dotyczy !== u.kategoria) return false;
-    if (d.moment === "zakończenie" && u.status !== "zakończył") return false;
+    // PSF przechowuje od początku pełny pakiet 8 formularzy (w tym PAK3 i F1),
+    // zgodnie z kompletem referencyjnym Pomost. W innych projektach dokumenty
+    // końcowe pojawiają się dopiero po zakończeniu udziału.
+    if (
+      d.moment === "zakończenie" &&
+      u.status !== "zakończył" &&
+      spec.id !== "psf-sciezka"
+    )
+      return false;
     if (
       (d.moment === "udział" || d.moment === "przystąpienie") &&
       u.status === "rezerwowy"
