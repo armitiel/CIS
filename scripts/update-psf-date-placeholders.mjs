@@ -27,6 +27,29 @@ function wstawDoNastepnejKomorki(xml, label, placeholder) {
   );
 }
 
+function poprawNaglowekUmowyA3(xml) {
+  let wynik = xml;
+  if (!wynik.includes("{{nr_umowy}} z dnia {{data_dokumentu}} r.")) {
+    wynik = wynik.replace(
+      "{{nr_umowy}}",
+      "{{nr_umowy}} z dnia {{data_dokumentu}} r.",
+    );
+  }
+  const marker = "Data: {{data_dokumentu}}";
+  const markerAt = wynik.indexOf(marker);
+  if (markerAt >= 0) {
+    const paragraphStarts = [
+      ...wynik.slice(0, markerAt).matchAll(/<w:p(?=[ >])/g),
+    ];
+    const paragraphStart = paragraphStarts.at(-1)?.index ?? -1;
+    const paragraphEnd = wynik.indexOf("</w:p>", markerAt);
+    if (paragraphStart < 0 || paragraphEnd < 0)
+      throw new Error("A3: nie znaleziono akapitu z datą podpisu");
+    wynik = wynik.slice(0, paragraphStart) + wynik.slice(paragraphEnd + 6);
+  }
+  return wynik;
+}
+
 for (const [name, replacement] of replacements) {
   const file = path.join(root, name);
   const zip = new PizZip(fs.readFileSync(file));
@@ -39,9 +62,11 @@ for (const [name, replacement] of replacements) {
 
 const dodatkowe = [
   ["PSF_A3_Umowa_wsparcia_szablon.docx", (xml) =>
-    xml
-      .replace("_____/FELB.06.08/[rok]", "{{nr_umowy}}")
-      .replace("Data: ___/___/______", "Data: {{data_dokumentu}}")],
+    poprawNaglowekUmowyA3(
+      xml
+        .replace("_____/FELB.06.08/[rok]", "{{nr_umowy}}")
+        .replace("Data: ___/___/______", "Data: {{data_dokumentu}}"),
+    )],
   ["PSF_C1_Formularz_zapotrzebowania_szablon.docx", (xml) =>
     wstawDoNastepnejKomorki(xml, "Nr Umowy wsparcia", "{{nr_umowy}}")],
   ["PSF_PAK2_Karta_doradztwa_bilans_szablon.docx", (xml) =>
