@@ -43,6 +43,11 @@ export const LISTA_POL: [string, string][] = [
   ["projekt_okres", "Okres realizacji projektu"],
   ["wnioskodawca", "Nazwa wnioskodawcy"],
   ["data_dzis", "Dzisiejsza data"],
+  ["data_dokumentu", "Data dokumentu (data przystąpienia)"],
+  ["data_dokumentu_kropki", "Data dokumentu w formacie dd.mm.rrrr"],
+  ["nr_umowy", "Automatyczny numer umowy wsparcia"],
+  ["godzina_spotkania_od", "Automatyczna godzina rozpoczęcia spotkania"],
+  ["godzina_spotkania_do", "Automatyczna godzina zakończenia spotkania"],
   // pola agregowane z obecności (liczone per uczestnik za wybrany okres)
   ["frekwencja", "Frekwencja % (z obecności)"],
   ["dni_obecny", "Liczba dni obecności"],
@@ -76,6 +81,23 @@ function dataUrodzeniaZPesel(pesel?: string): string {
   return `${String(dzien).padStart(2, "0")}.${String(miesiac).padStart(2, "0")}.${rok}`;
 }
 
+export function formatujDateDokumentu(data?: string): string {
+  const m = String(data ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : PUSTE;
+}
+
+export function formatujDateDokumentuKropki(data?: string): string {
+  const m = String(data ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : PUSTE;
+}
+
+export function formatujTelefon(telefon?: string): string {
+  const cyfry = String(telefon ?? "").replace(/\D/g, "");
+  const krajowy = cyfry.startsWith("48") && cyfry.length === 11 ? cyfry.slice(2) : cyfry;
+  if (krajowy.length !== 9) return telefon?.trim() || PUSTE;
+  return `+48 ${krajowy.slice(0, 3)} ${krajowy.slice(3, 6)} ${krajowy.slice(6)}`;
+}
+
 /** Komplet wartości pól dla uczestnika (brakujące dane → kropki do uzupełnienia). */
 export function polaUczestnika(
   u: Uczestnik,
@@ -96,7 +118,7 @@ export function polaUczestnika(
   const isced58 = iscedWyzsze;
   const isced4 = !isced58 && /policeal/.test(wyk);
   const isced3 = !isced58 && !isced4 && /ponadgimn|pogimn|zawodow/.test(wyk);
-  const isced2 = !isced58 && !isced4 && !isced3 && /gimnazjaln/.test(wyk);
+  const isced2 = !isced58 && !isced4 && !isced3 && (/gimnazjaln/.test(wyk) || /isced\s*0\s*[–-]\s*2/.test(wyk));
   const isced1 = !isced58 && !isced4 && !isced3 && !isced2 && /podstawow/.test(wyk);
   const isced0 = !isced58 && !isced4 && !isced3 && !isced2 && !isced1;
   // PSF — status na rynku pracy (4 opcje) z pola SOWA
@@ -128,6 +150,16 @@ export function polaUczestnika(
     `Rozmowa potwierdziła wysoką motywację do zmiany sytuacji i predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
   ];
   const seed = (s.pesel ?? "").split("").reduce((a, c) => a + (Number(c) || 0), 0);
+  // Dane, których nie ma w standardowym eksporcie SOWA, są dobierane
+  // deterministycznie: wyglądają jak losowe, lecz po ponownym wygenerowaniu
+  // dokumentu tej samej osoby pozostają identyczne.
+  const rokUmowy = /^\d{4}/.test(u.dataPrzystapienia)
+    ? u.dataPrzystapienia.slice(0, 4)
+    : String(new Date().getFullYear());
+  const numerUmowy = `${String(((seed * 37) % 999) + 1).padStart(3, "0")}/FELB.06.08/${rokUmowy}`;
+  const godzinySpotkan = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00"];
+  const godzinaSpotkaniaOd = godzinySpotkan[seed % godzinySpotkan.length];
+  const godzinaSpotkaniaDo = `${String(Number(godzinaSpotkaniaOd.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   const opisRozmowy = warianty[seed % warianty.length];
   // B-02 — data/miejsce diagnozy
   const dzienDiagnozy = String((seed % 10) + 1).padStart(2, "0");
@@ -220,7 +252,7 @@ export function polaUczestnika(
     mocne: wMocne[(seed + 1) % wMocne.length],
     rekomendacje: wRekom[(seed + 2) % wRekom.length],
     ...poziomy,
-    telefon: v(s.telefon),
+    telefon: formatujTelefon(s.telefon),
     email: v(s.email),
     status_rynku_pracy: v(s.statusRynkuPracy),
     kategoria:
@@ -233,6 +265,11 @@ export function polaUczestnika(
     status_udzialu: u.status,
     data_przystapienia:
       u.dataPrzystapienia === "—" ? PUSTE : u.dataPrzystapienia,
+    data_dokumentu: formatujDateDokumentu(u.dataPrzystapienia),
+    data_dokumentu_kropki: formatujDateDokumentuKropki(u.dataPrzystapienia),
+    nr_umowy: numerUmowy,
+    godzina_spotkania_od: godzinaSpotkaniaOd,
+    godzina_spotkania_do: godzinaSpotkaniaDo,
     projekt_nazwa: spec.nazwa,
     projekt_nabor: spec.nabor,
     projekt_okres: spec.okres,

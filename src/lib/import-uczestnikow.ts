@@ -22,11 +22,43 @@ function norm(s: string): string {
     .trim();
 }
 
+function tekstKomorki(v: unknown): string {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const rok = v.getUTCFullYear();
+    const miesiac = String(v.getUTCMonth() + 1).padStart(2, "0");
+    const dzien = String(v.getUTCDate()).padStart(2, "0");
+    return `${rok}-${miesiac}-${dzien}`;
+  }
+  return String(v ?? "").trim();
+}
+
+/** Normalizuje datę z SOWA/Excela do formatu ISO yyyy-MM-dd. */
+export function normalizujDate(v: unknown): string {
+  if (v instanceof Date) return tekstKomorki(v);
+  const tekst = String(v ?? "").trim();
+  if (!tekst) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tekst)) return tekst;
+
+  const liczba = Number(tekst.replace(",", "."));
+  if (Number.isFinite(liczba) && liczba >= 20_000 && liczba <= 80_000) {
+    const data = XLSX.SSF.parse_date_code(liczba);
+    if (data) {
+      return `${String(data.y).padStart(4, "0")}-${String(data.m).padStart(2, "0")}-${String(data.d).padStart(2, "0")}`;
+    }
+  }
+
+  const dopasowanie = tekst.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (dopasowanie) {
+    return `${dopasowanie[3]}-${dopasowanie[2].padStart(2, "0")}-${dopasowanie[1].padStart(2, "0")}`;
+  }
+  return tekst;
+}
+
 function znajdz(wiersz: Record<string, unknown>, ...frazy: string[]): string {
   for (const [k, v] of Object.entries(wiersz)) {
     const nk = norm(k);
     if (frazy.every((f) => nk.includes(f))) {
-      const s = String(v ?? "").trim();
+      const s = tekstKomorki(v);
       if (s !== "") return s;
     }
   }
@@ -43,7 +75,7 @@ function znajdzDokladnie(
 ): string {
   const cel = norm(naglowek);
   for (const [k, v] of Object.entries(wiersz)) {
-    if (norm(k) === cel) return String(v ?? "").trim();
+    if (norm(k) === cel) return tekstKomorki(v);
   }
   return "";
 }
@@ -164,7 +196,14 @@ export async function importujUczestnikow(
   prefixId: string,
 ): Promise<WynikImportu> {
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array", raw: false, codepage: 65001 });
+  const wb = XLSX.read(buf, {
+    type: "array",
+    raw: true,
+    // Pozostaw daty Excela jako numery seryjne. Konwersja przez obiekt Date
+    // przesuwała polską północ o jeden dzień wstecz (UTC), np. 10.07 → 09.07.
+    cellDates: false,
+    codepage: 65001,
+  });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const wiersze = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
     defval: "",
@@ -182,14 +221,14 @@ export async function importujUczestnikow(
       return;
     }
     const status = znajdz(w, "status", "rynku pracy");
-    const dataRozp = pierwszaNiepusta(w, [
+    const dataRozp = normalizujDate(pierwszaNiepusta(w, [
       ["data", "rozpoczecia"],
       ["data", "przystapienia"],
-    ]);
-    const dataZak = pierwszaNiepusta(w, [
+    ]));
+    const dataZak = normalizujDate(pierwszaNiepusta(w, [
       ["data", "zakonczenia"],
       ["data", "zakonczenia", "udzialu"],
-    ]);
+    ]));
     const kategoria = kategoriaZeStatusu(status);
 
     const sowa: DaneSOWA = {
@@ -238,8 +277,9 @@ export async function importujUczestnikow(
         znajdzDokladnie(w, "w tym 1") ||
         undefined,
       dataRozpoczeciaWsparcia:
-        znajdz(w, "data", "rozpoczecia", "wsparciu") || undefined,
-      dataZalozeniaDG: znajdz(w, "data", "zalozenia dg") || undefined,
+        normalizujDate(znajdz(w, "data", "rozpoczecia", "wsparciu")) || undefined,
+      dataZalozeniaDG:
+        normalizujDate(znajdz(w, "data", "zalozenia dg")) || undefined,
       osobaObcegoPochodzenia:
         (znajdz(w, "osoba", "obcego pochodzenia") ||
           undefined) as DaneSOWA["osobaObcegoPochodzenia"],

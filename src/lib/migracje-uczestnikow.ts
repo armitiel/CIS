@@ -6,7 +6,13 @@ export function wymagaNaprawyStatusu(
   projektId: string,
   u: Uczestnik,
 ): boolean {
-  if (projektId !== "cis-2026" || u.status !== "rezerwowy" || !u.utworzono)
+  if (
+    !["cis-2026", "psf-sciezka"].includes(projektId) ||
+    u.status !== "rezerwowy" ||
+    !u.utworzono ||
+    !u.dataPrzystapienia ||
+    u.dataPrzystapienia === "—"
+  )
     return false;
   const utworzono = Date.parse(u.utworzono);
   return Number.isFinite(utworzono) && utworzono <= GRANICA_BLEDNEGO_STATUSU;

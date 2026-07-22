@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 
-import { importujUczestnikow, scalUczestnikow } from "../import-uczestnikow";
+import { importujUczestnikow, normalizujDate, scalUczestnikow } from "../import-uczestnikow";
 import { poprawBledneStatusy } from "../migracje-uczestnikow";
 import { eksportujCSV, wierszSOWA } from "../sowa-eksport";
 import { walidujUczestnika } from "../sowa-walidacja";
 import { podzielL4 } from "../swiadczenia-l4";
 import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obecnosci";
 import type { Uczestnik } from "../types";
+import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika } from "../szablony";
+import { specyfikacjaPSF } from "../projekty";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
   return {
@@ -69,6 +71,22 @@ async function importuj(wiersze: Record<string, unknown>[]) {
 }
 
 describe("import uczestników", () => {
+  it("zamienia numer seryjny Excela na datę ISO", () => {
+    expect(normalizujDate(46211)).toBe("2026-07-08");
+    expect(normalizujDate("08/07/2026")).toBe("2026-07-08");
+  });
+
+  it("normalizuje daty z pełnego rekordu SOWA", async () => {
+    const wynik = await importuj([{
+      Imię: "Anna",
+      Nazwisko: "Nowak",
+      PESEL: "44051401458",
+      "Data rozpoczęcia udziału w projekcie": 46211,
+      "Data rozpoczęcia udziału we wsparciu": 46211,
+    }]);
+    expect(wynik.uczestnicy[0].dataPrzystapienia).toBe("2026-07-08");
+    expect(wynik.uczestnicy[0].sowa?.dataRozpoczeciaWsparcia).toBe("2026-07-08");
+  });
   it("ustawia nową osobę bez daty zakończenia jako aktywną", async () => {
     const wynik = await importuj([{ Imię: "Anna", Nazwisko: "Nowak", PESEL: "44051401458" }]);
     expect(wynik.uczestnicy).toHaveLength(1);
@@ -93,6 +111,37 @@ describe("import uczestników", () => {
     expect(wynik.uczestnicy.find((u) => u.id === "u-2")).toBeDefined();
     const zaktualizowany = wynik.uczestnicy.find((u) => u.id === "staly-id");
     expect(zaktualizowany).toMatchObject({ nazwisko: "Kowalski-Nowy", frekwencja: 75, posiadaneDokumenty: ["a-01"], etapSciezki: 2, postepSciezki: 60 });
+  });
+});
+
+describe("pola dokumentów PSF", () => {
+  it("używa daty przystąpienia zamiast daty uruchomienia generatora", () => {
+    expect(formatujDateDokumentu("2026-07-08")).toBe("08/07/2026");
+    expect(formatujDateDokumentuKropki("2026-07-08")).toBe("08.07.2026");
+    expect(formatujDateDokumentu("46211")).toBe("……………………");
+  });
+
+  it("formatuje polski numer telefonu", () => {
+    expect(formatujTelefon("48600100200")).toBe("+48 600 100 200");
+  });
+
+  it("mapuje zbiorczą kategorię ISCED 0–2 do pola ISCED 2 bez zaznaczania ISCED 0", () => {
+    const u = uczestnik({
+      kategoria: "bierny",
+      sciezka: "IPR",
+      sowa: {
+        ...uczestnik().sowa,
+        wyksztalcenie: "Średnie I stopnia lub niższe (ISCED 0–2)",
+      },
+    });
+    const pola = polaUczestnika(u, specyfikacjaPSF);
+    expect(pola.cb_isced0).toBe("☐");
+    expect(pola.cb_isced2).toBe("☒");
+    expect(pola.data_dokumentu).toBe("01/07/2026");
+    expect(pola.nr_umowy).toMatch(/^\d{3}\/FELB\.06\.08\/2026$/);
+    expect(pola.godzina_spotkania_od).toMatch(/^\d{2}:00$/);
+    expect(pola.godzina_spotkania_do).toMatch(/^\d{2}:00$/);
+    expect(polaUczestnika(u, specyfikacjaPSF).nr_umowy).toBe(pola.nr_umowy);
   });
 });
 
@@ -126,12 +175,15 @@ describe("format SOWA", () => {
 });
 
 describe("statusy i świadczenia", () => {
-  it("naprawia wyłącznie stare błędne statusy rezerwowe projektu CIS", () => {
+  it("naprawia stare błędne statusy rezerwowe CIS i PSF, gdy osoba już przystąpiła", () => {
     const stary = uczestnik({ id: "stary", status: "rezerwowy", utworzono: "2026-07-15T12:00:00Z" });
     const nowy = uczestnik({ id: "nowy", status: "rezerwowy", utworzono: "2026-07-15T13:00:00Z" });
+    const prawdziwaRezerwa = uczestnik({ id: "rezerwa", status: "rezerwowy", dataPrzystapienia: "—", utworzono: "2026-07-15T12:00:00Z" });
     const wynik = poprawBledneStatusy("cis-2026", [stary, nowy]);
     expect(wynik.poprawioneId).toEqual(["stary"]);
     expect(wynik.uczestnicy.map((u) => u.status)).toEqual(["aktywny", "rezerwowy"]);
+    expect(poprawBledneStatusy("psf-sciezka", [stary]).uczestnicy[0].status).toBe("aktywny");
+    expect(poprawBledneStatusy("psf-sciezka", [prawdziwaRezerwa]).uczestnicy[0].status).toBe("rezerwowy");
     expect(poprawBledneStatusy("inny-projekt", [stary]).uczestnicy[0].status).toBe("rezerwowy");
   });
 
