@@ -14,6 +14,7 @@ import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 import {
   dniDoradcowPSF,
+  dataStartowaHarmonogramuPSF,
   skoroszytKartyCzasuPSF,
   skoroszytKoordynacjiPSF,
   spotkaniaZFormularzyPSF,
@@ -207,6 +208,16 @@ describe("automatyczny harmonogram i karty PSF", () => {
     expect(karta.B5.v).toContain("Moja ścieżka rozwoju");
     expect(karta.B7.v).toBe(1);
     expect(karta.H43.f).toBe("SUM(H12:H42)");
+  });
+
+  it("otwiera harmonogram na ostatnim spotkaniu zamiast na pustym bieżącym tygodniu", () => {
+    const spotkania = spotkaniaZFormularzyPSF([
+      uczestnik({ id: "a", dataPrzystapienia: "2026-07-03" }),
+      uczestnik({ id: "b", dataPrzystapienia: "2026-07-09" }),
+    ]);
+    expect(dataStartowaHarmonogramuPSF(spotkania, "2026-07-23")).toBe("2026-07-09");
+    expect(dataStartowaHarmonogramuPSF(spotkania, "2026-06-01")).toBe("2026-07-03");
+    expect(dataStartowaHarmonogramuPSF([], "2026-07-23")).toBeNull();
   });
 });
 

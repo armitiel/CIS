@@ -4,7 +4,7 @@
 // Widoki: dzień / tydzień / miesiąc + karty czasu pracy kadry.
 // Dodawanie i edycja przez panel; godziny sumowane do kart pracy.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useProjekt } from "@/components/ProjektProvider";
 import { useZajecia, type Zajecie } from "@/lib/use-zajecia";
 import ZajeciaPanel from "@/components/ZajeciaPanel";
@@ -14,6 +14,7 @@ import type { KolorZajec } from "@/lib/types";
 import {
   pobierzKartyCzasuPSF,
   pobierzKoordynacjePSF,
+  dataStartowaHarmonogramuPSF,
   spotkaniaZFormularzyPSF,
 } from "@/lib/psf-spotkania";
 
@@ -172,12 +173,21 @@ export default function Harmonogram() {
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [widok, setWidok] = useState<Widok>("tydzien");
+  const [widok, setWidok] = useState<Widok>(automatycznyPSF ? "miesiac" : "tydzien");
   const [kotwica, setKotwica] = useState<Date>(dzis);
   const [panel, setPanel] = useState<
     { tryb: "nowy"; data: string } | { tryb: "edytuj"; zajecie: Zajecie } | null
   >(null);
   const [pokazImport, setPokazImport] = useState(false);
+
+  useEffect(() => {
+    if (!automatycznyPSF || spotkaniaPSF.length === 0) return;
+    const data = dataStartowaHarmonogramuPSF(spotkaniaPSF, iso(dzis));
+    if (!data) return;
+    const [r, m, d] = data.split("-").map(Number);
+    setKotwica(new Date(r, m - 1, d));
+    setWidok("miesiac");
+  }, [automatycznyPSF, projekt.id, spotkaniaPSF.length, dzis]);
 
   function importujWpisy(wpisy: WpisHarmonogramu[]) {
     for (const w of wpisy) zapisz(w);

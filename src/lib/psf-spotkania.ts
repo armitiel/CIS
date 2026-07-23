@@ -70,6 +70,19 @@ export function spotkaniaZFormularzyPSF(uczestnicy: Uczestnik[]): SpotkaniePSF[]
     );
 }
 
+/**
+ * Data, na której powinien otworzyć się harmonogram PSF: ostatnie spotkanie
+ * nie późniejsze niż dziś, a gdy wszystkie są przyszłe — pierwsze spotkanie.
+ */
+export function dataStartowaHarmonogramuPSF(
+  spotkania: SpotkaniePSF[],
+  dzisISO: string,
+): string | null {
+  const daty = [...new Set(spotkania.map((s) => s.data))].sort();
+  if (daty.length === 0) return null;
+  return daty.filter((d) => d <= dzisISO).at(-1) ?? daty[0];
+}
+
 export interface DzienDoradcyPSF {
   data: string;
   doradca: string;
