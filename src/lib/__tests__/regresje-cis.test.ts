@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import PizZip from "pizzip";
 import * as XLSX from "xlsx";
 
 import { importujUczestnikow, normalizujDate, scalUczestnikow } from "../import-uczestnikow";
@@ -8,8 +11,8 @@ import { walidujUczestnika } from "../sowa-walidacja";
 import { podzielL4 } from "../swiadczenia-l4";
 import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obecnosci";
 import type { Uczestnik } from "../types";
-import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika } from "../szablony";
-import { specyfikacjaPSF } from "../projekty";
+import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika, wypelnijSzablon } from "../szablony";
+import { specyfikacjaPSF, specyfikacjaSWA } from "../projekty";
 import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 import {
@@ -70,6 +73,37 @@ function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
     ...nadpisz,
   };
 }
+
+async function tekstWygenerowanegoDocx(nazwa: string, u: Uczestnik): Promise<string> {
+  const szablon = readFileSync(join(process.cwd(), "public", "wzory", nazwa));
+  const blob = wypelnijSzablon(
+    szablon.buffer.slice(szablon.byteOffset, szablon.byteOffset + szablon.byteLength),
+    polaUczestnika(u, specyfikacjaSWA),
+  );
+  const zip = new PizZip(await blob.arrayBuffer());
+  const xml = zip.file("word/document.xml")?.asText() ?? "";
+  return xml
+    .replace(/<[^>]+>/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+const WZORY_SWA = [
+  "SWA_A-01_Pakiet_zgloszeniowy_uczestnika_szablon.docx",
+  "SWA_A-02_Regulamin_rekrutacji_i_uczestnictwa_szablon.docx",
+  "SWA_B-01_Umowa_uczestnictwa_w_projekcie_szablon.docx",
+  "SWA_B-02_Arkusz_Diagnozy_Kompleksowej_szablon.docx",
+  "SWA_B-03_Wniosek_o_dostosowania_dla_ON_szablon.docx",
+  "SWA_C-01_Lista_Obecnosci_szablon.docx",
+  "SWA_C-05_Protokol_przekazania_smartfona_szablon.docx",
+  "SWA_D-01_Arkusz_Walidacji_Ankieta_POST_szablon.docx",
+  "SWA_D-02_Certyfikat_szablon.docx",
+  "SWA_D-03_Ankieta_ewaluacyjna_trwalosc_szablon.docx",
+  "SWA_F-01_Ankieta_kompetencji_PRE_szablon.docx",
+  "SWA_G-04_Rozliczenie_kosztow_dojazdu_szablon.docx",
+] as const;
 
 describe("wybór osób do generowania dokumentów", () => {
   it("po wejściu lub zmianie bazy nie zaznacza automatycznie wszystkich osób", () => {
@@ -165,6 +199,129 @@ describe("pola dokumentów PSF", () => {
   it("generuje pełny komplet ośmiu formularzy PSF także dla osoby aktywnej", () => {
     expect(wymaganeDokumenty(uczestnik(), specyfikacjaPSF).map((d) => d.symbol))
       .toEqual(["PAK1", "E1", "A3", "PAK2", "B", "C1", "PAK3", "F1"]);
+  });
+});
+
+describe("pola dokumentów SWA", () => {
+  it("zaznacza checkboxy A-01 i odmienia dane umowy dla kobiety", () => {
+    const u = uczestnik({
+      imie: "Alicja",
+      nazwisko: "Testowa",
+      kategoria: "bierny",
+      sciezka: "IPR",
+      cykl: 1,
+      sowa: {
+        ...uczestnik().sowa,
+        plec: "kobieta",
+        statusRynkuPracy: "Osoba bierna zawodowo",
+        wTymStatus: "Emeryt/rencista",
+        wyksztalcenie: "Podstawowe (ISCED 1) lub gimnazjalne (ISCED 2)",
+        niepelnosprawnosc: "Nie",
+      },
+    });
+
+    const pola = polaUczestnika(u, specyfikacjaSWA);
+    expect(pola).toMatchObject({
+      cb_kobieta: "☒",
+      cb_mezczyzna: "☐",
+      cb_swa_bierna: "☐",
+      cb_swa_emeryt_rencista: "☒",
+      cb_swa_wyk_podstawowe: "☒",
+      cb_swa_wyk_gimnazjalne: "☐",
+      cb_swa_niepelnosprawnosc_nie: "☒",
+      cb_swa_niepelnosprawnosc_tak: "☐",
+      cb_swa_cykl1: "☒",
+      cb_swa_cykl2: "☐",
+      forma_umowy: "Panią",
+      zamieszkaly_umowa: "zamieszkałą",
+      zwany_umowa: "zwaną dalej „Uczestniczką projektu”.",
+      miejsce_umowy: "Świebodzinie",
+    });
+  });
+
+  it("zaznacza pracującego mężczyznę z wyższym wykształceniem i ON", () => {
+    const u = uczestnik({
+      cykl: 2,
+      sowa: {
+        ...uczestnik().sowa,
+        statusRynkuPracy: "Osoba pracująca",
+        wyksztalcenie: "Wyższe (ISCED 5–8)",
+        niepelnosprawnosc: "Tak — stopień umiarkowany",
+      },
+    });
+
+    const pola = polaUczestnika(u, specyfikacjaSWA);
+    expect(pola).toMatchObject({
+      cb_kobieta: "☐",
+      cb_mezczyzna: "☒",
+      cb_swa_pracujaca: "☒",
+      cb_swa_wyk_wyzsze: "☒",
+      cb_swa_niepelnosprawnosc_nie: "☐",
+      cb_swa_niepelnosprawnosc_tak: "☒",
+      cb_swa_cykl1: "☐",
+      cb_swa_cykl2: "☒",
+      forma_umowy: "Panem",
+      zamieszkaly_umowa: "zamieszkałym",
+      zwany_umowa: "zwanym dalej „Uczestnikiem projektu”.",
+    });
+  });
+
+  it("wstawia zaznaczenia do gotowego dokumentu A-01", async () => {
+    const u = uczestnik({
+      imie: "Alicja",
+      nazwisko: "Testowa",
+      kategoria: "bierny",
+      sciezka: "IPR",
+      cykl: 1,
+      sowa: {
+        ...uczestnik().sowa,
+        plec: "kobieta",
+        statusRynkuPracy: "Osoba bierna zawodowo",
+        wTymStatus: "Emeryt/rencista",
+        wyksztalcenie: "Podstawowe (ISCED 1) lub gimnazjalne (ISCED 2)",
+        niepelnosprawnosc: "Nie",
+      },
+    });
+    const tekst = await tekstWygenerowanegoDocx(
+      "SWA_A-01_Pakiet_zgloszeniowy_uczestnika_szablon.docx",
+      u,
+    );
+
+    expect(tekst).toContain("☒ Kobieta");
+    expect(tekst).toContain("☐ Mężczyzna");
+    expect(tekst).toContain("☒ Emeryt/rencista");
+    expect(tekst).toContain("☒ Podstawowe");
+    expect(tekst).toContain("☒ NIE – nie posiadam orzeczenia");
+    expect(tekst).toContain("☒ Miasto");
+    expect(tekst).toContain("☒ I cykl (2026)");
+  });
+
+  it("wypełnia datę i formy osobowe w gotowej umowie B-01", async () => {
+    const u = uczestnik({
+      imie: "Alicja",
+      nazwisko: "Testowa",
+      sowa: { ...uczestnik().sowa, plec: "kobieta" },
+    });
+    const tekst = await tekstWygenerowanegoDocx(
+      "SWA_B-01_Umowa_uczestnictwa_w_projekcie_szablon.docx",
+      u,
+    );
+
+    expect(tekst).toContain("zawarta w dniu 01.07.2026 r. w Świebodzinie");
+    expect(tekst).toContain("Panią: Alicja Testowa");
+    expect(tekst).toContain("zamieszkałą:");
+    expect(tekst).toContain("zwaną dalej „Uczestniczką projektu”.");
+    expect(tekst).toContain("formularz SWA/C-05");
+    expect(tekst).not.toContain("SWA/G-01");
+  });
+
+  it("generuje bez pozostawionych znaczników wszystkie 12 wzorów SWA", async () => {
+    const u = uczestnik();
+    for (const wzor of WZORY_SWA) {
+      const tekst = await tekstWygenerowanegoDocx(wzor, u);
+      expect(tekst, wzor).not.toMatch(/{{[^}]+}}/);
+      expect(tekst.length, wzor).toBeGreaterThan(50);
+    }
   });
 });
 

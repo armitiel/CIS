@@ -127,6 +127,25 @@ export function polaUczestnika(
   const stBezrobZarej = /bezrobotn/.test(srp) && /zarejestrowan/.test(srp) && !/niezarejestrowan/.test(srp);
   const stBezrobNiezarej = /bezrobotn/.test(srp) && /niezarejestrowan/.test(srp);
   const stBierna = /biern/.test(srp);
+  // SWA A-01 ma bardziej szczegółowe checkboxy niż słownik formularza SOWA.
+  // Przy wartościach łączonych stosujemy mapowanie obowiązującego wzoru SWA:
+  // ISCED 0-2 → "Podstawowe", ISCED 3-4 → "Ponadgimnazjalne / średnie".
+  const szczegolStatusu = (s.wTymStatus ?? "").toLowerCase();
+  const stEmerytRencista = /emeryt|rencist/.test(szczegolStatusu);
+  const swaWykWyzsze = /wy[żz]sze|isced\s*[5678]/.test(wyk);
+  const swaWykPolicealne = !/ponadgimn/.test(wyk) && /policeal/.test(wyk);
+  const swaWykSrednie =
+    !swaWykWyzsze && !swaWykPolicealne && /ponadgimn|średnie|isced\s*[34]/.test(wyk);
+  const swaWykGimnazjalne =
+    !swaWykWyzsze && !swaWykPolicealne && !swaWykSrednie &&
+    /gimnazjal/.test(wyk) && !/podstawow/.test(wyk);
+  const swaWykPodstawowe =
+    !swaWykWyzsze && !swaWykPolicealne && !swaWykSrednie && !swaWykGimnazjalne &&
+    /podstawow|isced\s*0\s*[–-]\s*2|isced\s*[012]/.test(wyk);
+  const niepelnosprawnosc = (s.niepelnosprawnosc ?? "").trim().toLowerCase();
+  const niepelnosprawnoscNie = /^(nie|brak|nie dotyczy)$/.test(niepelnosprawnosc);
+  const niepelnosprawnoscTak =
+    niepelnosprawnosc !== "" && !niepelnosprawnoscNie;
   const ulicaNr = s.ulica
     ? `${s.ulica} ${s.nrDomu ?? ""}${s.nrLokalu ? "/" + s.nrLokalu : ""}`.trim()
     : PUSTE;
@@ -228,6 +247,21 @@ export function polaUczestnika(
     cb_bezrob_zarej: cb(stBezrobZarej),
     cb_bezrob_niezarej: cb(stBezrobNiezarej),
     cb_bierna: cb(stBierna),
+    // SWA A-01 — checkboxy odzwierciedlające dokładny układ wzoru.
+    cb_swa_pracujaca: cb(stPracujaca),
+    cb_swa_bezrob_zarej: cb(stBezrobZarej),
+    cb_swa_bezrob_niezarej: cb(stBezrobNiezarej),
+    cb_swa_bierna: cb(stBierna && !stEmerytRencista),
+    cb_swa_emeryt_rencista: cb(stEmerytRencista),
+    cb_swa_wyk_podstawowe: cb(swaWykPodstawowe),
+    cb_swa_wyk_gimnazjalne: cb(swaWykGimnazjalne),
+    cb_swa_wyk_srednie: cb(swaWykSrednie),
+    cb_swa_wyk_policealne: cb(swaWykPolicealne),
+    cb_swa_wyk_wyzsze: cb(swaWykWyzsze),
+    cb_swa_niepelnosprawnosc_nie: cb(niepelnosprawnoscNie),
+    cb_swa_niepelnosprawnosc_tak: cb(niepelnosprawnoscTak),
+    cb_swa_cykl1: cb(u.cykl === 1),
+    cb_swa_cykl2: cb(u.cykl === 2),
     // PSF — DEGURBA 3-opcyjny (PAK1)
     cb_degurba_miejski: cb(s.degurba === "1"),
     cb_degurba_podmiejski: cb(s.degurba === "2"),
@@ -274,6 +308,12 @@ export function polaUczestnika(
     projekt_nabor: spec.nabor,
     projekt_okres: spec.okres,
     wnioskodawca: spec.wnioskodawca,
+    miejsce_umowy: "Świebodzinie",
+    forma_umowy: kobieta ? "Panią" : "Panem",
+    zamieszkaly_umowa: kobieta ? "zamieszkałą" : "zamieszkałym",
+    zwany_umowa: kobieta
+      ? "zwaną dalej „Uczestniczką projektu”."
+      : "zwanym dalej „Uczestnikiem projektu”.",
     data_dzis: new Date().toLocaleDateString("pl-PL", {
       day: "2-digit",
       month: "2-digit",
