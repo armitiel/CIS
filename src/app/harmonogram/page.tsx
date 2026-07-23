@@ -11,6 +11,11 @@ import ZajeciaPanel from "@/components/ZajeciaPanel";
 import ImportHarmonogramu from "@/components/ImportHarmonogramu";
 import type { WpisHarmonogramu } from "@/lib/import-harmonogramu";
 import type { KolorZajec } from "@/lib/types";
+import {
+  pobierzKartyCzasuPSF,
+  pobierzKoordynacjePSF,
+  spotkaniaZFormularzyPSF,
+} from "@/lib/psf-spotkania";
 
 type Widok = "dzien" | "tydzien" | "miesiac" | "kadra";
 
@@ -137,8 +142,30 @@ function KartaZajec({
 }
 
 export default function Harmonogram() {
-  const { projekt } = useProjekt();
+  const { projekt, uczestnicy } = useProjekt();
   const { zajecia, zapisz, zapiszWiele, usun } = useZajecia(projekt.id);
+  const automatycznyPSF = projekt.id === "psf-sciezka";
+  const spotkaniaPSF = useMemo(
+    () => automatycznyPSF ? spotkaniaZFormularzyPSF(uczestnicy) : [],
+    [automatycznyPSF, uczestnicy],
+  );
+  const zajeciaWidoczne = useMemo<Zajecie[]>(() => {
+    if (!automatycznyPSF) return zajecia;
+    const automatyczne: Zajecie[] = spotkaniaPSF.map((s) => ({
+      id: s.id,
+      data: s.data,
+      godzina: s.godzinaOd,
+      godzinaDo: s.godzinaDo,
+      nazwa: `${s.zadanie} — ${s.uczestnik}`,
+      typ: "Indywidualne · automatycznie z PAK2",
+      prowadzacy: s.doradca,
+      grupa: s.grupa,
+      kolor: "blue",
+      osob: 1,
+      seria: null,
+    }));
+    return automatyczne;
+  }, [automatycznyPSF, spotkaniaPSF, zajecia]);
 
   const dzis = useMemo(() => {
     const d = new Date();
@@ -167,11 +194,11 @@ export default function Harmonogram() {
 
   const wgDnia = useMemo(() => {
     const m: Record<string, Zajecie[]> = {};
-    for (const z of zajecia) (m[z.data] ??= []).push(z);
+    for (const z of zajeciaWidoczne) (m[z.data] ??= []).push(z);
     for (const k of Object.keys(m))
       m[k].sort((a, b) => a.godzina.localeCompare(b.godzina));
     return m;
-  }, [zajecia]);
+  }, [zajeciaWidoczne]);
   const zajeciaDnia = (d: Date): Zajecie[] => wgDnia[iso(d)] ?? [];
 
   function przesun(kierunek: 1 | -1) {
@@ -214,7 +241,7 @@ export default function Harmonogram() {
   const kartyPracy = useMemo(() => {
     const rok = kotwica.getFullYear();
     const mc = kotwica.getMonth();
-    const wMiesiacu = zajecia.filter((z) => {
+    const wMiesiacu = zajeciaWidoczne.filter((z) => {
       const d = new Date(z.data + "T00:00:00");
       return d.getFullYear() === rok && d.getMonth() === mc;
     });
@@ -231,7 +258,7 @@ export default function Harmonogram() {
     const sumaGodzin = wiersze.reduce((s, w) => s + w.godziny, 0);
     const sumaZajec = wiersze.reduce((s, w) => s + w.zajec, 0);
     return { wiersze, sumaGodzin, sumaZajec };
-  }, [zajecia, kotwica]);
+  }, [zajeciaWidoczne, kotwica]);
 
   function eksportKartyCSV() {
     const sep = ";";
@@ -291,7 +318,26 @@ export default function Harmonogram() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          {automatycznyPSF ? (
+            <>
+              <button
+                onClick={() => pobierzKoordynacjePSF(spotkaniaPSF)}
+                disabled={spotkaniaPSF.length === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft disabled:opacity-40"
+              >
+                <span className="material-symbols-rounded notranslate text-[18px]">table_view</span>
+                Arkusz koordynacji
+              </button>
+              <button
+                onClick={() => pobierzKartyCzasuPSF(spotkaniaPSF, kotwica.getFullYear(), kotwica.getMonth())}
+                disabled={spotkaniaPSF.length === 0}
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                <span className="material-symbols-rounded notranslate text-[18px]">description</span>
+                Karty czasu PSF
+              </button>
+            </>
+          ) : <><button
             onClick={() => setPokazImport(true)}
             className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
             title="Zbuduj harmonogram z pliku (Excel/CSV/Word/PDF) albo wygeneruj propozycję"
@@ -307,7 +353,7 @@ export default function Harmonogram() {
           >
             <span className="material-symbols-rounded notranslate text-[18px]">add</span>
             Dodaj zajęcia
-          </button>
+          </button></>}
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button
@@ -345,7 +391,7 @@ export default function Harmonogram() {
               {MIESIACE[kotwica.getMonth()]}
               {tenSamDzien(kotwica, dzis) && " · dziś"}
             </span>
-            <button
+            {!automatycznyPSF && <button
               onClick={() => setPanel({ tryb: "nowy", data: iso(kotwica) })}
               className="flex h-7 w-7 items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-primary-strong"
               title="Dodaj zajęcia w tym dniu"
@@ -353,7 +399,7 @@ export default function Harmonogram() {
               <span className="material-symbols-rounded notranslate text-[18px]">
                 add
               </span>
-            </button>
+            </button>}
           </div>
           {zajeciaDnia(kotwica).map((z, i) => (
             <KartaZajec
@@ -361,7 +407,7 @@ export default function Harmonogram() {
               z={z}
               delay={i * 0.06}
               pelna
-              onClick={() => setPanel({ tryb: "edytuj", zajecie: z })}
+              onClick={z.id.startsWith("psf-auto:") ? undefined : () => setPanel({ tryb: "edytuj", zajecie: z })}
             />
           ))}
           {zajeciaDnia(kotwica).length === 0 && (
@@ -408,20 +454,20 @@ export default function Harmonogram() {
                         {dzisiaj && " · dziś"}
                       </span>
                     </button>
-                    <button
+                    {!automatycznyPSF && <button
                       onClick={() => setPanel({ tryb: "nowy", data: iso(data) })}
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-faint hover:bg-surface hover:text-primary-strong"
                       title="Dodaj zajęcia"
                     >
                       <span className="material-symbols-rounded notranslate text-[18px]">add</span>
-                    </button>
+                    </button>}
                   </div>
                   {lista.map((z, zi) => (
                     <KartaZajec
                       key={z.id}
                       z={z}
                       delay={di * 0.04 + zi * 0.06}
-                      onClick={() => setPanel({ tryb: "edytuj", zajecie: z })}
+                      onClick={z.id.startsWith("psf-auto:") ? undefined : () => setPanel({ tryb: "edytuj", zajecie: z })}
                     />
                   ))}
                   {lista.length === 0 && (
@@ -581,9 +627,9 @@ export default function Harmonogram() {
           </div>
 
           <p className="text-xs text-faint">
-            Godziny liczone z różnicy „od–do" w zajęciach danego miesiąca.
-            Zestawienie pomocnicze do kart czasu pracy — zweryfikuj z ewidencją
-            i umowami kadry.
+            {automatycznyPSF
+              ? "Terminy i godziny są pobierane automatycznie z tych samych danych, które wypełniają formularze PAK2 uczestników. Nie wymagają ponownego wpisywania."
+              : "Godziny liczone z różnicy „od–do” w zajęciach danego miesiąca. Zestawienie pomocnicze do kart czasu pracy — zweryfikuj z ewidencją i umowami kadry."}
           </p>
         </div>
       )}

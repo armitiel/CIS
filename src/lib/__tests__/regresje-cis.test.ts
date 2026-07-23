@@ -12,6 +12,12 @@ import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, po
 import { specyfikacjaPSF } from "../projekty";
 import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
+import {
+  dniDoradcowPSF,
+  skoroszytKartyCzasuPSF,
+  skoroszytKoordynacjiPSF,
+  spotkaniaZFormularzyPSF,
+} from "../psf-spotkania";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
   return {
@@ -157,6 +163,50 @@ describe("pola dokumentów PSF", () => {
   it("generuje pełny komplet ośmiu formularzy PSF także dla osoby aktywnej", () => {
     expect(wymaganeDokumenty(uczestnik(), specyfikacjaPSF).map((d) => d.symbol))
       .toEqual(["PAK1", "E1", "A3", "PAK2", "B", "C1", "PAK3", "F1"]);
+  });
+});
+
+describe("automatyczny harmonogram i karty PSF", () => {
+  it("używa dokładnie tej samej daty i godzin co formularz PAK2", () => {
+    const u = uczestnik({ grupa: "Pomost 9", dataPrzystapienia: "2026-07-08" });
+    const pola = polaUczestnika(u, specyfikacjaPSF);
+    const [spotkanie] = spotkaniaZFormularzyPSF([u]);
+
+    expect(spotkanie).toMatchObject({
+      uczestnikId: u.id,
+      data: "2026-07-08",
+      godzinaOd: pola.godzina_spotkania_od,
+      godzinaDo: pola.godzina_spotkania_do,
+      minuty: 60,
+      doradca: "Doradca 1 — Korina Łukaszkiewicz",
+    });
+  });
+
+  it("pomija rezerwowych i sumuje spotkania doradcy według dni", () => {
+    const a = uczestnik({ id: "a", dataPrzystapienia: "2026-07-08" });
+    const b = uczestnik({ id: "b", imie: "Anna", sowa: { ...uczestnik().sowa, pesel: "02070803628" }, dataPrzystapienia: "2026-07-08" });
+    const rezerwowy = uczestnik({ id: "r", status: "rezerwowy" });
+    const spotkania = spotkaniaZFormularzyPSF([a, b, rezerwowy]);
+
+    expect(spotkania).toHaveLength(2);
+    expect(dniDoradcowPSF(spotkania)).toEqual([
+      expect.objectContaining({ data: "2026-07-08", liczbaSpotkan: 2, godziny: 2 }),
+    ]);
+  });
+
+  it("buduje arkusz koordynacji i miesięczną kartę czasu w XLSX", () => {
+    const spotkania = spotkaniaZFormularzyPSF([
+      uczestnik({ id: "a", dataPrzystapienia: "2026-07-08" }),
+    ]);
+    const koord = skoroszytKoordynacjiPSF(spotkania).Sheets["Arkusz koordynacji"];
+    const karta = skoroszytKartyCzasuPSF(spotkania, spotkania[0].doradca, 2026, 6)
+      .Sheets["Karta czasu pracy"];
+
+    expect(koord.A1.v).toBe("ARKUSZ KOORDYNACJI SPOTKAŃ DORADCZYCH");
+    expect(koord.H5.v).toBe(60);
+    expect(karta.B5.v).toContain("Moja ścieżka rozwoju");
+    expect(karta.B7.v).toBe(1);
+    expect(karta.H43.f).toBe("SUM(H12:H42)");
   });
 });
 

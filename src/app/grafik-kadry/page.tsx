@@ -16,6 +16,12 @@ import KadraPanel from "@/components/KadraPanel";
 import GrafikDzienPanel from "@/components/GrafikDzienPanel";
 import WypelnijGrafikPanel from "@/components/WypelnijGrafikPanel";
 import ImportGrafikuPanel from "@/components/ImportGrafikuPanel";
+import {
+  dniDoradcowPSF,
+  pobierzKartyCzasuPSF,
+  pobierzKoordynacjePSF,
+  spotkaniaZFormularzyPSF,
+} from "@/lib/psf-spotkania";
 
 type Widok = "grafik" | "miesiac" | "karty";
 
@@ -74,7 +80,12 @@ function kategoriaWpisow(wpisy: { typ: string }[]): { label: string; bg: string 
 }
 
 export default function GrafikKadry() {
-  const { projekt } = useProjekt();
+  const { projekt, uczestnicy } = useProjekt();
+  const automatycznyPSF = projekt.id === "psf-sciezka";
+  const spotkaniaPSF = useMemo(
+    () => automatycznyPSF ? spotkaniaZFormularzyPSF(uczestnicy) : [],
+    [automatycznyPSF, uczestnicy],
+  );
   const { kadra, zapisz: zapiszOsobe, usun: usunOsobe } = useKadra(projekt.id);
   const {
     grafik,
@@ -168,6 +179,13 @@ export default function GrafikKadry() {
         ? `Tydzień ${pon.getDate()}–${pt.getDate()} ${MIESIACE[pt.getMonth()]} ${pt.getFullYear()}`
         : `Tydzień ${pon.getDate()} ${MIESIACE[pon.getMonth()]} – ${pt.getDate()} ${MIESIACE[pt.getMonth()]} ${pt.getFullYear()}`
       : `${MIESIACE_M[kotwica.getMonth()]} ${kotwica.getFullYear()}`;
+
+  const dniPSFMiesiaca = useMemo(() =>
+    dniDoradcowPSF(spotkaniaPSF).filter((d) => {
+      const [r, m] = d.data.split("-").map(Number);
+      return r === kotwica.getFullYear() && m - 1 === kotwica.getMonth();
+    }), [spotkaniaPSF, kotwica]);
+  const sumaPSFMiesiaca = dniPSFMiesiaca.reduce((n, d) => n + d.godziny, 0);
 
   // ===== widok GRAFIK: wiersze osób z dniami tygodnia =====
   const wierszeGrafiku = useMemo(
@@ -339,7 +357,7 @@ export default function GrafikKadry() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {kadra.length > 0 && widok !== "karty" && (
+          {!automatycznyPSF && kadra.length > 0 && widok !== "karty" && (
             <button
               onClick={() => setPokazWypelnij(true)}
               className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90"
@@ -350,7 +368,7 @@ export default function GrafikKadry() {
               Wypełnij grafik
             </button>
           )}
-          <button
+          {!automatycznyPSF && <button
             onClick={() => setPokazImport(true)}
             className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
             title="Wczytaj plan pracy kadry z pliku Excel"
@@ -359,8 +377,8 @@ export default function GrafikKadry() {
               upload_file
             </span>
             Import z Excela
-          </button>
-          <button
+          </button>}
+          {!automatycznyPSF && <button
             onClick={() => setPokazKadre(true)}
             className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13.5px] font-semibold text-ink-mid transition-colors hover:bg-soft"
           >
@@ -368,7 +386,7 @@ export default function GrafikKadry() {
               group
             </span>
             Kadra ({kadra.length})
-          </button>
+          </button>}
           <div className="flex gap-1 rounded-xl bg-soft p-1">
             {WIDOKI.map(([w, label]) => (
               <button
@@ -387,8 +405,58 @@ export default function GrafikKadry() {
         </div>
       </div>
 
+      {automatycznyPSF && (
+        <div className="card anim-card-in overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-[22px] py-4">
+            <div>
+              <div className="font-serif text-lg font-semibold text-ink-strong">
+                Grafik automatyczny z formularzy uczestników
+              </div>
+              <div className="mt-1 text-[12.5px] text-muted">
+                Daty i godziny są identyczne jak w PAK2. Nie trzeba dodawać kadry ani przepisywać spotkań.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => pobierzKoordynacjePSF(spotkaniaPSF)}
+                disabled={spotkaniaPSF.length === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-line-strong bg-surface px-3.5 py-2 text-[13px] font-semibold text-ink-mid hover:bg-soft disabled:opacity-40"
+              >
+                <span className="material-symbols-rounded notranslate text-[18px]">table_view</span>
+                Arkusz koordynacji
+              </button>
+              <button
+                onClick={() => pobierzKartyCzasuPSF(spotkaniaPSF, kotwica.getFullYear(), kotwica.getMonth())}
+                disabled={dniPSFMiesiaca.length === 0}
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13px] font-semibold text-white hover:opacity-90 disabled:opacity-40"
+              >
+                <span className="material-symbols-rounded notranslate text-[18px]">download</span>
+                Karty czasu PSF
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-[1.1fr_1.3fr_0.8fr_0.7fr] gap-2 border-b border-line-soft px-[22px] py-2.5">
+            <div className="th-label">Data</div><div className="th-label">Doradca</div>
+            <div className="th-label text-center">Spotkania</div><div className="th-label text-right">Godziny</div>
+          </div>
+          {dniPSFMiesiaca.map((d) => (
+            <div key={`${d.data}-${d.doradca}`} className="grid grid-cols-[1.1fr_1.3fr_0.8fr_0.7fr] gap-2 border-t border-line-soft px-[22px] py-3 text-[13.5px]">
+              <div className="font-semibold text-ink">{d.data.split("-").reverse().join(".")}</div>
+              <div className="text-ink-mid">{d.doradca}</div>
+              <div className="text-center text-ink-mid">{d.liczbaSpotkan}</div>
+              <div className="text-right font-serif font-bold text-ink-strong">{formatGodziny(d.godziny)} h</div>
+            </div>
+          ))}
+          {dniPSFMiesiaca.length === 0 && <div className="px-[22px] py-7 text-center text-sm text-faint">Brak spotkań z formularzy w tym miesiącu.</div>}
+          <div className="flex justify-between border-t border-line bg-hover-row px-[22px] py-3.5 text-sm">
+            <span className="text-muted">Łącznie w miesiącu</span>
+            <span className="font-serif text-lg font-bold text-primary-strong">{formatGodziny(sumaPSFMiesiaca)} h</span>
+          </div>
+        </div>
+      )}
+
       {/* Brak kadry — podpowiedź startowa */}
-      {kadra.length === 0 && (
+      {kadra.length === 0 && !automatycznyPSF && (
         <div className="card flex flex-col items-center gap-3 p-8 text-center">
           <span className="material-symbols-rounded notranslate text-[40px] text-faint">
             badge
