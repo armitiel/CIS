@@ -11,6 +11,7 @@ import type { Uczestnik } from "../types";
 import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika } from "../szablony";
 import { specyfikacjaPSF } from "../projekty";
 import { wymaganeDokumenty } from "../projekt-spec";
+import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
   return {
@@ -61,6 +62,14 @@ function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
     ...nadpisz,
   };
 }
+
+describe("wybór osób do generowania dokumentów", () => {
+  it("po wejściu lub zmianie bazy nie zaznacza automatycznie wszystkich osób", () => {
+    const osoby = Array.from({ length: 27 }, (_, i) => ({ id: `u-${i + 1}` }));
+
+    expect(wyborDokumentowPoZmianieBazy(osoby).size).toBe(0);
+  });
+});
 
 async function importuj(wiersze: Record<string, unknown>[]) {
   const arkusz = XLSX.utils.json_to_sheet(wiersze);

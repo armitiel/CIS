@@ -74,6 +74,7 @@ import WyborUczestnikow from "@/components/WyborUczestnikow";
 import Portal from "@/components/Portal";
 import { Avatar, BrakiPill } from "@/components/ui";
 import type { Uczestnik } from "@/lib/types";
+import { wyborDokumentowPoZmianieBazy } from "@/lib/wybor-dokumentow";
 
 const rodzajLabel: Record<WymaganyDokument["rodzaj"], string> = {
   uczestnik: "teczka uczestnika",
@@ -515,9 +516,9 @@ export default function Dokumenty() {
     });
   }
 
-  // zmiana projektu / importu bazy → domyślnie zaznacz wszystkich
+  // Zmiana projektu / importu bazy → wymagaj świadomego wyboru osób do wydruku.
   useEffect(() => {
-    setZaznaczeni(new Set(uczestnicy.map((u) => u.id)));
+    setZaznaczeni(wyborDokumentowPoZmianieBazy(uczestnicy));
   }, [uczestnicy]);
 
   /**
