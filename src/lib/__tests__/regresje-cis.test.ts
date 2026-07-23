@@ -23,6 +23,7 @@ import {
   skoroszytKoordynacjiPSF,
   spotkaniaZFormularzyPSF,
 } from "../psf-spotkania";
+import { normalizujEmailZespolu, poprawnyEmailZespolu } from "../zespol-reguly";
 
 function uczestnik(nadpisz: Partial<Uczestnik> = {}): Uczestnik {
   return {
@@ -443,6 +444,33 @@ describe("format SOWA", () => {
     const u = uczestnik({ sowa: { ...uczestnik().sowa, zakresWsparcia: undefined, rodzajWsparcia: undefined, wTymWsparcia: undefined, dataRozpoczeciaWsparcia: undefined } });
     const pola = walidujUczestnika(u).filter((p) => p.poziom === "blad").map((p) => p.pole);
     expect(pola).toEqual(expect.arrayContaining(["Zakres wsparcia", "Rodzaj wsparcia", "W tym — wsparcia", "Data rozpoczęcia wsparcia"]));
+  });
+});
+
+describe("dostep pracownikow", () => {
+  it("akceptuje konto Google spoza domeny gmail i normalizuje adres", () => {
+    expect(normalizujEmailZespolu("  Pracownik@Firma.PL ")).toBe(
+      "pracownik@firma.pl",
+    );
+    expect(poprawnyEmailZespolu("pracownik@firma.pl")).toBe(true);
+    expect(poprawnyEmailZespolu("brak-malpy.pl")).toBe(false);
+  });
+
+  it("migracja zamyka dostep do aktywnego zespolu i chroni administratora", () => {
+    const sql = readFileSync(
+      join(
+        process.cwd(),
+        "supabase",
+        "migrations",
+        "20260723120000_e13_pracownicy_role.sql",
+      ),
+      "utf8",
+    );
+    expect(sql).toContain("and z.aktywny");
+    expect(sql).toContain("czy_administratorem");
+    expect(sql).toContain("zespol_chron_ostatniego_admina");
+    expect(sql).toContain("'uczestnicy','projekty','obecnosci'");
+    expect(sql).toContain("drop policy if exists \"%s_wlasciciel_select\"");
   });
 });
 

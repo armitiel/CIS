@@ -33,17 +33,51 @@ export const updateSession = async (request: NextRequest) => {
 
   // brama dostępu: niezalogowany → /login (poza ścieżkami publicznymi)
   const sciezka = request.nextUrl.pathname;
+  const api = sciezka.startsWith("/api");
   const publiczna =
     sciezka === "/login" ||
-    sciezka.startsWith("/auth") ||
-    sciezka.startsWith("/api");
+    sciezka === "/brak-dostepu" ||
+    sciezka.startsWith("/auth");
   if (!user && !publiczna) {
+    if (api) {
+      return NextResponse.json(
+        { blad: "Wymagane zalogowanie." },
+        { status: 401 },
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  // zalogowany na /login → przekieruj na pulpit
-  if (user && sciezka === "/login") {
+
+  let maDostep = false;
+  if (user?.email) {
+    const { data } = await supabase
+      .from("zespol")
+      .select("email")
+      .eq("email", user.email.trim().toLowerCase())
+      .eq("aktywny", true)
+      .maybeSingle();
+    maDostep = !!data;
+  }
+
+  if (user && !maDostep && !publiczna) {
+    if (api) {
+      return NextResponse.json(
+        { blad: "Brak dostepu do aplikacji." },
+        { status: 403 },
+      );
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/brak-dostepu";
+    return NextResponse.redirect(url);
+  }
+
+  if (
+    user &&
+    maDostep &&
+    (sciezka === "/login" || sciezka === "/brak-dostepu")
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

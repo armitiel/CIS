@@ -15,6 +15,7 @@ const moduly = [
   { href: "/grafik-kadry", label: "Grafik kadry", icon: "badge" },
   { href: "/dokumenty", label: "Dokumenty", icon: "folder_open" },
   { href: "/projekty", label: "Projekty", icon: "workspaces" },
+  { href: "/pracownicy", label: "Pracownicy", icon: "manage_accounts" },
 ];
 
 export default function Sidebar({

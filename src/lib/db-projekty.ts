@@ -141,17 +141,26 @@ export async function czyZasiano(): Promise<boolean> {
   return !!data?.zasiano;
 }
 
-/** Zaszczepia przykładowe projekty i oznacza profil jako zasiany (idempotentnie). */
+/**
+ * Zaszczepia przykładowe projekty tylko wtedy, gdy wspolna baza jest pusta.
+ * Kolejny pracownik nie tworzy dzieki temu duplikatow projektow zespolu.
+ */
 export async function zasiejPrzykladowe(): Promise<void> {
   const supabase = klient();
-  for (const seed of SEEDY_PRZYKLADOWE) {
-    const { error } = await supabase
-      .from("projekty")
-      .upsert(doWiersza(seed), {
-        onConflict: "user_id,klucz",
-        ignoreDuplicates: true,
-      });
-    if (error) throw error;
+  const { count, error: bladLiczby } = await supabase
+    .from("projekty")
+    .select("id", { count: "exact", head: true });
+  if (bladLiczby) throw bladLiczby;
+  if ((count ?? 0) === 0) {
+    for (const seed of SEEDY_PRZYKLADOWE) {
+      const { error } = await supabase
+        .from("projekty")
+        .upsert(doWiersza(seed), {
+          onConflict: "user_id,klucz",
+          ignoreDuplicates: true,
+        });
+      if (error) throw error;
+    }
   }
   const { error: errProfil } = await supabase
     .from("profil")
