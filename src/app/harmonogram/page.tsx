@@ -12,6 +12,7 @@ import ImportHarmonogramu from "@/components/ImportHarmonogramu";
 import type { WpisHarmonogramu } from "@/lib/import-harmonogramu";
 import type { KolorZajec } from "@/lib/types";
 import {
+  dniKartCzasuPSF,
   pobierzKartyCzasuPSF,
   pobierzKoordynacjePSF,
   dataStartowaHarmonogramuPSF,
@@ -251,6 +252,25 @@ export default function Harmonogram() {
   const kartyPracy = useMemo(() => {
     const rok = kotwica.getFullYear();
     const mc = kotwica.getMonth();
+    if (automatycznyPSF) {
+      const wiersze = dniKartCzasuPSF(spotkaniaPSF)
+        .filter((d) => {
+          const [r, m] = d.data.split("-").map(Number);
+          return r === rok && m === mc + 1;
+        })
+        .reduce<Record<string, { prowadzacy: string; zajec: number; godziny: number }>>((grupy, d) => {
+          const g = (grupy[d.doradca] ??= { prowadzacy: d.doradca, zajec: 0, godziny: 0 });
+          g.zajec += d.liczbaSpotkan;
+          g.godziny += d.godziny;
+          return grupy;
+        }, {});
+      const lista = Object.values(wiersze).sort((a, b) => b.godziny - a.godziny);
+      return {
+        wiersze: lista,
+        sumaGodzin: lista.reduce((s, w) => s + w.godziny, 0),
+        sumaZajec: lista.reduce((s, w) => s + w.zajec, 0),
+      };
+    }
     const wMiesiacu = zajeciaWidoczne.filter((z) => {
       const d = new Date(z.data + "T00:00:00");
       return d.getFullYear() === rok && d.getMonth() === mc;
@@ -268,7 +288,7 @@ export default function Harmonogram() {
     const sumaGodzin = wiersze.reduce((s, w) => s + w.godziny, 0);
     const sumaZajec = wiersze.reduce((s, w) => s + w.zajec, 0);
     return { wiersze, sumaGodzin, sumaZajec };
-  }, [zajeciaWidoczne, kotwica]);
+  }, [automatycznyPSF, spotkaniaPSF, zajeciaWidoczne, kotwica]);
 
   function eksportKartyCSV() {
     const sep = ";";
@@ -340,7 +360,7 @@ export default function Harmonogram() {
               </button>
               <button
                 onClick={() => pobierzKartyCzasuPSF(spotkaniaPSF, kotwica.getFullYear(), kotwica.getMonth())}
-                disabled={spotkaniaPSF.length === 0}
+                disabled={kartyPracy.wiersze.length === 0}
                 className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 <span className="material-symbols-rounded notranslate text-[18px]">description</span>

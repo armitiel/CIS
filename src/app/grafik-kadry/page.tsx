@@ -17,7 +17,7 @@ import GrafikDzienPanel from "@/components/GrafikDzienPanel";
 import WypelnijGrafikPanel from "@/components/WypelnijGrafikPanel";
 import ImportGrafikuPanel from "@/components/ImportGrafikuPanel";
 import {
-  dniDoradcowPSF,
+  dniKartCzasuPSF,
   pobierzKartyCzasuPSF,
   pobierzKoordynacjePSF,
   spotkaniaZFormularzyPSF,
@@ -181,7 +181,7 @@ export default function GrafikKadry() {
       : `${MIESIACE_M[kotwica.getMonth()]} ${kotwica.getFullYear()}`;
 
   const dniPSFMiesiaca = useMemo(() =>
-    dniDoradcowPSF(spotkaniaPSF).filter((d) => {
+    dniKartCzasuPSF(spotkaniaPSF).filter((d) => {
       const [r, m] = d.data.split("-").map(Number);
       return r === kotwica.getFullYear() && m - 1 === kotwica.getMonth();
     }), [spotkaniaPSF, kotwica]);
@@ -410,10 +410,10 @@ export default function GrafikKadry() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-[22px] py-4">
             <div>
               <div className="font-serif text-lg font-semibold text-ink-strong">
-                Grafik automatyczny z formularzy uczestników
+                Grafik automatyczny z formularzy i kart historycznych
               </div>
               <div className="mt-1 text-[12.5px] text-muted">
-                Daty i godziny są identyczne jak w PAK2. Nie trzeba dodawać kadry ani przepisywać spotkań.
+                Nowe terminy pochodzą z PAK2, a zatwierdzone godziny Gorzowa z dotychczasowych kart. Nie trzeba ich przepisywać.
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -447,7 +447,7 @@ export default function GrafikKadry() {
               <div className="text-right font-serif font-bold text-ink-strong">{formatGodziny(d.godziny)} h</div>
             </div>
           ))}
-          {dniPSFMiesiaca.length === 0 && <div className="px-[22px] py-7 text-center text-sm text-faint">Brak spotkań z formularzy w tym miesiącu.</div>}
+          {dniPSFMiesiaca.length === 0 && <div className="px-[22px] py-7 text-center text-sm text-faint">Brak spotkań w tym miesiącu.</div>}
           <div className="flex justify-between border-t border-line bg-hover-row px-[22px] py-3.5 text-sm">
             <span className="text-muted">Łącznie w miesiącu</span>
             <span className="font-serif text-lg font-bold text-primary-strong">{formatGodziny(sumaPSFMiesiaca)} h</span>

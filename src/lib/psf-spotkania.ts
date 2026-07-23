@@ -31,7 +31,9 @@ function minuty(t: string): number {
 
 /** Doradca wynika z miejsca/grupy formularza; uczestników Pomost obsługuje Doradca 1. */
 export function doradcaPSF(u: Uczestnik): string {
-  return /gorz[oó]w/i.test(u.grupa) ? "Doradca 2" : "Doradca 1 — Korina Łukaszkiewicz";
+  return /gorz[oó]w/i.test(u.grupa)
+    ? "Doradca 2 — Gorzów"
+    : "Doradca 1 — Korina Łukaszkiewicz";
 }
 
 /**
@@ -92,6 +94,63 @@ export interface DzienDoradcyPSF {
   godziny: number;
 }
 
+/**
+ * Historyczne godziny Doradcy 2 odczytane z zatwierdzonych kart czasu pracy.
+ * Nie przechowujemy tu danych osobowych uczestników. Wpis z formularza o tym
+ * samym terminie zastępuje wpis historyczny, więc późniejszy import grupy
+ * Gorzów nie podwoi godzin.
+ */
+const HISTORYCZNE_TERMINY_GORZOW: ReadonlyArray<[string, string, string]> = [
+  ["2026-03-20", "15:00", "19:00"],
+  ["2026-03-23", "15:00", "17:00"],
+  ["2026-03-24", "15:00", "19:00"],
+  ["2026-05-04", "15:00", "18:00"],
+  ["2026-05-05", "15:00", "19:00"],
+  ["2026-05-06", "15:00", "18:00"],
+  ["2026-07-08", "15:00", "16:00"],
+  ["2026-07-10", "15:00", "21:00"],
+];
+
+function historyczneSpotkaniaGorzowPSF(): SpotkaniePSF[] {
+  return HISTORYCZNE_TERMINY_GORZOW.flatMap(([data, od, doG]) => {
+    const start = minuty(od);
+    const koniec = minuty(doG);
+    const wynik: SpotkaniePSF[] = [];
+    for (let t = start; t < koniec; t += 60) {
+      const godzinaOd = `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+      const nastepna = t + 60;
+      const godzinaDo = `${String(Math.floor(nastepna / 60)).padStart(2, "0")}:${String(nastepna % 60).padStart(2, "0")}`;
+      wynik.push({
+        id: `psf-historyczne-gorzow:${data}:${godzinaOd}`,
+        uczestnikId: "",
+        nrUczestnika: "",
+        uczestnik: "",
+        grupa: "Gorzów",
+        doradca: "Doradca 2 — Gorzów",
+        data,
+        godzinaOd,
+        godzinaDo,
+        minuty: 60,
+        zadanie: ZADANIE,
+      });
+    }
+    return wynik;
+  });
+}
+
+export function spotkaniaDoKartCzasuPSF(spotkania: SpotkaniePSF[]): SpotkaniePSF[] {
+  const polaczone = new Map<string, SpotkaniePSF>();
+  for (const s of [...spotkania, ...historyczneSpotkaniaGorzowPSF()]) {
+    const klucz = `${s.data}|${s.doradca}|${s.godzinaOd}|${s.godzinaDo}`;
+    if (!polaczone.has(klucz) || s.uczestnikId) polaczone.set(klucz, s);
+  }
+  return [...polaczone.values()].sort((a, b) =>
+    a.data === b.data
+      ? a.godzinaOd.localeCompare(b.godzinaOd)
+      : a.data.localeCompare(b.data),
+  );
+}
+
 export function dniDoradcowPSF(spotkania: SpotkaniePSF[]): DzienDoradcyPSF[] {
   const mapa = new Map<string, SpotkaniePSF[]>();
   for (const s of spotkania) {
@@ -108,6 +167,10 @@ export function dniDoradcowPSF(spotkania: SpotkaniePSF[]): DzienDoradcyPSF[] {
       godziny: lista.reduce((n, s) => n + s.minuty, 0) / 60,
     }))
     .sort((a, b) => a.data === b.data ? a.doradca.localeCompare(b.doradca) : a.data.localeCompare(b.data));
+}
+
+export function dniKartCzasuPSF(spotkania: SpotkaniePSF[]): DzienDoradcyPSF[] {
+  return dniDoradcowPSF(spotkaniaDoKartCzasuPSF(spotkania));
 }
 
 function dataPL(iso: string): string {
@@ -148,7 +211,7 @@ const DNI = ["nd", "pon", "wt", "śr", "czw", "pt", "sob"];
 export function skoroszytKartyCzasuPSF(
   spotkania: SpotkaniePSF[], doradca: string, rok: number, miesiac: number,
 ): XLSX.WorkBook {
-  const dni = dniDoradcowPSF(spotkania).filter((d) => {
+  const dni = dniKartCzasuPSF(spotkania).filter((d) => {
     const [r, m] = d.data.split("-").map(Number);
     return d.doradca === doradca && r === rok && m === miesiac + 1;
   });
@@ -157,7 +220,7 @@ export function skoroszytKartyCzasuPSF(
   const suma = dni.reduce((n, d) => n + d.godziny, 0);
   const rows: (string | number)[][] = [
     ["KARTA CZASU PRACY W PROJEKCIE"], [], [],
-    ["Imię i nazwisko:", doradca.replace(/^Doradca 1 — /, "")],
+    ["Imię i nazwisko:", doradca.startsWith("Doradca 1 — ") ? doradca.replace(/^Doradca 1 — /, "") : ""],
     ["Projekt:", specyfikacjaPSF.nazwa],
     ["Stanowisko:", "Doradca zawodowy"],
     ["Wymiar godzin:", suma],
@@ -188,7 +251,12 @@ export function pobierzKoordynacjePSF(spotkania: SpotkaniePSF[]) {
 }
 
 export function pobierzKartyCzasuPSF(spotkania: SpotkaniePSF[], rok: number, miesiac: number) {
-  const doradcy = [...new Set(spotkania.map((s) => s.doradca))];
+  const doradcy = [...new Set(dniKartCzasuPSF(spotkania)
+    .filter((d) => {
+      const [r, m] = d.data.split("-").map(Number);
+      return r === rok && m === miesiac + 1;
+    })
+    .map((d) => d.doradca))];
   for (const d of doradcy) {
     XLSX.writeFile(skoroszytKartyCzasuPSF(spotkania, d, rok, miesiac), `Karta_czasu_${slug(d)}_${MIESIACE[miesiac]}_${rok}.xlsx`);
   }

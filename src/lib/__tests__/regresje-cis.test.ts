@@ -14,6 +14,7 @@ import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 import {
   dniDoradcowPSF,
+  dniKartCzasuPSF,
   dataStartowaHarmonogramuPSF,
   skoroszytKartyCzasuPSF,
   skoroszytKoordynacjiPSF,
@@ -208,6 +209,44 @@ describe("automatyczny harmonogram i karty PSF", () => {
     expect(karta.B5.v).toContain("Moja ścieżka rozwoju");
     expect(karta.B7.v).toBe(1);
     expect(karta.H43.f).toBe("SUM(H12:H42)");
+  });
+
+  it("uwzględnia historyczne karty Doradcy 2 z Gorzowa bez danych osobowych", () => {
+    const marzec = dniKartCzasuPSF([]).filter((d) => d.data.startsWith("2026-03"));
+    const maj = dniKartCzasuPSF([]).filter((d) => d.data.startsWith("2026-05"));
+    const lipiec = dniKartCzasuPSF([]).filter((d) => d.data.startsWith("2026-07"));
+
+    expect(marzec.reduce((n, d) => n + d.godziny, 0)).toBe(10);
+    expect(maj.reduce((n, d) => n + d.godziny, 0)).toBe(10);
+    expect(lipiec.reduce((n, d) => n + d.godziny, 0)).toBe(7);
+    expect(lipiec.every((d) => d.doradca === "Doradca 2 — Gorzów")).toBe(true);
+
+    const karta = skoroszytKartyCzasuPSF([], "Doradca 2 — Gorzów", 2026, 6)
+      .Sheets["Karta czasu pracy"];
+    expect(karta.B4.v).toBe("");
+    expect(karta.B7.v).toBe(7);
+    expect(karta.D19.v).toBe("15:00");
+    expect(karta.E19.v).toBe("16:00");
+    expect(karta.D21.v).toBe("15:00");
+    expect(karta.E21.v).toBe("21:00");
+  });
+
+  it("nie podwaja historycznej godziny Gorzowa po imporcie formularza", () => {
+    const spotkania = [{
+      id: "psf-auto:test",
+      uczestnikId: "u-test",
+      nrUczestnika: "001",
+      uczestnik: "Osoba Testowa",
+      grupa: "Gorzów lipiec",
+      doradca: "Doradca 2 — Gorzów",
+      data: "2026-07-08",
+      godzinaOd: "15:00",
+      godzinaDo: "16:00",
+      minuty: 60,
+      zadanie: "Doradztwo zawodowe i bilans kompetencji",
+    }];
+    const lipiec = dniKartCzasuPSF(spotkania).filter((d) => d.data.startsWith("2026-07"));
+    expect(lipiec.reduce((n, d) => n + d.godziny, 0)).toBe(7);
   });
 
   it("otwiera harmonogram na ostatnim spotkaniu zamiast na pustym bieżącym tygodniu", () => {
