@@ -536,3 +536,14 @@ describe("statusy i świadczenia", () => {
     });
   });
 });
+
+describe("komunikaty interfejsu", () => {
+  it("nie pokazuje nieaktualnej informacji o etapie E1", () => {
+    const strona = readFileSync(
+      join(process.cwd(), "src", "app", "uczestnicy", "page.tsx"),
+      "utf8",
+    );
+    expect(strona).not.toContain("baza z logowaniem i historią zmian to etap E1");
+    expect(strona).toContain("Brak uczestników w projekcie — zaimportuj bazę");
+  });
+});
