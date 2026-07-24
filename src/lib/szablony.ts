@@ -169,6 +169,37 @@ export function polaUczestnika(
     `Rozmowa potwierdziła wysoką motywację do zmiany sytuacji i predyspozycje do rozwoju aktywności społecznej i zawodowej. Sytuacja indywidualna wymaga wsparcia.`,
   ];
   const seed = (s.pesel ?? "").split("").reduce((a, c) => a + (Number(c) || 0), 0);
+  // PSF PAK2/B — jeden spójny profil kompetencji w obu dokumentach.
+  // Wzór dopuszcza skalę 1–5, natomiast robocze teczki projektu stosują
+  // poziomy 1–3. Dobór jest deterministyczny, więc ponowne wygenerowanie
+  // dokumentów tej samej osoby nie zmienia wyniku.
+  const nazwyKompetencjiPsf = [
+    "cyfrowe",
+    "jezykowe",
+    "spoleczne",
+    "zawodowe",
+    "zielone",
+  ] as const;
+  const poziomyKompetencjiPsf: Record<string, string> = {};
+  const seqPsf = [1, 1, 2, 2, 3];
+  nazwyKompetencjiPsf.forEach((nazwa, indeks) => {
+    const poziom = seqPsf[(seed * 3 + indeks * 7) % seqPsf.length];
+    poziomyKompetencjiPsf[`psf_poziom_${nazwa}`] = String(poziom);
+    for (let i = 1; i <= 5; i++) {
+      poziomyKompetencjiPsf[`cb_psf_${nazwa}_${i}`] = cb(i === poziom);
+    }
+  });
+  const kryteriaPremiujacePsf = [
+    kobieta,
+    niepelnosprawnoscTak,
+    (s.wiek ?? 0) >= 50,
+    !iscedWyzsze && !isced4,
+    s.degurba === "3",
+  ];
+  const punktyPremiujacePsf = Math.min(
+    50,
+    kryteriaPremiujacePsf.filter(Boolean).length * 20,
+  );
   // Dane, których nie ma w standardowym eksporcie SOWA, są dobierane
   // deterministycznie: wyglądają jak losowe, lecz po ponownym wygenerowaniu
   // dokumentu tej samej osoby pozostają identyczne.
@@ -266,6 +297,8 @@ export function polaUczestnika(
     cb_degurba_miejski: cb(s.degurba === "1"),
     cb_degurba_podmiejski: cb(s.degurba === "2"),
     cb_degurba_wiejski: cb(s.degurba === "3"),
+    cb_psf_niepelnosprawnosc: cb(niepelnosprawnoscTak),
+    cb_psf_brak_statusow_spolecznych: cb(niepelnosprawnoscNie),
     // PSF — punktacja premiująca (PAK1) + grupa ISCED (IPR)
     cb_wiek50: cb((s.wiek ?? 0) >= 50),
     cb_isced3minus: cb(!iscedWyzsze && !isced4),
@@ -274,6 +307,9 @@ export function polaUczestnika(
       : iscedSrednie
         ? "ISCED 3-4"
         : "ISCED 0-2",
+    pkt_psf_premiujace: String(punktyPremiujacePsf),
+    pkt_psf_ogolem: String(30 + punktyPremiujacePsf),
+    ...poziomyKompetencjiPsf,
     // A-03: punkty cz. III + opis rozmowy cz. IV
     pkt_plec: String(pktPlec),
     pkt_wielokrotne: String(pktWielokrotne),

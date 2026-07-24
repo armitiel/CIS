@@ -12,7 +12,7 @@ import { podzielL4 } from "../swiadczenia-l4";
 import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obecnosci";
 import type { Uczestnik } from "../types";
 import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika, wypelnijSzablon } from "../szablony";
-import { specyfikacjaPSF, specyfikacjaSWA, unikalneProjekty } from "../projekty";
+import { normalizujSzablonProjektu, specyfikacjaPSF, specyfikacjaSWA, unikalneProjekty } from "../projekty";
 import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 import {
@@ -457,6 +457,32 @@ describe("dostep pracownikow", () => {
       pierwszy,
       drugi,
     ]);
+  });
+
+  it("odczytuje z bazy identyfikator szablonu PSF", () => {
+    expect(normalizujSzablonProjektu("psf")).toBe("psf");
+  });
+
+  it("wylicza spójny profil kompetencji i punktację PSF", () => {
+    const u = uczestnik({
+      sowa: {
+        ...uczestnik().sowa,
+        plec: "kobieta",
+        wiek: 54,
+        wyksztalcenie: "Pogimnazjalne / zawodowe (ISCED 3)",
+        niepelnosprawnosc: "Tak — stopień umiarkowany",
+        degurba: "3",
+      },
+    });
+    const pola = polaUczestnika(u, specyfikacjaPSF);
+    expect(pola.pkt_psf_premiujace).toBe("50");
+    expect(pola.pkt_psf_ogolem).toBe("80");
+    expect(pola.cb_psf_niepelnosprawnosc).toBe("☒");
+    for (const nazwa of ["cyfrowe", "jezykowe", "spoleczne", "zawodowe", "zielone"]) {
+      const poziom = pola[`psf_poziom_${nazwa}`];
+      expect(["1", "2", "3"]).toContain(poziom);
+      expect(pola[`cb_psf_${nazwa}_${poziom}`]).toBe("☒");
+    }
   });
 
   it("migracja scala projekty zespolu i wymusza unikalny klucz", () => {

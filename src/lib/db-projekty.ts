@@ -5,6 +5,7 @@
 import { createClient } from "@/utils/supabase/client";
 import {
   SEEDY_PRZYKLADOWE,
+  normalizujSzablonProjektu,
   unikalneProjekty,
   type ProjektWlasnyZapis,
 } from "./projekty";
@@ -32,8 +33,7 @@ function zWiersza(w: WierszProjektu): ProjektWlasnyZapis {
     okres: w.okres,
     zrodlo: w.zrodlo,
     sekcje: w.sekcje && w.sekcje.length > 0 ? w.sekcje : undefined,
-    szablon:
-      w.szablon === "cis" || w.szablon === "swa" ? w.szablon : undefined,
+    szablon: normalizujSzablonProjektu(w.szablon),
     utworzono: w.utworzono,
   };
 }

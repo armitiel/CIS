@@ -9,6 +9,9 @@ const entries = [...source.matchAll(/"cis-2026:([^"]+)":\s*"([^"]+)"/g)].map(
 const swaEntries = [...source.matchAll(/"swa-6\.8:([^"]+)":\s*"([^"]+)"/g)].map(
   ([, id, filename]) => ({ id, filename }),
 );
+const psfEntries = [...source.matchAll(/"psf-sciezka:([^"]+)":\s*"([^"]+)"/g)].map(
+  ([, id, filename]) => ({ id, filename }),
+);
 
 const errors = [];
 if (entries.length !== 37) {
@@ -48,6 +51,21 @@ for (const { id, filename } of swaEntries) {
   }
 }
 
+if (psfEntries.length !== 8) {
+  errors.push(`Oczekiwano 8 wzorów PSF, znaleziono ${psfEntries.length}.`);
+}
+for (const { id, filename } of psfEntries) {
+  const path = join(process.cwd(), "public/wzory", filename);
+  if (!existsSync(path)) {
+    errors.push(`${id}: brak pliku ${filename}.`);
+    continue;
+  }
+  const signature = readFileSync(path).subarray(0, 4).toString("hex");
+  if (signature !== "504b0304") {
+    errors.push(`${id}: ${filename} nie jest poprawnym plikiem Office Open XML.`);
+  }
+}
+
 function documentXml(filename) {
   const zip = new PizZip(readFileSync(join(process.cwd(), "public/wzory", filename)));
   return zip.file("word/document.xml")?.asText() ?? "";
@@ -75,9 +93,31 @@ for (const pole of [
 if (b01.includes("SWA/G-01")) errors.push("SWA B-01 nadal odwołuje się do błędnego formularza SWA/G-01.");
 if (!b01.includes("SWA/C-05")) errors.push("SWA B-01 nie odwołuje się do właściwego formularza SWA/C-05.");
 
+const pak1 = documentXml("PSF_PAK1_Zgloszenie_potrzeb_szablon.docx");
+for (const pole of [
+  "cb_isced0", "cb_isced1", "cb_isced2", "cb_isced3", "cb_isced4", "cb_isced58",
+  "cb_psf_niepelnosprawnosc", "pkt_psf_premiujace", "pkt_psf_ogolem",
+]) {
+  if (!pak1.includes(`{{${pole}}}`)) errors.push(`PSF PAK1: brak pola {{${pole}}}.`);
+}
+if (pak1.includes("SUMA PUNKTÓW PREMIUJĄCYCH: 50")) {
+  errors.push("PSF PAK1 nadal zawiera punktację 50 wpisaną na stałe.");
+}
+
+const pak2 = documentXml("PSF_PAK2_Karta_doradztwa_bilans_szablon.docx");
+const ipr = documentXml("PSF_B_Indywidualny_Plan_Rozwoju_szablon.docx");
+for (const nazwa of ["cyfrowe", "jezykowe", "spoleczne", "zawodowe", "zielone"]) {
+  for (let poziom = 1; poziom <= 5; poziom++) {
+    const pole = `cb_psf_${nazwa}_${poziom}`;
+    if (!pak2.includes(`{{${pole}}}`)) errors.push(`PSF PAK2: brak pola {{${pole}}}.`);
+  }
+  const pole = `psf_poziom_${nazwa}`;
+  if (!ipr.includes(`{{${pole}}}`)) errors.push(`PSF IPR: brak pola {{${pole}}}.`);
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
 
-console.log(`Zweryfikowano ${entries.length} wzorów CIS i ${swaEntries.length} wzorów SWA (DOCX/XLSX).`);
+console.log(`Zweryfikowano ${entries.length} wzorów CIS, ${swaEntries.length} wzorów SWA i ${psfEntries.length} wzorów PSF (DOCX/XLSX).`);

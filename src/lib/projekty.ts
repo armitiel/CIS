@@ -216,6 +216,15 @@ export interface ProjektWlasnyZapis {
   szablon?: "cis" | "swa" | "psf";
 }
 
+/** Odczytuje wyłącznie obsługiwane identyfikatory szablonów zapisane w bazie. */
+export function normalizujSzablonProjektu(
+  wartosc: string | null | undefined,
+): ProjektWlasnyZapis["szablon"] {
+  return wartosc === "cis" || wartosc === "swa" || wartosc === "psf"
+    ? wartosc
+    : undefined;
+}
+
 /**
  * Przykładowe projekty zaszczepiane do bazy przy pierwszym logowaniu użytkownika.
  * Są zwykłymi rekordami (z szablonem) — można je edytować i usunąć.
