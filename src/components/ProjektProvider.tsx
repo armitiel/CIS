@@ -21,6 +21,7 @@ import {
 import {
   projekty as projektyWbudowane,
   projektDomyslny,
+  unikalneProjekty,
   wczytajProjektyWlasne,
   zapiszProjektyWlasne,
   zbudujProjektWlasny,
@@ -158,7 +159,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   }, [gotowy]);
 
   const wszystkieProjekty = useMemo(() => {
-    const wlasne = zapisy.map(zbudujProjektWlasny);
+    const wlasne = unikalneProjekty(zapisy).map(zbudujProjektWlasny);
     if (!trybBazy) return [...projektyWbudowane, ...wlasne];
     // Tryb bazy: projekty użytkownika + wbudowane z kodu, których baza jeszcze
     // nie ma (np. projekt dodany w aktualizacji po pierwszym zasianiu bazy).

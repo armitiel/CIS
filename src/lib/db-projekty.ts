@@ -1,11 +1,11 @@
-// Warstwa dostępu do projektów w Supabase (etap E1) — model PRYWATNY per użytkownik.
-// Każdy rekord należy do zalogowanego użytkownika (RLS po user_id; kolumna
-// user_id uzupełniana automatycznie DEFAULT auth.uid()). Gdy baza/sesja
-// niedostępne, wołający (ProjektProvider) wraca do localStorage.
+// Warstwa dostępu do wspólnych projektów zespołu w Supabase.
+// user_id wskazuje konto, które utworzyło rekord, natomiast RLS daje aktywnemu
+// zespołowi wspólny dostęp. Logiczny klucz projektu jest unikalny globalnie.
 
 import { createClient } from "@/utils/supabase/client";
 import {
   SEEDY_PRZYKLADOWE,
+  unikalneProjekty,
   type ProjektWlasnyZapis,
 } from "./projekty";
 
@@ -74,7 +74,7 @@ export async function czySesja(): Promise<boolean> {
   }
 }
 
-/** Pobiera projekty zalogowanego użytkownika (RLS ogranicza do własnych). */
+/** Pobiera wspólne projekty zespołu. */
 export async function pobierzProjekty(): Promise<ProjektWlasnyZapis[]> {
   const supabase = klient();
   const { data, error } = await supabase
@@ -82,17 +82,17 @@ export async function pobierzProjekty(): Promise<ProjektWlasnyZapis[]> {
     .select("*")
     .order("utworzono", { ascending: true });
   if (error) throw error;
-  return (data as WierszProjektu[]).map(zWiersza);
+  return unikalneProjekty((data as WierszProjektu[]).map(zWiersza));
 }
 
-/** Dodaje lub nadpisuje projekt (upsert po user_id+klucz). */
+/** Dodaje lub nadpisuje wspólny projekt po jego logicznym kluczu. */
 export async function zapiszProjektDB(
   z: ProjektWlasnyZapis,
 ): Promise<void> {
   const supabase = klient();
   const { error } = await supabase
     .from("projekty")
-    .upsert(doWiersza(z), { onConflict: "user_id,klucz" });
+    .upsert(doWiersza(z), { onConflict: "klucz" });
   if (error) throw error;
 }
 
@@ -156,7 +156,7 @@ export async function zasiejPrzykladowe(): Promise<void> {
       const { error } = await supabase
         .from("projekty")
         .upsert(doWiersza(seed), {
-          onConflict: "user_id,klucz",
+          onConflict: "klucz",
           ignoreDuplicates: true,
         });
       if (error) throw error;

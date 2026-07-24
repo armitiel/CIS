@@ -12,7 +12,7 @@ import { podzielL4 } from "../swiadczenia-l4";
 import { NASTEPNY_ZNAK, ZNAKI_DO_WYBORU, kodObecnosci } from "../oznaczenia-obecnosci";
 import type { Uczestnik } from "../types";
 import { formatujDateDokumentu, formatujDateDokumentuKropki, formatujTelefon, polaUczestnika, wypelnijSzablon } from "../szablony";
-import { specyfikacjaPSF, specyfikacjaSWA } from "../projekty";
+import { specyfikacjaPSF, specyfikacjaSWA, unikalneProjekty } from "../projekty";
 import { wymaganeDokumenty } from "../projekt-spec";
 import { wyborDokumentowPoZmianieBazy } from "../wybor-dokumentow";
 import {
@@ -448,6 +448,33 @@ describe("format SOWA", () => {
 });
 
 describe("dostep pracownikow", () => {
+  it("pokazuje tylko jeden rekord dla wspolnego klucza projektu", () => {
+    const pierwszy = { id: "cis-2026", nazwa: "CIS" };
+    const powtorka = { id: "cis-2026", nazwa: "CIS kopia" };
+    const drugi = { id: "swa-6.8", nazwa: "Smartfon" };
+
+    expect(unikalneProjekty([pierwszy, powtorka, drugi])).toEqual([
+      pierwszy,
+      drugi,
+    ]);
+  });
+
+  it("migracja scala projekty zespolu i wymusza unikalny klucz", () => {
+    const sql = readFileSync(
+      join(
+        process.cwd(),
+        "supabase",
+        "migrations",
+        "20260724120000_e14_projekty_wspolne_bez_duplikatow.sql",
+      ),
+      "utf8",
+    );
+    expect(sql).toContain("partition by klucz");
+    expect(sql).toContain("delete from public.projekty");
+    expect(sql).toContain("create unique index");
+    expect(sql).toContain("public.projekty (klucz)");
+  });
+
   it("akceptuje konto Google spoza domeny gmail i normalizuje adres", () => {
     expect(normalizujEmailZespolu("  Pracownik@Firma.PL ")).toBe(
       "pracownik@firma.pl",

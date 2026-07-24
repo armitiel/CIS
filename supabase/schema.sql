@@ -1,6 +1,5 @@
--- Schemat bazy CIS — etap E1. Wklej w Supabase: SQL Editor → New query → Run.
--- Model PRYWATNY per użytkownik: każda zalogowana osoba ma własny, odseparowany
--- zestaw projektów i uczestników (RLS po auth.uid() = user_id).
+-- Schemat bazy CIS. Wklej w Supabase: SQL Editor → New query → Run.
+-- Aktywni pracownicy korzystają ze wspólnego zestawu projektów i uczestników.
 -- Przykładowe projekty są zaszczepiane aplikacyjnie przy pierwszym logowaniu
 -- (patrz: profil.zasiano) i można je usunąć.
 --
@@ -94,7 +93,7 @@ create table if not exists public.projekty (
   szablon text,
   utworzono date not null default current_date,
   created_at timestamptz not null default now(),
-  unique (user_id, klucz)
+  unique (klucz)
 );
 
 create index if not exists projekty_user_idx on public.projekty (user_id);

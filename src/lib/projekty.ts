@@ -15,6 +15,23 @@ export interface Projekt {
   uczestnicyDomyslni: Uczestnik[];
 }
 
+/**
+ * Zwraca po jednym projekcie dla każdego logicznego identyfikatora.
+ *
+ * Wspólna baza zespołu może chwilowo zawierać stare rekordy utworzone przez
+ * różne konta przed wprowadzeniem globalnej unikalności klucza. Zachowujemy
+ * pierwszy rekord z uporządkowanego wyniku bazy, żeby interfejs nie pokazywał
+ * kilku kart tego samego projektu.
+ */
+export function unikalneProjekty<T extends { id: string }>(lista: T[]): T[] {
+  const widziane = new Set<string>();
+  return lista.filter((projekt) => {
+    if (widziane.has(projekt.id)) return false;
+    widziane.add(projekt.id);
+    return true;
+  });
+}
+
 /** Specyfikacja wstępna projektu 6.8 — do uzupełnienia o pełny katalog formularzy. */
 export const specyfikacjaSWA: SpecyfikacjaProjektu = {
   id: "swa-6.8",
