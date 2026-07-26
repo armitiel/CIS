@@ -182,6 +182,13 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
             ? biezacy
             : (zBazy[0]?.id ?? biezacy),
         );
+        // Uprawnienia — ładujemy tu, gdzie sesja jest już pewna (kluczowe dla filtra projektów).
+        try {
+          const upr = await pobierzMojeUprawnienia();
+          if (!anulowane) setMojeUpr(upr);
+        } catch {
+          /* brak kolumny/uprawnień — filtr nie zawęzi widoku */
+        }
       } catch {
         // brak tabel / brak uprawnień → zostajemy w trybie lokalnym
       }
@@ -226,8 +233,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     if (!mojeUpr || mojeUpr.rola === "administrator") return wszystkieProjekty;
     const przypisane = mojeUpr.projekty ?? [];
     if (przypisane.length === 0) return wszystkieProjekty;
-    const dozwolone = wszystkieProjekty.filter((p) => przypisane.includes(p.id));
-    return dozwolone.length > 0 ? dozwolone : wszystkieProjekty;
+    // fail-closed: pokazujemy tylko przypisane; brak dopasowania = brak projektów (nie wszystkie).
+    return wszystkieProjekty.filter((p) => przypisane.includes(p.id));
   }, [wszystkieProjekty, mojeUpr]);
 
   const projekt =
