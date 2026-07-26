@@ -7,6 +7,9 @@ export default function Login() {
   const [bladKonfig, setBladKonfig] = useState(false);
   const [trwa, setTrwa] = useState(false);
   const [bladUrl, setBladUrl] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [magicWyslany, setMagicWyslany] = useState(false);
+  const [magicBlad, setMagicBlad] = useState<string | null>(null);
 
   // odczytaj ewentualny błąd przekazany przez /auth/callback
   useEffect(() => {
@@ -53,6 +56,35 @@ export default function Login() {
     }
   }
 
+  // Logowanie zwykłym e-mailem — link do zalogowania (magic link, bez hasła).
+  async function zalogujMailem() {
+    const adres = email.trim().toLowerCase();
+    if (!adres || !adres.includes("@")) {
+      setMagicBlad("Wpisz poprawny adres e-mail.");
+      return;
+    }
+    setTrwa(true);
+    setMagicBlad(null);
+    try {
+      const supabase = createClient();
+      if (!supabase) {
+        setBladKonfig(true);
+        setTrwa(false);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithOtp({
+        email: adres,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      setTrwa(false);
+      if (error) setMagicBlad(error.message);
+      else setMagicWyslany(true);
+    } catch {
+      setTrwa(false);
+      setMagicBlad("Nie udało się wysłać linku. Spróbuj ponownie.");
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-app px-4">
       <div className="card anim-card-in w-full max-w-sm p-8 text-center">
@@ -96,6 +128,47 @@ export default function Login() {
           </svg>
           {trwa ? "Przekierowanie…" : "Zaloguj się przez Google"}
         </button>
+
+        <div className="my-4 flex items-center gap-3 text-xs text-faint">
+          <span className="h-px flex-1 bg-line" />
+          albo
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        {magicWyslany ? (
+          <div className="rounded-lg bg-green-soft px-3 py-3 text-sm text-primary-strong">
+            Wysłaliśmy link na <b>{email.trim().toLowerCase()}</b>. Otwórz
+            skrzynkę i kliknij link, aby się zalogować (sprawdź też folder SPAM).
+          </div>
+        ) : (
+          <div className="text-left">
+            <label className="th-label mb-1 block">
+              Zaloguj się e-mailem (bez hasła)
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="twoj@email.pl"
+              className="w-full rounded-xl border border-line-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-[oklch(0.62_0.09_152)]"
+            />
+            <button
+              onClick={zalogujMailem}
+              disabled={trwa}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+            >
+              <span className="material-symbols-rounded notranslate text-[18px]">
+                mail
+              </span>
+              {trwa ? "Wysyłanie…" : "Wyślij link na e-mail"}
+            </button>
+            {magicBlad && (
+              <p className="mt-2 rounded-lg bg-amber-soft px-3 py-2 text-xs text-amber-ink">
+                {magicBlad}
+              </p>
+            )}
+          </div>
+        )}
 
         {bladUrl && (
           <p className="mt-4 break-words rounded-lg bg-amber-soft px-3 py-2 text-left text-xs text-amber-ink">
