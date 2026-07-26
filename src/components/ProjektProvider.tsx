@@ -57,6 +57,23 @@ import {
 const KLUCZ_PROJEKT = "cis-app:aktywny-projekt";
 const kluczUczestnikow = (projektId: string) =>
   `cis-app:uczestnicy:${projektId}`;
+// Kosz — usunięci uczestnicy przechowywani lokalnie, do przywrócenia jednym kliknięciem.
+const kluczKosz = (projektId: string) => `cis-app:kosz-uczestnikow:${projektId}`;
+const czytajKosz = (projektId: string): Uczestnik[] => {
+  try {
+    const raw = localStorage.getItem(kluczKosz(projektId));
+    return raw ? (JSON.parse(raw) as Uczestnik[]) : [];
+  } catch {
+    return [];
+  }
+};
+const zapiszKosz = (projektId: string, lista: Uczestnik[]) => {
+  try {
+    localStorage.setItem(kluczKosz(projektId), JSON.stringify(lista));
+  } catch {
+    /* limit localStorage */
+  }
+};
 
 const IDS_WBUDOWANE = projektyWbudowane.map((p) => p.id);
 
@@ -71,8 +88,12 @@ interface ProjektContextValue {
   dodajUczestnika: (u: Uczestnik) => void;
   /** aktualizuje pola uczestnika (np. etap/postęp ścieżki) — zapis lokalny + baza */
   aktualizujUczestnika: (id: string, zmiany: Partial<Uczestnik>) => void;
-  /** usuwa uczestnika z projektu — zapis lokalny + baza */
+  /** usuwa uczestnika z projektu — zapis lokalny + baza; kopia trafia do Kosza */
   usunUczestnika: (id: string) => void;
+  /** uczestnicy usunięci (Kosz) w aktywnym projekcie — do przywrócenia */
+  kosz: Uczestnik[];
+  /** przywraca uczestnika z Kosza z powrotem do projektu */
+  przywrocUczestnika: (id: string) => void;
   /** dodaje projekt (zapis w bazie lub przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
   /** aktualizuje dane projektu; zwraca false, gdy projektu nie można edytować */
@@ -95,6 +116,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const [importowani, setImportowani] = useState<Record<string, Uczestnik[]>>(
     {},
   );
+  // licznik odświeżający listę Kosza po usunięciu/przywróceniu
+  const [koszWersja, setKoszWersja] = useState(0);
   // Lista projektów dynamicznych: tryb lokalny = własne z localStorage,
   // tryb bazy = wszystkie projekty użytkownika z Supabase.
   const [zapisy, setZapisy] = useState<ProjektWlasnyZapis[]>([]);
@@ -339,9 +362,24 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [projekt.id, projekt.uczestnicyDomyslni],
   );
 
-  /** Usuwa uczestnika z aktywnego projektu. */
+  /** Usuwa uczestnika z aktywnego projektu — najpierw kopia do Kosza (do przywrócenia). */
   const usunUczestnika = useCallback(
     (id: string) => {
+      // Znajdź usuwanego w bieżącej liście (localStorage = źródło lokalne) i przenieś do Kosza.
+      let lista: Uczestnik[] = [];
+      try {
+        const raw = localStorage.getItem(kluczUczestnikow(projekt.id));
+        lista = raw
+          ? (JSON.parse(raw) as Uczestnik[])
+          : (projekt.uczestnicyDomyslni ?? []);
+      } catch {
+        lista = projekt.uczestnicyDomyslni ?? [];
+      }
+      const usuwany = lista.find((u) => u.id === id);
+      if (usuwany) {
+        const kosz = czytajKosz(projekt.id).filter((u) => u.id !== id);
+        zapiszKosz(projekt.id, [usuwany, ...kosz]);
+      }
       setImportowani((stan) => {
         const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
         const nowi = obecni.filter((u) => u.id !== id);
@@ -355,6 +393,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
         }
         return { ...stan, [projekt.id]: nowi };
       });
+      setKoszWersja((n) => n + 1);
       if (bazaDostepna()) {
         usunUczestnikaDB(id).catch(() => {
           /* rekord spoza bazy / brak sesji — pozostaje zapis lokalny */
@@ -362,6 +401,48 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [projekt.id, projekt.uczestnicyDomyslni],
+  );
+
+  /** Przywraca uczestnika z Kosza z powrotem do projektu. */
+  const przywrocUczestnika = useCallback(
+    (id: string) => {
+      const kosz = czytajKosz(projekt.id);
+      const wracajacy = kosz.find((u) => u.id === id);
+      if (!wracajacy) return;
+      zapiszKosz(
+        projekt.id,
+        kosz.filter((u) => u.id !== id),
+      );
+      setImportowani((stan) => {
+        const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
+        const nowi = obecni.some((u) => u.id === id)
+          ? obecni
+          : [...obecni, wracajacy];
+        try {
+          localStorage.setItem(
+            kluczUczestnikow(projekt.id),
+            JSON.stringify(nowi),
+          );
+        } catch {
+          /* limit localStorage */
+        }
+        return { ...stan, [projekt.id]: nowi };
+      });
+      setKoszWersja((n) => n + 1);
+      if (bazaDostepna()) {
+        dodajUczestnikaDB(wracajacy, projekt.id).catch(() => {
+          /* brak sesji/tabeli — pozostaje zapis lokalny */
+        });
+      }
+    },
+    [projekt.id, projekt.uczestnicyDomyslni],
+  );
+
+  /** Lista uczestników w Koszu aktywnego projektu. */
+  const kosz = useMemo(
+    () => czytajKosz(projekt.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projekt.id, koszWersja],
   );
 
   /** Czy projekt można edytować/usunąć. */
@@ -462,6 +543,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       dodajUczestnika,
       aktualizujUczestnika,
       usunUczestnika,
+      kosz,
+      przywrocUczestnika,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,
@@ -479,6 +562,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       dodajUczestnika,
       aktualizujUczestnika,
       usunUczestnika,
+      kosz,
+      przywrocUczestnika,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,

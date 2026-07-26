@@ -23,7 +23,10 @@ export default function Uczestnicy() {
     wyczyscImport,
     dodajUczestnika,
     aktualizujUczestnika,
+    kosz,
+    przywrocUczestnika,
   } = useProjekt();
+  const [pokazKosz, setPokazKosz] = useState(false);
   const [szukaj, setSzukaj] = useState("");
   const [kategoria, setKategoria] = useState<FiltrKategorii>("wszyscy");
   const [grupaFiltr, setGrupaFiltr] = useState<string>("wszyscy");
@@ -228,12 +231,73 @@ export default function Uczestnicy() {
             </span>
             Dodaj uczestnika
           </button>
+          <button
+            onClick={() => setPokazKosz((v) => !v)}
+            className="btn-dark"
+            title="Kosz — przywróć przypadkowo usuniętych uczestników"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              restore_from_trash
+            </span>
+            Kosz{kosz.length ? ` (${kosz.length})` : ""}
+          </button>
         </div>
       </div>
 
       {komunikat && (
         <div className="card anim-fade-in px-4 py-3 text-sm text-ink">
           {komunikat}
+        </div>
+      )}
+
+      {pokazKosz && (
+        <div className="card anim-card-in overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+            <h2 className="m-0 font-serif text-[17px] font-semibold text-ink-strong">
+              Kosz — usunięci uczestnicy ({kosz.length})
+            </h2>
+            <span className="text-[12.5px] text-ink-soft">
+              Kliknij „Przywróć”, aby cofnąć usunięcie
+            </span>
+          </div>
+          {kosz.length === 0 ? (
+            <div className="px-5 py-4 text-sm text-ink-soft">
+              Kosz jest pusty.
+            </div>
+          ) : (
+            <ul className="m-0 list-none divide-y divide-line p-0">
+              {kosz.map((u) => (
+                <li
+                  key={u.id}
+                  className="flex items-center justify-between gap-3 px-5 py-3"
+                >
+                  <span className="text-sm text-ink">
+                    {u.nazwisko} {u.imie}
+                    {u.sowa?.pesel ? (
+                      <span className="ml-2 text-[12.5px] text-ink-soft">
+                        PESEL {u.sowa.pesel}
+                      </span>
+                    ) : null}
+                  </span>
+                  <button
+                    onClick={() => {
+                      przywrocUczestnika(u.id);
+                      setKomunikat(
+                        `Przywrócono uczestnika ${u.nazwisko} ${u.imie}.`,
+                      );
+                    }}
+                    className="btn-dark"
+                    title="Przywróć uczestnika do projektu"
+                  >
+                    <span className="material-symbols-rounded notranslate text-[18px]">
+                      restore
+                    </span>
+                    Przywróć
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
