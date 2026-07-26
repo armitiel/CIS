@@ -239,7 +239,54 @@ export function polaUczestnika(
   for (let i = 1; i <= 18; i++) {
     poziomy["poz" + i] = String(seqPoz[(seed * 3 + i * 7) % seqPoz.length]);
   }
+  // PSF PAK2 — opisy słowne (CZĘŚĆ V i VIII) wywiedzione z poziomów kompetencji.
+  // Priorytetowe = kompetencje o najniższym poziomie. Pola nie mogą być puste.
+  const psfFormy: Record<string, { dop: string; obsz: string; mian: string }> = {
+    cyfrowe: { dop: "cyfrowych", obsz: "cyfrowym", mian: "cyfrowe" },
+    jezykowe: { dop: "językowych", obsz: "językowym", mian: "językowe" },
+    spoleczne: { dop: "społecznych", obsz: "społecznym", mian: "społeczne" },
+    zawodowe: { dop: "zawodowych", obsz: "zawodowym", mian: "zawodowe" },
+    zielone: { dop: "zielonych", obsz: "zielonym", mian: "zielone" },
+  };
+  const psfPoziomyList = nazwyKompetencjiPsf.map((n) => ({
+    n,
+    poziom: Number(poziomyKompetencjiPsf[`psf_poziom_${n}`] ?? "2"),
+  }));
+  const psfMin = Math.min(...psfPoziomyList.map((x) => x.poziom));
+  const psfPriorytet = psfPoziomyList
+    .filter((x) => x.poziom === psfMin)
+    .map((x) => x.n);
+  const psfWyzsze = psfPoziomyList
+    .filter((x) => x.poziom > psfMin)
+    .map((x) => x.n);
+  const listaPsf = (arr: string[], forma: "dop" | "obsz" | "mian") => {
+    const w = arr.map((n) => psfFormy[n][forma]);
+    if (w.length <= 1) return w.join("");
+    return w.slice(0, -1).join(", ") + " i " + w[w.length - 1];
+  };
+  const psfPriDop = listaPsf(psfPriorytet, "dop");
+  const psfPriObsz = listaPsf(psfPriorytet, "obsz");
+  const psfWyzDop = psfWyzsze.length ? listaPsf(psfWyzsze, "dop") : "";
+  const opisPotrzeb =
+    `Na podstawie bilansu kompetencji jako priorytetowe zidentyfikowano potrzeby rozwojowe w zakresie kompetencji ${psfPriDop} (najniższe poziomy w ocenie).` +
+    (psfWyzsze.length
+      ? ` Relatywnie wyższy poziom kompetencji ${psfWyzDop} oraz motywacja uczestnika do nauki stanowią zasób wspierający dalszy rozwój.`
+      : " Motywacja uczestnika do nauki stanowi zasób wspierający dalszy rozwój.");
+  const opisPrzebiegu =
+    `Podczas 60-minutowego spotkania doradczego przeprowadzono bilans kompetencji, w którym najniższe poziomy odnotowano w obszarze ${psfPriObsz}. ` +
+    `Omówiono sytuację edukacyjno-zawodową uczestnika oraz jego motywację do podnoszenia kwalifikacji. ` +
+    `Zaprezentowano ofertę Bazy Usług Rozwojowych i narzędzia walidacji kompetencji (Europass, „Moje portfolio”).`;
+  const rekomendacjeWnioski =
+    `Rekomenduje się skierowanie na usługę rozwojową z BUR rozwijającą kompetencje ${psfPriDop}. ` +
+    `Wskazana jest ścieżka umożliwiająca praktyczne zastosowanie nabytych umiejętności, zgodnie z Indywidualnym Planem Rozwoju.`;
+  // PSF B (IPR) — „Obszary wymagające rozwoju" wywiedzione z profilu kompetencji (pkt 2).
+  const obszaryRozwoju =
+    `Kompetencje ${listaPsf(psfPriorytet, "mian")} — zidentyfikowane jako priorytetowe na podstawie profilu kompetencji (najniższe poziomy w bilansie).`;
   return {
+    opis_potrzeb: opisPotrzeb,
+    opis_przebiegu: opisPrzebiegu,
+    rekomendacje_wnioski: rekomendacjeWnioski,
+    obszary_rozwoju: obszaryRozwoju,
     imie: v(u.imie),
     nazwisko: v(u.nazwisko),
     imie_nazwisko: `${u.imie} ${u.nazwisko}`,
