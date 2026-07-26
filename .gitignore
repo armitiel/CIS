@@ -38,3 +38,15 @@ dev*.log
 
 # Supabase CLI
 supabase/.temp/
+
+# Windows / śmieci systemowe
+desktop.ini
+**/desktop.ini
+Thumbs.db
+NVIDIA Corporation/
+
+# kopie zapasowe i pliki tymczasowe edycji
+*.bak
+*.bak_*
+**/_backup_*/
+public/wzory/_backup_*/
