@@ -96,6 +96,8 @@ interface ProjektContextValue {
   przywrocUczestnika: (id: string) => void;
   /** usuwa wszystkich uczestników aktywnego projektu (do Kosza) */
   usunWszystkichUczestnikow: () => void;
+  /** opróżnia Kosz aktywnego projektu (trwałe usunięcie) */
+  oproznijKosz: () => void;
   /** dodaje projekt (zapis w bazie lub przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
   /** aktualizuje dane projektu; zwraca false, gdy projektu nie można edytować */
@@ -439,6 +441,12 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [projekt.id, koszWersja],
   );
 
+  /** Opróżnia Kosz aktywnego projektu (trwałe usunięcie — bez możliwości przywrócenia). */
+  const oproznijKosz = useCallback(() => {
+    zapiszKosz(projekt.id, []);
+    setKoszWersja((n) => n + 1);
+  }, [projekt.id]);
+
   /** Usuwa WSZYSTKICH uczestników aktywnego projektu — cała lista trafia do Kosza. */
   const usunWszystkichUczestnikow = useCallback(() => {
     setImportowani((stan) => {
@@ -564,6 +572,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       kosz,
       przywrocUczestnika,
       usunWszystkichUczestnikow,
+      oproznijKosz,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,
@@ -584,6 +593,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       kosz,
       przywrocUczestnika,
       usunWszystkichUczestnikow,
+      oproznijKosz,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,

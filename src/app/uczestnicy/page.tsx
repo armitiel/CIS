@@ -26,6 +26,7 @@ export default function Uczestnicy() {
     kosz,
     przywrocUczestnika,
     usunWszystkichUczestnikow,
+    oproznijKosz,
   } = useProjekt();
   const [pokazKosz, setPokazKosz] = useState(false);
   const [szukaj, setSzukaj] = useState("");
@@ -281,9 +282,33 @@ export default function Uczestnicy() {
             <h2 className="m-0 font-serif text-[17px] font-semibold text-ink-strong">
               Kosz — usunięci uczestnicy ({kosz.length})
             </h2>
-            <span className="text-[12.5px] text-ink-soft">
-              Kliknij „Przywróć”, aby cofnąć usunięcie
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[12.5px] text-ink-soft">
+                Kliknij „Przywróć”, aby cofnąć usunięcie
+              </span>
+              {kosz.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Opróżnić Kosz (${kosz.length})? To trwałe usunięcie — nie będzie już można przywrócić tych osób.`,
+                      )
+                    ) {
+                      const n = kosz.length;
+                      oproznijKosz();
+                      setKomunikat(`Opróżniono Kosz (usunięto trwale ${n}).`);
+                    }
+                  }}
+                  className="btn-dark"
+                  title="Trwale usuń wszystkich z Kosza (bez możliwości przywrócenia)"
+                >
+                  <span className="material-symbols-rounded notranslate text-[18px]">
+                    delete_forever
+                  </span>
+                  Opróżnij kosz
+                </button>
+              )}
+            </div>
           </div>
           {kosz.length === 0 ? (
             <div className="px-5 py-4 text-sm text-ink-soft">
