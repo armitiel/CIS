@@ -94,6 +94,8 @@ interface ProjektContextValue {
   kosz: Uczestnik[];
   /** przywraca uczestnika z Kosza z powrotem do projektu */
   przywrocUczestnika: (id: string) => void;
+  /** usuwa wszystkich uczestników aktywnego projektu (do Kosza) */
+  usunWszystkichUczestnikow: () => void;
   /** dodaje projekt (zapis w bazie lub przeglądarce) i przełącza na niego */
   dodajProjekt: (zapis: ProjektWlasnyZapis) => void;
   /** aktualizuje dane projektu; zwraca false, gdy projektu nie można edytować */
@@ -445,6 +447,38 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     [projekt.id, koszWersja],
   );
 
+  /** Usuwa WSZYSTKICH uczestników aktywnego projektu — cała lista trafia do Kosza. */
+  const usunWszystkichUczestnikow = useCallback(() => {
+    let lista: Uczestnik[] = [];
+    try {
+      const raw = localStorage.getItem(kluczUczestnikow(projekt.id));
+      lista = raw
+        ? (JSON.parse(raw) as Uczestnik[])
+        : (projekt.uczestnicyDomyslni ?? []);
+    } catch {
+      lista = projekt.uczestnicyDomyslni ?? [];
+    }
+    if (lista.length) {
+      const mapa = new Map<string, Uczestnik>();
+      [...lista, ...czytajKosz(projekt.id)].forEach((u) => mapa.set(u.id, u));
+      zapiszKosz(projekt.id, [...mapa.values()]);
+    }
+    setImportowani((stan) => {
+      try {
+        localStorage.setItem(kluczUczestnikow(projekt.id), JSON.stringify([]));
+      } catch {
+        /* limit localStorage */
+      }
+      return { ...stan, [projekt.id]: [] };
+    });
+    setKoszWersja((n) => n + 1);
+    if (bazaDostepna()) {
+      usunUczestnikowProjektu(projekt.id).catch(() => {
+        /* brak sesji/tabeli — pozostaje zapis lokalny */
+      });
+    }
+  }, [projekt.id, projekt.uczestnicyDomyslni]);
+
   /** Czy projekt można edytować/usunąć. */
   const czyWlasny = useCallback(
     (id: string) => (trybBazy ? true : !IDS_WBUDOWANE.includes(id)),
@@ -545,6 +579,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       usunUczestnika,
       kosz,
       przywrocUczestnika,
+      usunWszystkichUczestnikow,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,
@@ -564,6 +599,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
       usunUczestnika,
       kosz,
       przywrocUczestnika,
+      usunWszystkichUczestnikow,
       dodajProjekt,
       aktualizujProjekt,
       usunProjekt,

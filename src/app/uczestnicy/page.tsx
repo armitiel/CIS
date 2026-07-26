@@ -25,6 +25,7 @@ export default function Uczestnicy() {
     aktualizujUczestnika,
     kosz,
     przywrocUczestnika,
+    usunWszystkichUczestnikow,
   } = useProjekt();
   const [pokazKosz, setPokazKosz] = useState(false);
   const [szukaj, setSzukaj] = useState("");
@@ -240,6 +241,30 @@ export default function Uczestnicy() {
               restore_from_trash
             </span>
             Kosz{kosz.length ? ` (${kosz.length})` : ""}
+          </button>
+          <button
+            onClick={() => {
+              const n = uczestnicy.length;
+              if (n === 0) return;
+              if (
+                window.confirm(
+                  `Usunąć wszystkich uczestników (${n}) z projektu „${projekt.skrot}”? Trafią do Kosza — będzie można je przywrócić.`,
+                )
+              ) {
+                usunWszystkichUczestnikow();
+                setKomunikat(
+                  `Usunięto wszystkich uczestników (${n}) — są w Koszu do przywrócenia.`,
+                );
+              }
+            }}
+            disabled={uczestnicy.length === 0}
+            className="btn-dark"
+            title="Usuń wszystkich uczestników projektu (odwracalne — trafiają do Kosza)"
+          >
+            <span className="material-symbols-rounded notranslate text-[18px]">
+              delete_sweep
+            </span>
+            Usuń wszystkich
           </button>
         </div>
       </div>
