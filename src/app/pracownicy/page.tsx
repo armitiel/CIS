@@ -19,6 +19,7 @@ export default function Pracownicy() {
   const [email, setEmail] = useState("");
   const [nazwa, setNazwa] = useState("");
   const [rola, setRola] = useState<RolaDostepu>("pracownik");
+  const [noweProjekty, setNoweProjekty] = useState<string[]>([]);
   const [trwa, setTrwa] = useState(false);
   const [blad, setBlad] = useState<string | null>(null);
   const [komunikat, setKomunikat] = useState<string | null>(null);
@@ -46,11 +47,19 @@ export default function Pracownicy() {
     setKomunikat(null);
     try {
       await dodajPracownika(email, rola, nazwa);
+      if (rola === "pracownik" && noweProjekty.length > 0) {
+        await ustawProjektyPracownika(email, noweProjekty);
+      }
       setEmail("");
       setNazwa("");
       setRola("pracownik");
+      setNoweProjekty([]);
       await odswiez();
-      setKomunikat("Dodano pracownika. Moze teraz zalogowac sie swoim kontem Google.");
+      setKomunikat(
+        rola === "pracownik" && noweProjekty.length > 0
+          ? `Dodano pracownika z dostepem do ${noweProjekty.length} projekt(ow). Moze zalogowac sie kontem Google.`
+          : "Dodano pracownika. Moze teraz zalogowac sie swoim kontem Google.",
+      );
     } catch (e) {
       setBlad(e instanceof Error ? e.message : "Nie udalo sie dodac pracownika.");
     } finally {
@@ -148,6 +157,43 @@ export default function Pracownicy() {
                 <option value="administrator">Administrator - takze zarzadzanie dostepem</option>
               </select>
             </div>
+            {rola === "pracownik" && (
+              <div className="sm:col-span-2">
+                <label className="th-label mb-1 block">
+                  Projekty pracownika{" "}
+                  <span className="font-normal text-muted">
+                    (nic nie zaznaczysz = widzi wszystkie)
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {projekty.map((p) => {
+                    const zazn = noweProjekty.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() =>
+                          setNoweProjekty((s) =>
+                            zazn
+                              ? s.filter((id) => id !== p.id)
+                              : [...s, p.id],
+                          )
+                        }
+                        className={`rounded-xl px-3 py-1.5 text-[13px] font-medium ${
+                          zazn
+                            ? "bg-green-soft text-primary-strong"
+                            : "bg-soft text-ink-mid"
+                        }`}
+                        title={p.nazwa}
+                      >
+                        {zazn ? "☒ " : "☐ "}
+                        {p.skrot}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="flex items-end">
               <button
                 onClick={dodaj}
