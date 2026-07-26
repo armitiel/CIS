@@ -5,12 +5,15 @@ import {
   dodajPracownika,
   pobierzMojeUprawnienia,
   pobierzZespol,
+  ustawProjektyPracownika,
   zmienPracownika,
   type CzlonekZespolu,
   type RolaDostepu,
 } from "@/lib/db-zespol";
+import { useProjekt } from "@/components/ProjektProvider";
 
 export default function Pracownicy() {
+  const { projekty } = useProjekt();
   const [zespol, setZespol] = useState<CzlonekZespolu[]>([]);
   const [administrator, setAdministrator] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
@@ -68,6 +71,25 @@ export default function Pracownicy() {
       setKomunikat("Zapisano zmiane dostepu.");
     } catch (e) {
       setBlad(e instanceof Error ? e.message : "Nie udalo sie zmienic dostepu.");
+    } finally {
+      setTrwa(false);
+    }
+  }
+
+  async function zmienProjekty(emailPracownika: string, noweProjekty: string[]) {
+    setTrwa(true);
+    setBlad(null);
+    setKomunikat(null);
+    try {
+      await ustawProjektyPracownika(emailPracownika, noweProjekty);
+      await odswiez();
+      setKomunikat("Zapisano przypisanie projektów.");
+    } catch (e) {
+      setBlad(
+        e instanceof Error
+          ? e.message
+          : "Nie udalo sie zapisac projektow (czy wykonano zmiane w bazie?).",
+      );
     } finally {
       setTrwa(false);
     }
@@ -158,10 +180,8 @@ export default function Pracownicy() {
         </div>
         <div className="divide-y divide-line-soft">
           {zespol.map((osoba) => (
-            <div
-              key={osoba.email}
-              className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <div key={osoba.email} className="flex flex-col gap-3 px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="font-semibold text-ink">
                   {osoba.nazwa || osoba.email.split("@")[0]}
@@ -201,6 +221,45 @@ export default function Pracownicy() {
                   </span>
                 )}
               </div>
+              </div>
+              {administrator && osoba.rola === "pracownik" && (
+                <div className="border-t border-line-soft pt-3">
+                  <div className="th-label mb-2">
+                    Projekty pracownika{" "}
+                    {osoba.projekty.length === 0
+                      ? "— brak przypisania (widzi wszystkie)"
+                      : `(${osoba.projekty.length})`}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {projekty.map((p) => {
+                      const zazn = osoba.projekty.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          disabled={trwa}
+                          onClick={() =>
+                            void zmienProjekty(
+                              osoba.email,
+                              zazn
+                                ? osoba.projekty.filter((id) => id !== p.id)
+                                : [...osoba.projekty, p.id],
+                            )
+                          }
+                          className={`rounded-xl px-3 py-1.5 text-[13px] font-medium ${
+                            zazn
+                              ? "bg-green-soft text-primary-strong"
+                              : "bg-soft text-ink-mid"
+                          }`}
+                          title={p.nazwa}
+                        >
+                          {zazn ? "☒ " : "☐ "}
+                          {p.skrot}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {administrator !== null && zespol.length === 0 && (

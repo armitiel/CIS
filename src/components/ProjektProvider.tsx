@@ -53,6 +53,10 @@ import {
   zapiszProjektDB,
   zasiejPrzykladowe,
 } from "@/lib/db-projekty";
+import {
+  pobierzMojeUprawnienia,
+  type CzlonekZespolu,
+} from "@/lib/db-zespol";
 
 const KLUCZ_PROJEKT = "cis-app:aktywny-projekt";
 const kluczUczestnikow = (projektId: string) =>
@@ -122,6 +126,8 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   );
   // licznik odświeżający listę Kosza po usunięciu/przywróceniu
   const [koszWersja, setKoszWersja] = useState(0);
+  // uprawnienia zalogowanego pracownika (rola + przypisane projekty)
+  const [mojeUpr, setMojeUpr] = useState<CzlonekZespolu | null>(null);
   // Lista projektów dynamicznych: tryb lokalny = własne z localStorage,
   // tryb bazy = wszystkie projekty użytkownika z Supabase.
   const [zapisy, setZapisy] = useState<ProjektWlasnyZapis[]>([]);
@@ -185,6 +191,23 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     };
   }, [gotowy]);
 
+  // Uprawnienia zalogowanego pracownika — do filtrowania widocznych projektów.
+  useEffect(() => {
+    if (!gotowy || !bazaDostepna()) return;
+    let anulowane = false;
+    (async () => {
+      try {
+        const upr = await pobierzMojeUprawnienia();
+        if (!anulowane) setMojeUpr(upr);
+      } catch {
+        /* brak sesji / kolumny — bez ograniczeń (widoczne wszystkie) */
+      }
+    })();
+    return () => {
+      anulowane = true;
+    };
+  }, [gotowy, trybBazy]);
+
   const wszystkieProjekty = useMemo(() => {
     const wlasne = unikalneProjekty(zapisy).map(zbudujProjektWlasny);
     if (!trybBazy) return [...projektyWbudowane, ...wlasne];
@@ -197,10 +220,30 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     return [...brakujaceWbudowane, ...wlasne];
   }, [trybBazy, zapisy]);
 
+  // Projekty widoczne dla zalogowanego: administrator i brak przypisania → wszystkie;
+  // pracownik z przypisanymi projektami → tylko one.
+  const dostepneProjekty = useMemo(() => {
+    if (!mojeUpr || mojeUpr.rola === "administrator") return wszystkieProjekty;
+    const przypisane = mojeUpr.projekty ?? [];
+    if (przypisane.length === 0) return wszystkieProjekty;
+    const dozwolone = wszystkieProjekty.filter((p) => przypisane.includes(p.id));
+    return dozwolone.length > 0 ? dozwolone : wszystkieProjekty;
+  }, [wszystkieProjekty, mojeUpr]);
+
   const projekt =
-    wszystkieProjekty.find((p) => p.id === projektId) ??
-    wszystkieProjekty[0] ??
+    dostepneProjekty.find((p) => p.id === projektId) ??
+    dostepneProjekty[0] ??
     projektDomyslny;
+
+  // Gdy aktywny projekt jest poza dostępnymi — przełącz na pierwszy dozwolony.
+  useEffect(() => {
+    if (
+      dostepneProjekty.length > 0 &&
+      !dostepneProjekty.some((p) => p.id === projektId)
+    ) {
+      setProjektId(dostepneProjekty[0].id);
+    }
+  }, [dostepneProjekty, projektId]);
 
   // E1: pobierz uczestników aktywnego projektu z bazy. Gdy baza zwróci rekordy
   // — stają się źródłem prawdy; gdy pusto/błąd — zostaje localStorage/domyślne.
@@ -560,7 +603,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       projekt,
-      projekty: wszystkieProjekty,
+      projekty: dostepneProjekty,
       zmienProjekt,
       uczestnicy,
       zaimportowano,
@@ -581,7 +624,7 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       projekt,
-      wszystkieProjekty,
+      dostepneProjekty,
       zmienProjekt,
       uczestnicy,
       zaimportowano,

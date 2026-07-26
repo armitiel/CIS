@@ -12,7 +12,21 @@ export interface CzlonekZespolu {
   rola: RolaDostepu;
   aktywny: boolean;
   nazwa: string | null;
+  /** Klucze projektów przypisanych pracownikowi. Pusto = brak ograniczenia (widzi wszystkie). */
+  projekty: string[];
   dodany: string;
+}
+
+// Odczyt odporny na brak kolumny „projekty" (gdy migracja jeszcze niewykonana).
+function znormalizujCzlonka(w: Record<string, unknown>): CzlonekZespolu {
+  return {
+    email: String(w.email ?? ""),
+    rola: (w.rola as RolaDostepu) ?? "pracownik",
+    aktywny: w.aktywny !== false,
+    nazwa: (w.nazwa as string | null) ?? null,
+    projekty: Array.isArray(w.projekty) ? (w.projekty as string[]) : [],
+    dodany: String(w.dodany ?? ""),
+  };
 }
 
 function klient() {
@@ -29,20 +43,32 @@ export async function pobierzMojeUprawnienia(): Promise<CzlonekZespolu | null> {
   if (!user?.email) return null;
   const { data, error } = await supabase
     .from("zespol")
-    .select("email,rola,aktywny,nazwa,dodany")
+    .select("*")
     .eq("email", normalizujEmailZespolu(user.email))
     .maybeSingle();
   if (error) throw error;
-  return data as CzlonekZespolu | null;
+  return data ? znormalizujCzlonka(data as Record<string, unknown>) : null;
 }
 
 export async function pobierzZespol(): Promise<CzlonekZespolu[]> {
   const { data, error } = await klient()
     .from("zespol")
-    .select("email,rola,aktywny,nazwa,dodany")
+    .select("*")
     .order("email", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as CzlonekZespolu[];
+  return (data ?? []).map((w) => znormalizujCzlonka(w as Record<string, unknown>));
+}
+
+/** Ustawia listę projektów przypisanych pracownikowi (tylko administrator; wymaga kolumny „projekty"). */
+export async function ustawProjektyPracownika(
+  email: string,
+  projekty: string[],
+): Promise<void> {
+  const { error } = await klient()
+    .from("zespol")
+    .update({ projekty })
+    .eq("email", normalizujEmailZespolu(email));
+  if (error) throw error;
 }
 
 export async function dodajPracownika(
