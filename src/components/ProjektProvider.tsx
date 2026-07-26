@@ -367,23 +367,15 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
   /** Usuwa uczestnika z aktywnego projektu — najpierw kopia do Kosza (do przywrócenia). */
   const usunUczestnika = useCallback(
     (id: string) => {
-      // Znajdź usuwanego w bieżącej liście (localStorage = źródło lokalne) i przenieś do Kosza.
-      let lista: Uczestnik[] = [];
-      try {
-        const raw = localStorage.getItem(kluczUczestnikow(projekt.id));
-        lista = raw
-          ? (JSON.parse(raw) as Uczestnik[])
-          : (projekt.uczestnicyDomyslni ?? []);
-      } catch {
-        lista = projekt.uczestnicyDomyslni ?? [];
-      }
-      const usuwany = lista.find((u) => u.id === id);
-      if (usuwany) {
-        const kosz = czytajKosz(projekt.id).filter((u) => u.id !== id);
-        zapiszKosz(projekt.id, [usuwany, ...kosz]);
-      }
       setImportowani((stan) => {
+        // Źródłem prawdy jest aktualnie wyświetlana lista (stan React), nie localStorage —
+        // dzięki temu Kosz działa też, gdy lista pochodzi z bazy (np. „Moja ścieżka").
         const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
+        const usuwany = obecni.find((u) => u.id === id);
+        if (usuwany) {
+          const koszObecny = czytajKosz(projekt.id).filter((u) => u.id !== id);
+          zapiszKosz(projekt.id, [usuwany, ...koszObecny]);
+        }
         const nowi = obecni.filter((u) => u.id !== id);
         try {
           localStorage.setItem(
@@ -449,21 +441,13 @@ export function ProjektProvider({ children }: { children: React.ReactNode }) {
 
   /** Usuwa WSZYSTKICH uczestników aktywnego projektu — cała lista trafia do Kosza. */
   const usunWszystkichUczestnikow = useCallback(() => {
-    let lista: Uczestnik[] = [];
-    try {
-      const raw = localStorage.getItem(kluczUczestnikow(projekt.id));
-      lista = raw
-        ? (JSON.parse(raw) as Uczestnik[])
-        : (projekt.uczestnicyDomyslni ?? []);
-    } catch {
-      lista = projekt.uczestnicyDomyslni ?? [];
-    }
-    if (lista.length) {
-      const mapa = new Map<string, Uczestnik>();
-      [...lista, ...czytajKosz(projekt.id)].forEach((u) => mapa.set(u.id, u));
-      zapiszKosz(projekt.id, [...mapa.values()]);
-    }
     setImportowani((stan) => {
+      const obecni = stan[projekt.id] ?? projekt.uczestnicyDomyslni;
+      if (obecni.length) {
+        const mapa = new Map<string, Uczestnik>();
+        [...obecni, ...czytajKosz(projekt.id)].forEach((u) => mapa.set(u.id, u));
+        zapiszKosz(projekt.id, [...mapa.values()]);
+      }
       try {
         localStorage.setItem(kluczUczestnikow(projekt.id), JSON.stringify([]));
       } catch {
